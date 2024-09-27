@@ -27,12 +27,12 @@ async def async_setup_entry(
     new_sensors = []
     if hasattr(device, 'battery_level'):
         new_sensors.append(BatterySensor(device))
-    if hasattr(device, 'breaker_power'):
-        for i in range(len(device.breaker_power)):
-            new_sensors.append(BreakerPowerSensor(device, i))
-    if hasattr(device, 'breaker_current'):
-        for i in range(len(device.breaker_current)):
-            new_sensors.append(BreakerCurrentSensor(device, i))
+    if hasattr(device, 'circuit_power'):
+        for i in range(len(device.circuit_power)):
+            new_sensors.append(CircuitPowerSensor(device, i))
+    if hasattr(device, 'circuit_current'):
+        for i in range(len(device.circuit_current)):
+            new_sensors.append(CircuitCurrentSensor(device, i))
     if hasattr(device, 'grid_power'):
         new_sensors.append(GridPowerSensor(device))
     if hasattr(device, 'in_use_power'):
@@ -88,8 +88,8 @@ class BatterySensor(SensorBase):
         """Return the state of the sensor."""
         return self._device.battery_level
 
-class BreakerPowerSensor(SensorBase):
-    """Represents breaker consumed wattage."""
+class CircuitPowerSensor(SensorBase):
+    """Represents circuit consumed wattage."""
 
     device_class = SensorDeviceClass.POWER
     _attr_unit_of_measurement = UnitOfPower.WATT
@@ -98,19 +98,19 @@ class BreakerPowerSensor(SensorBase):
         """Initialize the sensor."""
         super().__init__(device)
 
-        self._attr_unique_id = f"{self._device.name}_breaker_power_{index+1}"
+        self._attr_unique_id = f"{self._device.name}_circuit_power_{index+1}"
 
-        self._attr_name = f"Breaker Power {index+1}"
+        self._attr_name = f"Circuit Power {index+1}"
 
         self._index = index
 
     @property
     def state(self):
         """Return the state of the sensor."""
-        return self._device.breaker_power[self._index]
+        return self._device.circuit_power[self._index]
 
-class BreakerCurrentSensor(SensorBase):
-    """Represents breaker consumed amperage."""
+class CircuitCurrentSensor(SensorBase):
+    """Represents circuit consumed amperage."""
 
     device_class = SensorDeviceClass.CURRENT
     _attr_unit_of_measurement = UnitOfElectricCurrent.AMPERE
@@ -120,16 +120,16 @@ class BreakerCurrentSensor(SensorBase):
         """Initialize the sensor."""
         super().__init__(device)
 
-        self._attr_unique_id = f"{self._device.name}_breaker_current_{index+1}"
+        self._attr_unique_id = f"{self._device.name}_circuit_current_{index+1}"
 
-        self._attr_name = f"Breaker Current {index+1}"
+        self._attr_name = f"Circuit Current {index+1}"
 
         self._index = index
 
     @property
     def state(self):
         """Return the state of the sensor."""
-        return self._device.breaker_current[self._index]
+        return self._device.circuit_current[self._index]
 
 class GridPowerSensor(SensorBase):
     """Represents grid intake wattage."""

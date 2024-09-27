@@ -1,8 +1,8 @@
 # EcoFlow BLE
 
 [![hacs_badge](https://img.shields.io/badge/HACS-Default-41BDF5.svg)](https://github.com/hacs/integration)
-[![Validation hassfest](https://github.com/rabits/ha-ef-ble/actions/workflows/validation-hassfest.yml/badge.svg)](https://github.com/rabits/ha-ef-ble/actions/workflows/validation-hassfest.yml)
-[![Validation HACS](https://github.com/rabits/ha-ef-ble/actions/workflows/validation-hacs.yml/badge.svg)](https://github.com/rabits/ha-ef-ble/actions/workflows/validation-hacs.yml)
+[![Validation hassfest](https://github.com/rabits/ha-ef-ble/actions/workflows/validate-hassfest.yml/badge.svg)](https://github.com/rabits/ha-ef-ble/actions/workflows/validate-hassfest.yml)
+[![Validation HACS](https://github.com/rabits/ha-ef-ble/actions/workflows/validate-hacs.yml/badge.svg)](https://github.com/rabits/ha-ef-ble/actions/workflows/validate-hacs.yml)
 
 Unofficial EcoFlow BLE devices Home Assistant integration will allow you to communicate with a
 number of EcoFlow devices through bluetooth and monitor their status / control parameters.
@@ -10,6 +10,11 @@ number of EcoFlow devices through bluetooth and monitor their status / control p
 Recognized devices:
 * Smart Home Panel 2 (EF-HD3####, FW Version: 4.0.0.122, WiFi Version: 2.0.1.20)
 * TODO: Delta Pro Ultra (EF-YJ####, FW Version: 5.0.0.25, WiFi Version: 2.0.2.4)
+
+**NOTICE**: this integration utilizes Bluetooth LE of the EF device, which is supporting just one
+connection at a time - so if you want to manage the device through BLE from your phone, you will
+need to disable this device in HA for that and later re-enable it to continue to collect data. It's
+an internal EF device limitation, so not much to do here...
 
 ## WARNING: Support & Warranty
 

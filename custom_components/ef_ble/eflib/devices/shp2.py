@@ -10,7 +10,7 @@ class Device(DeviceBase):
     '''Smart Home Panel 2'''
     SN_PREFIX = b'HD31'
 
-    NUM_OF_BREAKERS = 12
+    NUM_OF_CIRCUITS = 12
     NUM_OF_CHANNELS = 3
 
     @staticmethod
@@ -20,8 +20,8 @@ class Device(DeviceBase):
     def __init__(self, ble_dev: BLEDevice, adv_data: AdvertisementData, sn: str) -> None:
         super().__init__(ble_dev, adv_data, sn)
 
-        self._data_breaker_power = [None] * Device.NUM_OF_BREAKERS
-        self._data_breaker_current = [None] * Device.NUM_OF_BREAKERS
+        self._data_circuit_power = [None] * Device.NUM_OF_CIRCUITS
+        self._data_circuit_current = [None] * Device.NUM_OF_CIRCUITS
 
         self._data_grid_power = None
         self._data_in_use_power = None
@@ -42,14 +42,14 @@ class Device(DeviceBase):
         return self._data_channel_power
 
     @property
-    def breaker_power(self) -> list[int | None]:
-        '''Breaker consuming wattage in W.'''
-        return self._data_breaker_power
+    def circuit_power(self) -> list[int | None]:
+        '''Circuit consuming wattage in W.'''
+        return self._data_circuit_power
 
     @property
-    def breaker_current(self) -> list[float | None]:
-        '''Breaker consuming amperage in A.'''
-        return self._data_breaker_current
+    def circuit_current(self) -> list[float | None]:
+        '''Circuit consuming amperage in A.'''
+        return self._data_circuit_current
 
     @property
     def grid_power(self) -> int | None:
@@ -77,12 +77,12 @@ class Device(DeviceBase):
 
                 if p.HasField('load_info'):
                     for i, w in enumerate(p.load_info.hall1_watt):
-                        if self._data_breaker_power[i] != w:
-                            self._data_breaker_power[i] = w
+                        if self._data_circuit_power[i] != w:
+                            self._data_circuit_power[i] = w
                             updated = True
                     for i, a in enumerate(p.load_info.hall1_curr):
-                        if self._data_breaker_current[i] != a:
-                            self._data_breaker_current[i] = a
+                        if self._data_circuit_current[i] != a:
+                            self._data_circuit_current[i] = a
                             updated = True
 
                 if p.HasField('watt_info'):

@@ -3,8 +3,14 @@ import asyncio
 import logging
 from collections.abc import Callable
 
-from bleak import BleakClient
+from bleak import BleakError
 from bleak.backends.characteristic import BleakGATTCharacteristic
+from bleak_retry_connector import (
+    MAX_CONNECT_ATTEMPTS,
+    BleakClientWithServiceCache,
+    BLEDevice,
+    establish_connection,
+)
 
 import hashlib
 import ecdsa
@@ -32,14 +38,16 @@ class Connection:
     NOTIFY_CHARACTERISTIC = "00000003-0000-1000-8000-00805f9b34fb"
     WRITE_CHARACTERISTIC = "00000002-0000-1000-8000-00805f9b34fb"
 
-    def __init__(self, address: str, dev_sn: str, user_id: str, data_parse: Callable[[Packet], bool]) -> None:
-        self._address = address
+    def __init__(self, ble_dev: BLEDevice, dev_sn: str, user_id: str, data_parse: Callable[[Packet], bool]) -> None:
+        self._ble_dev = ble_dev
+        self._address = ble_dev.address
         self._dev_sn = dev_sn
         self._user_id = user_id
         self._data_parse = data_parse
 
         self._client = None
         self._disconnected = asyncio.Event()
+        self._retry_on_disconnect = True
 
         self._enc_packet_buffer = b''
 
@@ -47,9 +55,32 @@ class Connection:
     def is_connected(self) -> bool:
         return self._client != None and self._client.is_connected
 
-    async def connect(self):
-        self._client = BleakClient(self._address)
-        await self._client.connect()
+    def ble_dev(self) -> BLEDevice:
+        return self._ble_dev
+
+    async def connect(self, max_attempts: int = MAX_CONNECT_ATTEMPTS):
+        self._retry_on_disconnect = True
+        try:
+            if self._client != None:
+                if self._client.is_connected:
+                    _LOGGER.warning("%s: Device is already connected", self._address)
+                    return
+                _LOGGER.info("%s: Reconnecting to device", self._address)
+                await self._client.connect()
+            else:
+                _LOGGER.info("%s: Connecting to device", self._address)
+                self._client = await establish_connection(
+                    BleakClientWithServiceCache,
+                    self.ble_dev(),
+                    self._ble_dev.name,
+                    disconnected_callback=self.disconnected,
+                    ble_device_callback=self.ble_dev,
+                    max_attempts=max_attempts,
+                )
+        except (asyncio.TimeoutError, BleakError) as err:
+            _LOGGER.error("%s: Failed to connect to the device: %s", self._address, err)
+            raise err
+
         _LOGGER.info("%s: Connected", self._address)
 
         if self._client._backend.__class__.__name__ == "BleakClientBlueZDBus":
@@ -60,10 +91,19 @@ class Connection:
 
         await self.initBleSessionKey()
 
+    def disconnected(self, *args, **kwargs) -> None:
+        _LOGGER.info("%s: Disconnected from device", self._address)
+        if self._retry_on_disconnect:
+            loop = asyncio.get_event_loop()
+            loop.create_task(self.connect())
+        else:
+            self._disconnected.set()
+
     async def disconnect(self):
+        _LOGGER.info("%s: Disconnecting from device", self._address)
+        self._retry_on_disconnect = False
         if self._client != None:
             await self._client.disconnect()
-        self._done.set()
 
     async def waitDisconnect(self):
         await self._disconnected.wait()
@@ -167,7 +207,7 @@ class Connection:
             if crc16(header+payload_data) != struct.unpack('<H', payload_crc)[0]:
                 _LOGGER.error("%s: Unable to parse encrypted packet - incorrect CRC16: %r", self._address, " ".join("{:02x}".format(c) for c in data[:6+payload_length]))
                 continue
-            
+
             # Decrypt the payload packet
             payload = await self.decryptSession(payload_data)
             _LOGGER.debug("%s: parseEncPackets: decrypted payload: %r", self._address, " ".join("{:02x}".format(c) for c in payload))
@@ -287,15 +327,16 @@ class Connection:
     async def autoAuthenticationHandler(self, characteristic: BleakGATTCharacteristic, recv_data: bytearray):
         await self._client.stop_notify(Connection.NOTIFY_CHARACTERISTIC)
         packets = await self.parseEncPackets(bytes(recv_data))
-        
+
         if len(packets) < 1:
             raise PacketReceiveError
-        
+
         data = packets[0].payload()
         _LOGGER.debug("%s: autoAuthenticationHandler: data: %r", self._address, " ".join("{:02x}".format(c) for c in data))
-        
+
         if data != b'\x00':
-            raise AuthFailedError("%s: Auth failed with response: %r" % (self._address, " ".join("{:02x}".format(c) for c in data)))
+            _LOGGER.error("%s: Auth failed with response: %r", self._address, " ".join("{:02x}".format(c) for c in data))
+            raise AuthFailedError
 
         await self.listenForData()
 

@@ -15,9 +15,11 @@ class DeviceBase:
     MANUFACTURER_KEY = 0xb5b5
 
     def __init__(self, ble_dev: BLEDevice, adv_data: AdvertisementData, sn: str) -> None:
-        _LOGGER.debug("%s: Creating new device: %s (%s)", ble_dev.address, self.device, sn)
+        _LOGGER.debug("%s: Creating new device: %s '%s' (%s)", ble_dev.address, self.device, adv_data.local_name, sn)
+        self._ble_dev = ble_dev
         self._address = ble_dev.address
         self._name = adv_data.local_name
+        self._name_by_user = self._name
         self._sn = sn
 
         self._conn = None
@@ -35,6 +37,10 @@ class DeviceBase:
     def name(self):
         return self._name
 
+    @property
+    def name_by_user(self):
+        return self._name_by_user
+
     def isValid(self):
         return self._sn != None
 
@@ -50,7 +56,7 @@ class DeviceBase:
         if self._conn == None:
             if user_id != None:
                 self._user_id = user_id
-            self._conn = Connection(self._address, self._sn, self._user_id, self.data_parse)
+            self._conn = Connection(self._ble_dev, self._sn, self._user_id, self.data_parse)
         await self._conn.connect()
 
     async def disconnect(self):

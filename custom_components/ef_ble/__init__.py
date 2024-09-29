@@ -34,8 +34,6 @@ async def async_setup_entry(hass: HomeAssistant, entry: DeviceConfigEntry) -> bo
     if not bluetooth.async_address_present(hass, address):
         raise ConfigEntryNotReady("EcoFlow BLE device not present")
 
-    ## New logic:
-
     _LOGGER.debug("Connecting Device")
     discovery_info = bluetooth.async_last_service_info(hass, address, connectable=True)
     device = eflib.NewDevice(discovery_info.device, discovery_info.advertisement)
@@ -53,8 +51,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: DeviceConfigEntry) -> bo
     return True
 
 
-async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+async def async_unload_entry(hass: HomeAssistant, entry: DeviceConfigEntry) -> bool:
     """Unload a config entry."""
+    device = entry.runtime_data
+    await device.disconnect()
     unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
 
     return unload_ok

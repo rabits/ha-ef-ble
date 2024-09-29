@@ -1,8 +1,8 @@
 # EcoFlow BLE
 
 [![hacs_badge](https://img.shields.io/badge/HACS-Default-41BDF5.svg)](https://github.com/hacs/integration)
-[![Validation hassfest](https://github.com/rabits/ha-ef-ble/actions/workflows/validate-hassfest.yml/badge.svg)](https://github.com/rabits/ha-ef-ble/actions/workflows/validate-hassfest.yml)
-[![Validation HACS](https://github.com/rabits/ha-ef-ble/actions/workflows/validate-hacs.yml/badge.svg)](https://github.com/rabits/ha-ef-ble/actions/workflows/validate-hacs.yml)
+[![Validation hassfest](https://github.com/rabits/ha-ef-ble/actions/workflows/validate-hassfest.yaml/badge.svg)](https://github.com/rabits/ha-ef-ble/actions/workflows/validate-hassfest.yaml)
+[![Validation HACS](https://github.com/rabits/ha-ef-ble/actions/workflows/validate-hacs.yaml/badge.svg)](https://github.com/rabits/ha-ef-ble/actions/workflows/validate-hacs.yaml)
 
 Unofficial EcoFlow BLE devices Home Assistant integration will allow you to communicate with a
 number of EcoFlow devices through bluetooth and monitor their status / control parameters.

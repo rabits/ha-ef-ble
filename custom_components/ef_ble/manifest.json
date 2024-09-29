@@ -1,24 +1,6 @@
 {
     "domain": "ef_ble",
     "name": "EcoFlow BLE (Unofficial)",
-    "version": "0.1.0",
-
-    "codeowners": ["@rabits"],
-    "dependencies": ["bluetooth_adapters"],
-    "documentation": "https://github.com/rabits/ef-ble-integration/wiki",
-    "issue_tracker": "https://github.com/rabits/ef-ble-integration/issues",
-
-    "integration_type": "device",
-    "iot_class": "local_push",
-    "config_flow": true,
-    "loggers": ["custom_components.ef_ble"],
-
-    "requirements": [
-        "ecdsa",
-        "crc",
-        "PyCryptodome",
-        "protobuf"
-    ],
 
     "bluetooth": [{
         "local_name": "EF-HD3*",
@@ -32,5 +14,23 @@
         "manufacturer_id": 46517,
         "manufacturer_data_start": [19, 89, 55, 49, 49, 90, 65, 66, 53, 83, 71, 50, 82],
         "connectable": true
-    }]
+    }],
+
+    "codeowners": ["@rabits"],
+    "config_flow": true,
+    "dependencies": ["bluetooth_adapters"],
+    "documentation": "https://github.com/rabits/ef-ble-integration/wiki",
+    "integration_type": "device",
+    "iot_class": "local_push",
+    "issue_tracker": "https://github.com/rabits/ef-ble-integration/issues",
+    "loggers": ["custom_components.ef_ble"],
+
+    "requirements": [
+        "ecdsa",
+        "crc",
+        "PyCryptodome",
+        "protobuf"
+    ],
+
+    "version": "0.1.0"
 }

@@ -79,7 +79,10 @@ class Connection:
                 )
         except (asyncio.TimeoutError, BleakError) as err:
             _LOGGER.error("%s: Failed to connect to the device: %s", self._address, err)
-            raise err
+            # Retry connection after error with a bit of delay
+            loop = asyncio.get_event_loop()
+            loop.call_later(5, asyncio.create_task, self.connect())
+            return
 
         _LOGGER.info("%s: Connected", self._address)
 

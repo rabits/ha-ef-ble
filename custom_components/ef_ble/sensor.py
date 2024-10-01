@@ -144,6 +144,7 @@ class GridPowerSensor(SensorBase):
     device_class = SensorDeviceClass.POWER
     _attr_native_unit_of_measurement = UnitOfPower.WATT
     _attr_suggested_display_precision = 2
+    _attr_icon = "mdi:transmission-tower"
 
     def __init__(self, device):
         """Initialize the sensor."""
@@ -163,6 +164,7 @@ class InUsePowerSensor(SensorBase):
     device_class = SensorDeviceClass.POWER
     _attr_native_unit_of_measurement = UnitOfPower.WATT
     _attr_suggested_display_precision = 2
+    _attr_icon = "mdi:home-lightning-bolt-outline"
 
     def __init__(self, device):
         """Initialize the sensor."""

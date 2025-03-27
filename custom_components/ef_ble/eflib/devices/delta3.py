@@ -56,7 +56,8 @@ class Device(DeviceBase, ProtobufProps):
     SN_PREFIX = (b"P231", b"D361")
     NAME_PREFIX = "EF-D3"
 
-    battery_level = pb_field(pb.bms_batt_soc, lambda value: round(value, 2))
+    battery_level = pb_field(pb.cms_batt_soc, lambda value: round(value, 2))
+    battery_level_main = pb_field(pb.bms_batt_soc, lambda value: round(value, 2))
 
     ac_input_power = pb_field(pb.pow_get_ac_in)
     ac_output_power = pb_field(pb.pow_get_ac_out, _out_power)

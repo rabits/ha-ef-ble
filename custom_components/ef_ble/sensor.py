@@ -25,7 +25,14 @@ SENSOR_TYPES: dict[str, SensorEntityDescription] = {
     # Common
     "battery_level": SensorEntityDescription(
         key="battery_level",
-        name="Battery",
+        name="Battery Level",
+        native_unit_of_measurement=PERCENTAGE,
+        device_class=SensorDeviceClass.BATTERY,
+        state_class=SensorStateClass.MEASUREMENT,
+    ),
+    "battery_level_main": SensorEntityDescription(
+        key="battery_level_main",
+        name="Main Battery Level",
         native_unit_of_measurement=PERCENTAGE,
         device_class=SensorDeviceClass.BATTERY,
         state_class=SensorStateClass.MEASUREMENT,

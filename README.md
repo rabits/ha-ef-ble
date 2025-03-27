@@ -45,6 +45,7 @@ Recognized devices:
 | AC Input Power                  | DC Port        | Max Charge Limit     |                      |
 | AC Output Energy                | Backup Reserve | Min Discharge Limit  |                      |
 | AC Output Power                 |                |                      |                      |
+| Main Battery Level (Plus only)  |                |                      |                      |
 | Battery Level                   |                |                      |                      |
 | DC 12V Port Output Energy       |                |                      |                      |
 | DC 12V Port Output Power        |                |                      |                      |
@@ -69,10 +70,11 @@ Recognized devices:
 
 | *Sensors*                           | *Switches*     | *Sliders*            |
 |-------------------------------------|----------------|----------------------|
-| Battery Level                       | AC Ports       | Backup Reserve Level |
-| AC Input Power                      | DC Ports       | Max Charge Limit     |
-| AC Output Power                     | Backup Reserve | Min Discharge Limit  |
-| DC 12V Port Output Power            | USB Ports      |                      |
+| Main Battery Level                  | AC Ports       | Backup Reserve Level |
+| Battery Level                       | DC Ports       | Max Charge Limit     |
+| AC Input Power                      | Backup Reserve | Min Discharge Limit  |
+| AC Output Power                     | USB Ports      |                      |
+| DC 12V Port Output Power            |                |                      |
 | DC Port Input Power                 |                |                      |
 | DC Port Input State                 |                |                      |
 | DC Port (2) Input Power (Plus only) |                |                      |
@@ -81,10 +83,10 @@ Recognized devices:
 | Solar Power (2) (Plus only)         |                |                      |
 | Input Power Total                   |                |                      |
 | Output Power Total                  |                |                      |
-| Left USB A Output Power             |                |                      |
-| Right USB A Output Power            |                |                      |
-| Left USB C Output Power             |                |                      |
-| Right USB C Output Power            |                |                      |
+| USB A Output Power                  |                |                      |
+| USB A (2) Output Power              |                |                      |
+| USB C Output Power                  |                |                      |
+| USB C (2) Output Power              |                |                      |
 | AC Plugged In                       |                |                      |
 | Battery Input Power (disabled)      |                |                      |
 | Battery Output Power (disabled)     |                |                      |

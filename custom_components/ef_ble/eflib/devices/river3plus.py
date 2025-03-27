@@ -18,6 +18,8 @@ class Device(river3.Device):
 
     SN_PREFIX = (b"R631", b"R634")
 
+    battery_level_main = pb_field(river3.pb.bms_batt_soc)
+
     led_mode = pb_field(river3.pb.led_mode, lambda num: LedMode(num))
 
     async def set_led_mode(self, state: LedMode):

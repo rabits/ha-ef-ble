@@ -12,11 +12,11 @@ from ..devicebase import DeviceBase
 from ..packet import Packet
 from ..pb import pr705_pb2
 from ..props import (
+    Field,
     ProtobufProps,
     pb_field,
     proto_attr_mapper,
     repeated_pb_field_type,
-    Field,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -55,7 +55,7 @@ class Device(DeviceBase, ProtobufProps):
     SN_PREFIX = (b"R651", b"R653", b"R654", b"R655")
     NAME_PREFIX = "EF-R3"
 
-    battery_level = pb_field(pb.bms_batt_soc)
+    battery_level = pb_field(pb.cms_batt_soc)
 
     ac_input_power = pb_field(pb.pow_get_ac_in)
     ac_input_energy = _StatField(pr705_pb2.STATISTICS_OBJECT_AC_IN_ENERGY)

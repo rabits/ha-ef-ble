@@ -26,7 +26,7 @@
           "update_period": "Update Period"
         },
         "data_description": {
-          "update_period": "Number of seconds to wait before processing the next device update. A default value of 0 means all updates are processed (may result in a high number of DB writes)."
+          "update_period": "Number of seconds to wait before processing the next device update. A default value of 0 means all updates are processed immediately (may result in a high number of DB writes)."
         },
         "sections": {
           "login": {
@@ -46,7 +46,7 @@
           "update_period": "Update Period"
         },
         "data_description": {
-          "update_period": "Number of seconds to wait before processing the next device update. A default value of 0 means all updates are processed (may result in a high number of DB writes)."
+          "update_period": "Number of seconds to wait before processing the next device update. A default value of 0 means all updates are processed immediately (may result in a high number of DB writes)."
         },
         "sections": {
           "login": {
@@ -60,11 +60,20 @@
       },
       "reconfigure": {
         "data": {
-          "user_id": "EcoFlow User ID",
+          "user_id": "EcoFlow User ID"
+        }
+      }
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Options for {device_name}",
+        "data": {
           "update_period": "Update Period"
         },
         "data_description": {
-          "update_period": "Number of seconds to wait before processing the next device update. A default value of 0 means all updates are processed (may result in a high number of DB writes)."
+          "update_period": "Number of seconds to wait before processing the next device update. A default value of 0 means all updates are processed immediately (may result in a high number of DB writes)."
         }
       }
     }

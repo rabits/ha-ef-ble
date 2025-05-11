@@ -16,11 +16,15 @@ from homeassistant.config_entries import (
     CONN_CLASS_LOCAL_PUSH,
     ConfigFlow,
     ConfigFlowResult,
+    OptionsFlow,
 )
 from homeassistant.const import CONF_ADDRESS, CONF_EMAIL, CONF_PASSWORD
+from homeassistant.core import callback
 from homeassistant.data_entry_flow import section
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.storage import Store
+
+from custom_components.ef_ble import ConfigEntry
 
 from . import CONF_UPDATE_PERIOD, eflib
 from .const import CONF_USER_ID, DOMAIN
@@ -45,6 +49,7 @@ class EFBLEConfigFlow(ConfigFlow, domain=DOMAIN):
 
         self._user_id: str = ""
         self._email: str = ""
+        self._password: str = ""
         self._user_id_validated: bool = False
         self._collapsed = True
 
@@ -79,6 +84,7 @@ class EFBLEConfigFlow(ConfigFlow, domain=DOMAIN):
             self._user_id = data["user_id"]
 
         self._set_confirm_only()
+
         placeholders = {"name": title}
         self.context["title_placeholders"] = placeholders
 
@@ -95,17 +101,9 @@ class EFBLEConfigFlow(ConfigFlow, domain=DOMAIN):
             data_schema=vol.Schema(
                 {
                     vol.Optional(CONF_USER_ID, default=self._user_id): str,
-                    vol.Required("login"): section(
-                        vol.Schema(
-                            {
-                                vol.Optional(CONF_EMAIL, default=self._email): str,
-                                vol.Optional(CONF_PASSWORD): str,
-                            }
-                        ),
-                        {"collapsed": self._collapsed},
-                    ),
+                    **self._login_option(),
                     vol.Required(CONF_ADDRESS): vol.In([f"{title} ({device.address})"]),
-                    **self._get_device_period_option(),
+                    **_update_period_option(),
                 }
             ),
         )
@@ -155,20 +153,25 @@ class EFBLEConfigFlow(ConfigFlow, domain=DOMAIN):
             data_schema=vol.Schema(
                 {
                     vol.Optional(CONF_USER_ID, default=self._user_id): str,
-                    vol.Required("login"): section(
-                        vol.Schema(
-                            {
-                                vol.Optional(CONF_EMAIL, default=self._email): str,
-                                vol.Optional(CONF_PASSWORD): str,
-                            }
-                        ),
-                        {"collapsed": self._collapsed},
-                    ),
+                    **self._login_option(),
                     vol.Required(CONF_ADDRESS): vol.In(self._discovered_devices.keys()),
-                    **self._get_device_period_option(),
+                    **_update_period_option(),
                 }
             ),
         )
+
+    def _login_option(self):
+        return {
+            vol.Required("login"): section(
+                vol.Schema(
+                    {
+                        vol.Optional(CONF_EMAIL, default=self._email): str,
+                        vol.Optional(CONF_PASSWORD, default=self._password): str,
+                    }
+                ),
+                {"collapsed": self._collapsed},
+            ),
+        }
 
     async def async_step_reconfigure(
         self, user_input: dict[str, Any] | None = None
@@ -196,13 +199,17 @@ class EFBLEConfigFlow(ConfigFlow, domain=DOMAIN):
                     vol.Required(
                         CONF_USER_ID, default=reconfigure_entry.data.get(CONF_USER_ID)
                     ): str,
-                    **self._get_device_period_option(
-                        default=reconfigure_entry.data.get(CONF_UPDATE_PERIOD, 0)
-                    ),
                 }
             ),
             errors=errors,
         )
+
+    @staticmethod
+    @callback
+    def async_get_options_flow(
+        config_entry: ConfigEntry[eflib.DeviceBase],
+    ) -> OptionsFlow:
+        return OptionsFlowHandler()
 
     async def _validate_user_id(
         self, device: eflib.DeviceBase, user_input: dict[str, Any]
@@ -289,9 +296,37 @@ class EFBLEConfigFlow(ConfigFlow, domain=DOMAIN):
         self._collapsed = True
         return {}
 
-    def _get_device_period_option(self, default: int = 0):
-        return {
-            vol.Optional(CONF_UPDATE_PERIOD, default=default): vol.All(
-                int, vol.Range(min=0)
-            )
-        }
+
+class OptionsFlowHandler(OptionsFlow):
+    async def async_step_init(self, user_input: dict[str, Any] | None = None):
+        if user_input is not None:
+            return self.async_create_entry(data=user_input)
+
+        options = (
+            {CONF_UPDATE_PERIOD: self.config_entry.data.get(CONF_UPDATE_PERIOD, 0)}
+            if not self.config_entry.options
+            else self.config_entry.options
+        )
+
+        device: eflib.DeviceBase | None = getattr(
+            self.config_entry, "runtime_data", None
+        )
+
+        return self.async_show_form(
+            step_id="init",
+            data_schema=self.add_suggested_values_to_schema(
+                vol.Schema(_update_period_option()),
+                options,
+            ),
+            description_placeholders={
+                "device_name": device.device if device else "Ecoflow Device"
+            },
+        )
+
+
+def _update_period_option(default: int = 0):
+    return {
+        vol.Optional(CONF_UPDATE_PERIOD, default=default): vol.All(
+            int, vol.Range(min=0)
+        )
+    }

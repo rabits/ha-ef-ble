@@ -49,7 +49,6 @@ class EFBLEConfigFlow(ConfigFlow, domain=DOMAIN):
 
         self._user_id: str = ""
         self._email: str = ""
-        self._password: str = ""
         self._user_id_validated: bool = False
         self._collapsed = True
 
@@ -166,7 +165,7 @@ class EFBLEConfigFlow(ConfigFlow, domain=DOMAIN):
                 vol.Schema(
                     {
                         vol.Optional(CONF_EMAIL, default=self._email): str,
-                        vol.Optional(CONF_PASSWORD, default=self._password): str,
+                        vol.Optional(CONF_PASSWORD, default=""): str,
                     }
                 ),
                 {"collapsed": self._collapsed},
@@ -233,7 +232,7 @@ class EFBLEConfigFlow(ConfigFlow, domain=DOMAIN):
 
         self._user_id = user_id
 
-        await device.connect(self._user_id, max_attempts=2)
+        await device.connect(self._user_id, max_attempts=4)
         await device.waitConnected(timeout=20)
         conn_state = device.connection_state
         await device.disconnect()

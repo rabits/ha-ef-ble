@@ -75,7 +75,6 @@ class Device(DeviceBase, ProtobufProps):
     async def data_parse(self, packet: Packet) -> bool:
         """Processing the incoming notifications from the device"""
         processed = False
-        updated_props: list[str] = []
         self.reset_updated()
 
         if packet.src == 0x02 and packet.cmdSet == 0x02:
@@ -118,7 +117,7 @@ class Device(DeviceBase, ProtobufProps):
                 await self._time_commands.async_send_all()
             processed = True
 
-        for prop_name in updated_props:
+        for prop_name in self.updated_fields:
             self.update_callback(prop_name)
 
         return processed

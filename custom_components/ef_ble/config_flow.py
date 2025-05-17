@@ -4,8 +4,9 @@ from __future__ import annotations
 
 import base64
 import logging
+from collections.abc import Mapping
 from functools import cached_property
-from typing import Any
+from typing import Any, ClassVar
 
 import voluptuous as vol
 from homeassistant.components.bluetooth import (
@@ -14,6 +15,7 @@ from homeassistant.components.bluetooth import (
 )
 from homeassistant.config_entries import (
     CONN_CLASS_LOCAL_PUSH,
+    ConfigEntry,
     ConfigFlow,
     ConfigFlowResult,
     OptionsFlow,
@@ -24,11 +26,21 @@ from homeassistant.data_entry_flow import section
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.storage import Store
 
-from custom_components.ef_ble import ConfigEntry
-
-from . import CONF_UPDATE_PERIOD, eflib
-from .const import CONF_USER_ID, DOMAIN
+from . import eflib
+from .const import (
+    CONF_LOG_BLEAK,
+    CONF_LOG_CONNECTION,
+    CONF_LOG_ENCRYPTED_PAYLOADS,
+    CONF_LOG_MASKED,
+    CONF_LOG_MESSAGES,
+    CONF_LOG_PACKETS,
+    CONF_LOG_PAYLOADS,
+    CONF_UPDATE_PERIOD,
+    CONF_USER_ID,
+    DOMAIN,
+)
 from .eflib.connection import ConnectionState
+from .eflib.logging_util import LogOptions
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -50,6 +62,7 @@ class EFBLEConfigFlow(ConfigFlow, domain=DOMAIN):
         self._user_id: str = ""
         self._email: str = ""
         self._user_id_validated: bool = False
+        self._log_options = LogOptions(0)
         self._collapsed = True
 
     async def async_step_bluetooth(
@@ -91,7 +104,9 @@ class EFBLEConfigFlow(ConfigFlow, domain=DOMAIN):
             errors |= await self._validate_user_id(self._discovered_device, user_input)
             if not errors and self._user_id_validated:
                 user_input[CONF_ADDRESS] = device.address
+                user_input.pop("login")
                 return self.async_create_entry(title=title, data=user_input)
+            self._log_options = ConfLogOptions.from_config(user_input)
 
         return self.async_show_form(
             step_id="bluetooth_confirm",
@@ -103,6 +118,9 @@ class EFBLEConfigFlow(ConfigFlow, domain=DOMAIN):
                     **self._login_option(),
                     vol.Required(CONF_ADDRESS): vol.In([f"{title} ({device.address})"]),
                     **_update_period_option(),
+                    **ConfLogOptions.schema(
+                        ConfLogOptions.to_config(self._log_options)
+                    ),
                 }
             ),
         )
@@ -126,7 +144,10 @@ class EFBLEConfigFlow(ConfigFlow, domain=DOMAIN):
                 errors |= await self._validate_user_id(device, user_input)
                 if not errors and self._user_id_validated:
                     user_input[CONF_ADDRESS] = device.address
+                    user_input.pop("login")
+
                     return self.async_create_entry(title=title, data=user_input)
+                self._log_options = ConfLogOptions.from_config(user_input)
             except Exception:  # pylint: disable=broad-except
                 _LOGGER.exception("Unexpected exception")
                 errors["base"] = "unknown"
@@ -155,6 +176,9 @@ class EFBLEConfigFlow(ConfigFlow, domain=DOMAIN):
                     **self._login_option(),
                     vol.Required(CONF_ADDRESS): vol.In(self._discovered_devices.keys()),
                     **_update_period_option(),
+                    **ConfLogOptions.schema(
+                        ConfLogOptions.to_config(self._log_options)
+                    ),
                 }
             ),
         )
@@ -218,6 +242,7 @@ class EFBLEConfigFlow(ConfigFlow, domain=DOMAIN):
         self._email = user_input.get("login", {}).get(CONF_EMAIL, "")
         password = user_input.get("login", {}).get(CONF_PASSWORD, "")
         user_id = user_input.get(CONF_USER_ID, "")
+
         self._collapsed = False
 
         if not self._email and not password and not user_id:
@@ -231,6 +256,8 @@ class EFBLEConfigFlow(ConfigFlow, domain=DOMAIN):
             return await self._ecoflow_login(self._email, password)
 
         self._user_id = user_id
+
+        device.with_logging_options(ConfLogOptions.from_config(user_input))
 
         await device.connect(self._user_id, max_attempts=4)
         await device.waitConnected(timeout=20)
@@ -246,7 +273,7 @@ class EFBLEConfigFlow(ConfigFlow, domain=DOMAIN):
             case ConnectionState.ERROR_TIMEOUT:
                 error = "bt_timeout"
             case ConnectionState.ERROR_NOT_FOUND:
-                error = "bt_timeout"
+                error = "bt_not_found"
             case ConnectionState.ERROR_BLEAK:
                 error = "bt_general_error"
             case ConnectionState.ERROR_UNKNOWN:
@@ -301,11 +328,10 @@ class OptionsFlowHandler(OptionsFlow):
         if user_input is not None:
             return self.async_create_entry(data=user_input)
 
-        options = (
-            {CONF_UPDATE_PERIOD: self.config_entry.data.get(CONF_UPDATE_PERIOD, 0)}
-            if not self.config_entry.options
-            else self.config_entry.options
-        )
+        merged_entry = self.config_entry.data | self.config_entry.options
+        options = {
+            CONF_UPDATE_PERIOD: merged_entry.get(CONF_UPDATE_PERIOD, 0),
+        }
 
         device: eflib.DeviceBase | None = getattr(
             self.config_entry, "runtime_data", None
@@ -314,13 +340,71 @@ class OptionsFlowHandler(OptionsFlow):
         return self.async_show_form(
             step_id="init",
             data_schema=self.add_suggested_values_to_schema(
-                vol.Schema(_update_period_option()),
+                vol.Schema(
+                    {
+                        **_update_period_option(),
+                        **ConfLogOptions.schema(merged_entry, False),
+                    }
+                ),
                 options,
             ),
             description_placeholders={
                 "device_name": device.device if device else "Ecoflow Device"
             },
         )
+
+
+class ConfLogOptions:
+    _CONF_OPTION_TO_LOG_OPTION: ClassVar = {
+        CONF_LOG_MASKED: LogOptions.MASKED,
+        CONF_LOG_CONNECTION: LogOptions.CONNECTION_DEBUG,
+        CONF_LOG_MESSAGES: LogOptions.DESERIALIZED_MESSAGES,
+        CONF_LOG_PACKETS: LogOptions.PACKETS,
+        CONF_LOG_PAYLOADS: LogOptions.DECRYPTED_PAYLOADS,
+        CONF_LOG_ENCRYPTED_PAYLOADS: LogOptions.ENCRYPTED_PAYLOADS,
+        CONF_LOG_BLEAK: LogOptions.BLEAK_DEBUG,
+    }
+
+    CONF_KEY = "log_options"
+
+    @classmethod
+    def from_config(cls, config_entry: Mapping[str, Any]):
+        config_entry = config_entry.get(cls.CONF_KEY, config_entry)
+        log_options = LogOptions(0)
+        for conf_option, log_option in cls._CONF_OPTION_TO_LOG_OPTION.items():
+            if config_entry.get(conf_option, False):
+                log_options |= log_option
+        return log_options
+
+    @classmethod
+    def to_config(cls, options: LogOptions):
+        reversed_option_map = {v: k for k, v in cls._CONF_OPTION_TO_LOG_OPTION.items()}
+        return {reversed_option_map[option]: True for option in options}
+
+    @classmethod
+    def schema(
+        cls, defaults_dict: Mapping[str, Any] | None = None, collapsed: bool = True
+    ):
+        if defaults_dict is None:
+            defaults_dict = {}
+
+        defaults_dict = defaults_dict.get(cls.CONF_KEY, defaults_dict)
+
+        return {
+            vol.Required(cls.CONF_KEY): section(
+                vol.Schema(
+                    {
+                        **{
+                            vol.Optional(
+                                option, default=defaults_dict.get(option, False)
+                            ): bool
+                            for option in cls._CONF_OPTION_TO_LOG_OPTION
+                        },
+                    }
+                ),
+                {"collapsed": collapsed},
+            ),
+        }
 
 
 def _update_period_option(default: int = 0):

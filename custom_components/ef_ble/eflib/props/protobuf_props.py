@@ -1,8 +1,11 @@
 from collections import defaultdict
 from functools import cached_property
+from typing import Callable
 
 from google.protobuf.message import Message
 
+from .. import devicebase
+from ..logging_util import LogOptions
 from .protobuf_field import ProtobufField
 from .repeated_protobuf_field import ProtobufRepeatedField
 from .updatable_props import UpdatableProps
@@ -87,12 +90,30 @@ class ProtobufProps(UpdatableProps):
             for field in repeated_fields:
                 setattr(self, field.public_name, field_list)
 
-    def update_from_bytes(
+    @cached_property
+    def _log_message(self) -> Callable[[Message], None]:
+        if not isinstance(self, devicebase.DeviceBase):
+            return lambda _: None
+
+        def _log_msg(msg: Message):
+            return self._logger.log_filtered(
+                LogOptions.DESERIALIZED_MESSAGES,
+                "Message from %s, type: %s\n%s",
+                self.device,
+                msg.DESCRIPTOR.full_name,
+                str(msg),
+            )
+
+        return _log_msg
+
+    def update_from_bytes[T_MSG: Message](
         self,
-        message_type: type[Message],
+        message_type: type[T_MSG],
         serialized_message: bytes,
         reset: bool = False,
-    ):
+    ) -> T_MSG:
         msg = message_type()
         msg.ParseFromString(serialized_message)
         self.update_from_message(msg, reset=reset)
+        self._log_message(msg)
+        return msg

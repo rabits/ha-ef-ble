@@ -9,12 +9,13 @@
     "error": {
       "cannot_connect": "Cannot connect",
       "invalid_auth": "Authentication is invalid",
-      "unknown": "Unexpected error, check logs",
+      "unknown": "An unexpected error occured, check the logs for details",
       "email_empty": "Email cannot be empty",
       "password_empty": "Password cannot be empty",
       "device_auth_failed": "Device authentication failed - user ID may be incorrect",
-      "bt_timeout": "Could not connect to the device - exceeded maximum attempts",
-      "bt_general_error": "Could not connect to the device - see logs for details",
+      "bt_timeout": "Could not connect to the device - connection timed out",
+      "bt_not_found": "Device was not found - try refreshing the bluetooth integration if this error occurs repeatedly",
+      "bt_general_error": "Could not connect to the device - see the logs for more details",
       "error_try_refresh": "Connection is in an invalid state - try refreshing before adding the device"
     },
     "step": {
@@ -26,7 +27,7 @@
           "update_period": "Update Period"
         },
         "data_description": {
-          "update_period": "Number of seconds to wait before processing the next device update. A default value of 0 means all updates are processed immediately (may result in a high number of DB writes)."
+          "update_period": "Number of seconds to wait before processing the next device update. A default value of 0 means all updates are processed immediately (this may result in a high number of database writes)."
         },
         "sections": {
           "login": {
@@ -34,6 +35,19 @@
             "data": {
               "email": "Email",
               "password": "Password"
+            }
+          },
+          "log_options": {
+            "name": "Logging Options",
+            "description": "Detailed logging options. Most of these will flood your logs, so avoid leaving them enabled for long periods.",
+            "data": {
+                "log_masked": "Mask sensitive information (useful when sharing logs publicly)",
+                "log_connection": "Log device connection requests and responses",
+                "log_messages": "Log deserialized device update messages",
+                "log_packets": "Log packet objects",
+                "log_encrypted_payloads": "Log encrypted payloads",
+                "log_payloads": "Log decrypted payloads",
+                "log_bleak": "Enable bleak debug log level (not masked and not filtered to this device)"
             }
           }
         }
@@ -55,6 +69,19 @@
               "email": "Email",
               "password": "Password"
             }
+          },
+          "log_options": {
+            "name": "Logging Options",
+            "description": "Detailed logging options. Most of these will flood your logs, so avoid leaving them enabled for long periods.",
+            "data": {
+                "log_masked": "Mask sensitive information (useful when sharing logs publicly)",
+                "log_connection": "Log device connection requests and responses",
+                "log_messages": "Log deserialized device update messages",
+                "log_packets": "Log packet objects",
+                "log_encrypted_payloads": "Log encrypted payloads",
+                "log_payloads": "Log decrypted payloads",
+                "log_bleak": "Enable bleak debug log level (not masked and not filtered to this device)"
+            }
           }
         }
       },
@@ -74,6 +101,21 @@
         },
         "data_description": {
           "update_period": "Number of seconds to wait before processing the next device update. A default value of 0 means all updates are processed immediately (may result in a high number of DB writes)."
+        },
+        "sections": {
+          "log_options": {
+            "name": "Logging Options",
+            "description": "Detailed logging options. Most of these will flood your logs, so avoid leaving them enabled for long periods.",
+            "data": {
+                "log_masked": "Mask sensitive information (useful when sharing logs publicly)",
+                "log_connection": "Log device connection requests and responses",
+                "log_messages": "Log deserialized device update messages",
+                "log_packets": "Log packet objects",
+                "log_encrypted_payloads": "Log encrypted payloads",
+                "log_payloads": "Log decrypted payloads",
+                "log_bleak": "Enable bleak debug log level (not masked and not filtered to this device)"
+            }
+          }
         }
       }
     }

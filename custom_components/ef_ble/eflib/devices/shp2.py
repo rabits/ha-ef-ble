@@ -162,12 +162,12 @@ class Device(DeviceBase, ProtobufProps):
             # Device requested for time and timezone offset, so responding with that
             # otherwise it will not be able to send us predictions and config data
             if len(packet.payload) == 0:
-                await self._time_commands.async_send_all()
+                self._time_commands.async_send_all()
             processed = True
 
         elif packet.src == 0x0B and packet.cmdSet == 0x01 and packet.cmdId == 0x55:
             # Device reply that it's online and ready
-            await self._conn._add_task(self.set_config_flag(True))
+            self._conn._add_task(self.set_config_flag(True))
             processed = True
 
         self.error_count = len(self.errors) if self.errors is not None else None

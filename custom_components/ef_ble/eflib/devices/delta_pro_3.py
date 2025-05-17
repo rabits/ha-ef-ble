@@ -132,7 +132,7 @@ class Device(DeviceBase, ProtobufProps):
             # Device requested for time and timezone offset, so responding with that
             # otherwise it will not be able to send us predictions and config data
             if len(packet.payload) == 0:
-                await self._time_commands.async_send_all()
+                self._time_commands.async_send_all()
             processed = True
 
         self.solar_lv_power = self._get_solar_power(

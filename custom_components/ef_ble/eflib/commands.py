@@ -1,4 +1,3 @@
-import asyncio
 import logging
 import struct
 import time
@@ -94,7 +93,7 @@ class TimeCommands:
 
         await self.device._conn.sendPacket(packet)
 
-    async def async_send_all(self):
-        await self.device._conn._add_task(asyncio.create_task(self.sendUtcTime()))
-        await self.device._conn._add_task(asyncio.create_task(self.sendRTCRespond()))
-        await self.device._conn._add_task(asyncio.create_task(self.sendRTCCheck()))
+    def async_send_all(self):
+        self.device._conn._add_task(self.sendUtcTime())
+        self.device._conn._add_task(self.sendRTCRespond())
+        self.device._conn._add_task(self.sendRTCCheck())

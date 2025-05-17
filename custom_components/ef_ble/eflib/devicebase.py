@@ -1,4 +1,4 @@
-import logging
+import abc
 import time
 from collections import defaultdict
 from collections.abc import Callable
@@ -9,9 +9,8 @@ from bleak.backends.scanner import AdvertisementData
 from bleak_retry_connector import MAX_CONNECT_ATTEMPTS
 
 from .connection import Connection
+from .logging_util import DeviceLogger, LogOptions
 from .packet import Packet
-
-_LOGGER = logging.getLogger(__name__)
 
 
 class DeviceBase:
@@ -23,17 +22,20 @@ class DeviceBase:
         self, ble_dev: BLEDevice, adv_data: AdvertisementData, sn: str
     ) -> None:
         self._sn = sn
-        _LOGGER.debug(
-            "%s: Creating new device: %s (%s)",
-            ble_dev.address,
-            self.device,
-            sn,
-        )
-        self._ble_dev = ble_dev
-        self._address = ble_dev.address
         # We can't use advertisement name here - it's prone to change to "Ecoflow-dev"
         self._name = self.NAME_PREFIX + self._sn[-4:]
         self._name_by_user = self._name
+        self._ble_dev = ble_dev
+        self._address = ble_dev.address
+
+        self._logger = DeviceLogger(self)
+        self._logging_options = LogOptions(0)
+
+        self._logger.debug(
+            "Creating new device: %s (%s)",
+            self.device,
+            sn,
+        )
 
         self._conn = None
         self._callbacks = set()
@@ -77,6 +79,12 @@ class DeviceBase:
         self._update_period = period
         return self
 
+    def with_logging_options(self, options: LogOptions):
+        self._logger.set_options(options)
+        if self._conn is not None:
+            self._conn.with_logging_options(options)
+        return self
+
     async def data_parse(self, packet: Packet) -> bool:
         """Function to parse incoming data and trigger sensors update"""
         return False
@@ -95,29 +103,29 @@ class DeviceBase:
                 user_id,
                 self.data_parse,
                 self.packet_parse,
-            )
-            _LOGGER.info("%s: Connecting to %s", self._address, self.__doc__)
+            ).with_logging_options(self._logger.options)
+            self._logger.info("Connecting to %s", self.__doc__)
         elif self._conn._user_id != user_id:
             self._conn._user_id = user_id
 
         await self._conn.connect(max_attempts=max_attempts)
 
     async def disconnect(self):
-        if self._conn == None:
-            _LOGGER.error("%s: Device has no connection", self._address)
+        if self._conn is None:
+            self._logger.error("Device has no connection")
             return
 
         await self._conn.disconnect()
 
     async def waitConnected(self, timeout: int = 20):
-        if self._conn == None:
-            _LOGGER.error("%s: Device has no connection", self._address)
+        if self._conn is None:
+            self._logger.error("Device has no connection")
             return
         await self._conn.waitConnected(timeout=timeout)
 
     async def waitDisconnected(self):
-        if self._conn == None:
-            _LOGGER.error("%s: Device has no connection", self._address)
+        if self._conn is None:
+            self._logger.error("Device has no connection")
             return
 
         await self._conn.waitDisconnected()

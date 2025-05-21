@@ -42,6 +42,11 @@ class SensitiveMaskingFilter(logging.Filter):
                 replaced = True
         return msg_str if replaced else msg
 
+    def __eq__(self, value: object) -> bool:
+        if not isinstance(value, SensitiveMaskingFilter):
+            return False
+        return self.name == value.name
+
 
 class LogOptions(Flag):
     MASKED = auto()

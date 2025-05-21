@@ -12,6 +12,7 @@ from ..props import (
     proto_attr_mapper,
     repeated_pb_field_type,
 )
+from ..props.protobuf_field import TransformIfMissing
 
 pb_time = proto_attr_mapper(pd303_pb2.ProtoTime)
 pb_push_set = proto_attr_mapper(pd303_pb2.ProtoPushAndSet)
@@ -91,7 +92,10 @@ class Device(DeviceBase, ProtobufProps):
     channel_power_3 = ChannelPowerField(2)
 
     in_use_power = pb_field(pb_time.watt_info.all_hall_watt)
-    grid_power = pb_field(pb_time.watt_info.grid_watt)
+    grid_power = pb_field(
+        pb_time.watt_info.grid_watt,
+        TransformIfMissing(lambda value: value if value is not None else 0.0),
+    )
 
     errors = pb_field(pb_push_set.backup_incre_info.errcode, _errors)
     error_count = Field[int]()

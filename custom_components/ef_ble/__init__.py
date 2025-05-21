@@ -12,7 +12,7 @@ from homeassistant.exceptions import ConfigEntryNotReady
 from homeassistant.helpers.device_registry import DeviceInfo
 
 from . import eflib
-from .config_flow import ConfLogOptions
+from .config_flow import ConfLogOptions, LogOptions
 from .const import CONF_UPDATE_PERIOD, CONF_USER_ID, DOMAIN, MANUFACTURER
 
 PLATFORMS: list[Platform] = [
@@ -70,6 +70,7 @@ async def async_unload_entry(hass: HomeAssistant, entry: DeviceConfigEntry) -> b
     """Unload a config entry."""
     device = entry.runtime_data
     await device.disconnect()
+    device.with_logging_options(LogOptions(0))
     unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
 
     return unload_ok

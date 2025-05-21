@@ -1,4 +1,3 @@
-import logging
 from dataclasses import dataclass
 
 from ..commands import TimeCommands
@@ -11,8 +10,6 @@ from ..props import (
     proto_attr_mapper,
     repeated_pb_field_type,
 )
-
-_LOGGER = logging.getLogger(__name__)
 
 pb_heartbeat = proto_attr_mapper(yj751_sys_pb2.AppShowHeartbeatReport)
 pb_bp_info = proto_attr_mapper(yj751_sys_pb2.BpInfoReport)
@@ -80,30 +77,28 @@ class Device(DeviceBase, ProtobufProps):
         if packet.src == 0x02 and packet.cmdSet == 0x02:
             if packet.cmdId == 0x01:  # Ping
                 await self._conn.replyPacket(packet)
-                _LOGGER.debug(
+                self._logger.debug(
                     "%s: %s: Parsed data: %r", self.address, self.name, packet
                 )
                 self.update_from_bytes(
                     yj751_sys_pb2.AppShowHeartbeatReport, packet.payload
                 )
-                # _LOGGER.debug("DPU AppShowHeartbeatReport: \n %s", str(p))
+                # self._logger.debug("DPU AppShowHeartbeatReport: \n %s", str(p))
 
                 processed = True
             elif packet.cmdId == 0x04:
                 await self._conn.replyPacket(packet)
-                _LOGGER.debug(
-                    "%s: %s: Parsed data: %r", self.address, self.name, packet
-                )
-
                 self.update_from_bytes(yj751_sys_pb2.BpInfoReport, packet.payload)
-                # _LOGGER.debug("DPU BpInfoReport: \n %s", str(p))
+                # self._logger.debug("DPU BpInfoReport: \n %s", str(p))
 
                 self.update_from_bytes(
                     yj751_sys_pb2.AppShowHeartbeatReport, packet.payload
                 )
                 processed = True
         elif packet.src == 0x35 and packet.cmdSet == 0x35 and packet.cmdId == 0x20:
-            _LOGGER.debug("%s: %s: Ping received: %r", self.address, self.name, packet)
+            self._logger.debug(
+                "%s: %s: Ping received: %r", self.address, self.name, packet
+            )
             processed = True
 
         elif (

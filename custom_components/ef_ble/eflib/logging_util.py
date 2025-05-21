@@ -1,5 +1,6 @@
 import logging
-from collections.abc import Mapping
+import re
+from collections.abc import Callable, Mapping, Sequence
 from enum import Flag, auto
 from functools import cached_property
 from typing import TYPE_CHECKING, Any
@@ -12,9 +13,11 @@ if TYPE_CHECKING:
 
 
 class SensitiveMaskingFilter(logging.Filter):
-    def __init__(self, patterns: dict[str, str], name: str = "") -> None:
+    def __init__(
+        self, mask_funcs: Sequence[Callable[[str], str | None]], name: str = ""
+    ) -> None:
         super().__init__(name)
-        self._patterns = patterns
+        self._mask_funcs = mask_funcs
 
     def filter(self, record: logging.LogRecord) -> bool | logging.LogRecord:
         record.msg = self.mask_message(record.msg)
@@ -28,12 +31,16 @@ class SensitiveMaskingFilter(logging.Filter):
         return True
 
     def mask_message(self, msg: Any):
+        msg_str = msg
         if not isinstance(msg, str):
-            return msg
+            msg_str = str(msg)
 
-        for pattern, replacement in self._patterns.items():
-            msg = msg.replace(pattern, replacement)
-        return msg
+        replaced = False
+        for func in self._mask_funcs:
+            if replacement := func(msg_str):
+                msg_str = replacement
+                replaced = True
+        return msg_str if replaced else msg
 
 
 class LogOptions(Flag):
@@ -63,14 +70,16 @@ _ORIGINAL_BLEAK_LOG_LEVEL = _BLEAK_LOGGER.level
 
 
 class MaskingLogger(logging.Logger):
-    def __init__(self, logger: logging.Logger, patterns: dict[str, str]) -> None:
+    def __init__(
+        self, logger: logging.Logger, mask_funcs: Sequence[Callable[[str], str | None]]
+    ) -> None:
         self._logger = logger
-        self._patterns = patterns
+        self._mask_funcs = mask_funcs
         self._options = LogOptions(0)
 
     @cached_property
     def _mask_filter(self):
-        return SensitiveMaskingFilter(self._patterns)
+        return SensitiveMaskingFilter(self._mask_funcs)
 
     def __getattr__(self, name: str):
         return getattr(self._logger, name)
@@ -83,17 +92,22 @@ class MaskingLogger(logging.Logger):
         self._options = options
         self._logger.setLevel(logging.DEBUG if options.enabled else logging.INFO)
 
+        if LogOptions.MASKED in options:
+            for handler in logging.root.handlers:
+                if self._mask_filter not in handler.filters:
+                    handler.addFilter(self._mask_filter)
+
         bleak_logger = logging.getLogger(bleak.__name__)
         if LogOptions.BLEAK_DEBUG in options:
             bleak_logger.setLevel(logging.DEBUG)
+
         elif bleak_logger.isEnabledFor(logging.DEBUG):
             bleak_logger.setLevel(_ORIGINAL_BLEAK_LOG_LEVEL)
 
         if LogOptions.MASKED not in options:
-            self._logger.removeFilter(self._mask_filter)
-            return
-
-        self._logger.addFilter(self._mask_filter)
+            for handler in logging.root.handlers:
+                if self._mask_filter in handler.filters:
+                    handler.removeFilter(self._mask_filter)
 
     def log_filtered(
         self,
@@ -107,25 +121,49 @@ class MaskingLogger(logging.Logger):
 
 
 def _mask_sn(sn: str):
-    return f"{sn[:4]}{'*' * len(sn[4:-4])}{sn[-4:]}"
+    regex = re.compile(sn)
+
+    def _mask(input: str):
+        match = regex.search(input)
+        if match:
+            return f"{sn[:4]}{'*' * len(sn[4:-4])}{sn[-4:]}"
+        return None
+
+    return _mask
 
 
 def _mask_mac(mac_addr: str):
-    return f"{mac_addr[:5]}:**:**:**:**"
+    regex = re.compile(mac_addr.replace(":", "(.)"))
+
+    def _mask(input: str):
+        match = regex.search(input)
+        if match:
+            delim = match.group(1)
+            return regex.sub(
+                delim.join([mac_addr[:2], mac_addr[3:5], "**", "**", "**"]), input
+            )
+        return None
+
+    return _mask
 
 
 def _mask_user_id(user_id: str):
-    return f"{user_id[:4]}{'*' * len(user_id[4:])}"
+    regex = re.compile(user_id)
+
+    def _mask(input: str):
+        match = regex.search(input)
+        if match:
+            return f"{user_id[:4]}{'*' * len(user_id[4:])}"
+        return None
+
+    return _mask
 
 
 class DeviceLogger(MaskingLogger):
     def __init__(self, device: "DeviceBase"):
         super().__init__(
             logging.getLogger(f"{device.__module__} - {device._address}"),
-            patterns={
-                device._address: _mask_mac(device._address),
-                device._sn: _mask_sn(device._sn),
-            },
+            mask_funcs=[_mask_mac(device._address), _mask_sn(device._sn)],
         )
 
 
@@ -133,9 +171,9 @@ class ConnectionLogger(MaskingLogger):
     def __init__(self, connection: "Connection") -> None:
         super().__init__(
             logging.getLogger(f"{connection.__module__} - {connection._address}"),
-            patterns={
-                connection._address: _mask_mac(connection._address),
-                connection._dev_sn: _mask_sn(connection._dev_sn),
-                connection._user_id: _mask_user_id(connection._user_id),
-            },
+            mask_funcs=[
+                _mask_mac(connection._address),
+                _mask_sn(connection._dev_sn),
+                _mask_user_id(connection._user_id),
+            ],
         )

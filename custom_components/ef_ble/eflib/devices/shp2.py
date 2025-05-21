@@ -1,4 +1,3 @@
-import logging
 from collections.abc import Sequence
 from dataclasses import dataclass
 
@@ -13,8 +12,6 @@ from ..props import (
     proto_attr_mapper,
     repeated_pb_field_type,
 )
-
-_LOGGER = logging.getLogger(__name__)
 
 pb_time = proto_attr_mapper(pd303_pb2.ProtoTime)
 pb_push_set = proto_attr_mapper(pd303_pb2.ProtoPushAndSet)
@@ -121,7 +118,7 @@ class Device(DeviceBase, ProtobufProps):
             if (
                 packet.cmdId == 0x01
             ):  # master_info, load_info, backup_info, watt_info, master_ver_info
-                _LOGGER.debug(
+                self._logger.debug(
                     "%s: %s: Parsed data: %r", self.address, self.name, packet
                 )
 
@@ -131,7 +128,7 @@ class Device(DeviceBase, ProtobufProps):
 
                 processed = True
             elif packet.cmdId == 0x20:  # backup_incre_info
-                _LOGGER.debug(
+                self._logger.debug(
                     "%s: %s: Parsed data: %r", self.address, self.name, packet
                 )
 
@@ -144,14 +141,16 @@ class Device(DeviceBase, ProtobufProps):
                 processed = True
 
             elif packet.cmdId == 0x21:  # is_get_cfg_flag
-                _LOGGER.debug(
+                self._logger.debug(
                     "%s: %s: Parsed data: %r", self.address, self.name, packet
                 )
                 self.update_from_bytes(pd303_pb2.ProtoPushAndSet, packet.payload)
                 processed = True
 
         elif packet.src == 0x35 and packet.cmdSet == 0x35 and packet.cmdId == 0x20:
-            _LOGGER.debug("%s: %s: Ping received: %r", self.address, self.name, packet)
+            self._logger.debug(
+                "%s: %s: Ping received: %r", self.address, self.name, packet
+            )
             processed = True
 
         elif (
@@ -178,7 +177,7 @@ class Device(DeviceBase, ProtobufProps):
             and self.error_count > prev_error_count
         ) or (self.error_count is not None and prev_error_count is None):
             self.error_happened = True
-            _LOGGER.warning(
+            self._logger.warning(
                 "%s: %s: Error happened on device: %s",
                 self.address,
                 self.name,
@@ -193,7 +192,7 @@ class Device(DeviceBase, ProtobufProps):
 
     async def set_config_flag(self, enable):
         """Send command to enable/disable sending config data from device to the host"""
-        _LOGGER.debug("%s: setConfigFlag: %s", self._address, enable)
+        self._logger.debug("%s: setConfigFlag: %s", self._address, enable)
 
         ppas = pd303_pb2.ProtoPushAndSet()
         ppas.is_get_cfg_flag = enable
@@ -204,7 +203,7 @@ class Device(DeviceBase, ProtobufProps):
 
     async def set_circuit_power(self, circuit_id, enable):
         """Send command to power on / off the specific circuit of the panel"""
-        _LOGGER.debug(
+        self._logger.debug(
             "%s: setCircuitPower for %d: %s", self._address, circuit_id, enable
         )
 

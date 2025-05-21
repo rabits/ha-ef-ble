@@ -1,5 +1,3 @@
-import logging
-
 from bleak.backends.device import BLEDevice
 from bleak.backends.scanner import AdvertisementData
 from google.protobuf.message import Message
@@ -16,8 +14,6 @@ from ..props import (
     repeated_pb_field_type,
 )
 from ..props.enums import IntFieldValue
-
-_LOGGER = logging.getLogger(__name__)
 
 
 def _out_power(x) -> float:
@@ -123,8 +119,6 @@ class Device(DeviceBase, ProtobufProps):
     )
     dc_charging_current_max = _DcChargingMaxField(pd335_sys_pb2.PV_CHG_VOL_SPEC_12V)
 
-    cycles = pb_field(pb_bms.cycles)
-
     def __init__(
         self, ble_dev: BLEDevice, adv_data: AdvertisementData, sn: str
     ) -> None:
@@ -154,9 +148,7 @@ class Device(DeviceBase, ProtobufProps):
         self.reset_updated()
 
         if packet.src == 0x02 and packet.cmdSet == 0xFE and packet.cmdId == 0x15:
-            _LOGGER.debug("%s: %s: Parsed data: %r", self.address, self.name, packet)
             self.update_from_bytes(pd335_sys_pb2.DisplayPropertyUpload, packet.payload)
-            self.update_from_bytes(pd335_bms_bp_pb2.BMSHeartBeatReport, packet.payload)
 
             processed = True
         elif (

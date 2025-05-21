@@ -49,7 +49,6 @@ SENSOR_TYPES: dict[str, SensorEntityDescription] = {
         native_unit_of_measurement=PERCENTAGE,
         device_class=SensorDeviceClass.BATTERY,
         state_class=SensorStateClass.MEASUREMENT,
-        state_attribute_fields=["cycles"],
     ),
     "battery_level_main": SensorEntityDescription(
         key="battery_level_main",

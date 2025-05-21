@@ -1,5 +1,3 @@
-import logging
-
 from bleak.backends.device import BLEDevice
 from bleak.backends.scanner import AdvertisementData
 
@@ -15,8 +13,6 @@ from ..props import (
     repeated_pb_field_type,
 )
 from ..props.enums import IntFieldValue
-
-_LOGGER = logging.getLogger(__name__)
 
 pb = proto_attr_mapper(pr705_pb2.DisplayPropertyUpload)
 
@@ -137,7 +133,6 @@ class Device(DeviceBase, ProtobufProps):
         self.reset_updated()
 
         if packet.src == 0x02 and packet.cmdSet == 0xFE and packet.cmdId == 0x15:
-            _LOGGER.debug("%s: %s: Parsed data: %r", self.address, self.name, packet)
             self.update_from_bytes(pr705_pb2.DisplayPropertyUpload, packet.payload)
             processed = True
         elif (

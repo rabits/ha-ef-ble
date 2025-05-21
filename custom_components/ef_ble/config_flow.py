@@ -90,7 +90,9 @@ class EFBLEConfigFlow(ConfigFlow, domain=DOMAIN):
 
         errors = {}
         title = device.name_by_user or device.name
-        _LOGGER.debug("Confirm discovery: %s, %s", title, user_input)
+        _LOGGER.debug(
+            "Confirm discovery: %s, %s", title, self._redact_user_input(user_input)
+        )
 
         if data := await self._store.async_load():
             self._user_id = data["user_id"]
@@ -104,7 +106,7 @@ class EFBLEConfigFlow(ConfigFlow, domain=DOMAIN):
             errors |= await self._validate_user_id(self._discovered_device, user_input)
             if not errors and self._user_id_validated:
                 user_input[CONF_ADDRESS] = device.address
-                user_input.pop("login")
+                user_input.pop("login", None)
                 return self.async_create_entry(title=title, data=user_input)
             self._log_options = ConfLogOptions.from_config(user_input)
 
@@ -141,6 +143,7 @@ class EFBLEConfigFlow(ConfigFlow, domain=DOMAIN):
                 await self.async_set_unique_id(address, raise_on_progress=False)
                 self._abort_if_unique_id_configured()
                 title = device.name_by_user or device.name
+
                 errors |= await self._validate_user_id(device, user_input)
                 if not errors and self._user_id_validated:
                     user_input[CONF_ADDRESS] = device.address
@@ -236,7 +239,7 @@ class EFBLEConfigFlow(ConfigFlow, domain=DOMAIN):
 
     async def _validate_user_id(
         self, device: eflib.DeviceBase, user_input: dict[str, Any]
-    ):
+    ) -> dict[str, Any]:
         self._user_id_validated = False
 
         self._email = user_input.get("login", {}).get(CONF_EMAIL, "")
@@ -266,8 +269,6 @@ class EFBLEConfigFlow(ConfigFlow, domain=DOMAIN):
 
         error = None
         match conn_state:
-            case ConnectionState.INIT:
-                error = "error_try_refresh"
             case ConnectionState.ERROR_AUTH_FAILED:
                 error = "device_auth_failed"
             case ConnectionState.ERROR_TIMEOUT:
@@ -281,6 +282,8 @@ class EFBLEConfigFlow(ConfigFlow, domain=DOMAIN):
             case ConnectionState.AUTHENTICATED:
                 self._user_id_validated = True
                 await self._store.async_save(data={"user_id": self._user_id})
+            case _:
+                error = "error_try_refresh"
 
         await device.waitDisconnected()
 
@@ -321,6 +324,21 @@ class EFBLEConfigFlow(ConfigFlow, domain=DOMAIN):
         self._email = ""
         self._collapsed = True
         return {}
+
+    def _redact_user_input(self, user_input: dict[str, Any] | None):
+        if user_input is None:
+            return user_input
+
+        redacted_user_input = user_input.copy()
+        if "user_id" in user_input:
+            redacted_user_input["user_id"] = (
+                f"{user_input['user_id'][:4]}{'*' * len(user_input['user_id'][4:])}"
+            )
+        if "login" in user_input:
+            redacted_user_input = user_input.pop("login")
+        if "address" in user_input:
+            redacted_user_input = f"{user_input['address'][-12:]}:**:**:**:**"
+        return redacted_user_input
 
 
 class OptionsFlowHandler(OptionsFlow):

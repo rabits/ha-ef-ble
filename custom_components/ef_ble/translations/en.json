@@ -16,7 +16,7 @@
       "bt_timeout": "Could not connect to the device - connection timed out",
       "bt_not_found": "Device was not found - try refreshing the bluetooth integration if this error occurs repeatedly",
       "bt_general_error": "Could not connect to the device - see the logs for more details",
-      "error_try_refresh": "Connection is in an invalid state - try refreshing before adding the device"
+      "error_try_refresh": "Connection disconnected before it could authenticate - try refreshing before adding the device"
     },
     "step": {
       "bluetooth_confirm": {

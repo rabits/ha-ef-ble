@@ -33,7 +33,7 @@ def NewDevice(ble_dev: BLEDevice, adv_data: AdvertisementData) -> DeviceBase | N
         ):
             return item.Device(ble_dev, adv_data, sn.decode("ASCII"))
 
-    _LOGGER.warning("%s: Unknown SN: %s", ble_dev.address, sn)
+    _LOGGER.warning("%s: Unknown SN prefix: %s", ble_dev.address, f"{sn[:4]}")
     return None
 
 

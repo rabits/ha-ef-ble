@@ -52,6 +52,18 @@ def proto_attr_mapper[T: Message](pb: type[T]) -> type[T]:
     return _ProtoAttrAccessor(pb)  # type: ignore reportReturnType
 
 
+class Skip:
+    """Sentinel value for skipping assignment in pb_field transform function"""
+
+
+class TransformIfMissing[T_ATTR, T_OUT]:
+    def __init__(self, transform_func: Callable[[T_ATTR], T_OUT | type[Skip]]):
+        self._func = transform_func
+
+    def __call__(self, value: T_ATTR) -> T_OUT | type[Skip]:
+        return self._func(value)
+
+
 class ProtobufField[T](Field[T]):
     """
     Field that allows value assignment from protocol buffer message
@@ -61,7 +73,10 @@ class ProtobufField[T](Field[T]):
     """
 
     def __init__(
-        self, pb_field: _ProtoAttr, transform_value: Callable[[Any], T] = lambda x: x
+        self,
+        pb_field: _ProtoAttr,
+        transform_value: Callable[[Any], T] = lambda x: x,
+        process_if_missing: bool = False,
     ):
         """
         Create protobuf field that allows value assignment from protobuf message
@@ -71,10 +86,13 @@ class ProtobufField[T](Field[T]):
         pb_field
             Instance of protobuf accessor created with `proto_attr_mapper`
         transform_value, optional
-            Function that takes protobuf attribute
+            Function that takes protobuf attribute value
+        process_if_missing, optional
+            If True, transform function receives None
         """
         self.pb_field = pb_field
         self.transform_value = transform_value
+        self.process_if_missing = process_if_missing
 
     def _get_value(self, value: Message):
         for attr in self.pb_field.attrs:
@@ -90,26 +108,33 @@ class ProtobufField[T](Field[T]):
                 f"field {self.pb_field}"
             )
 
-        if (value := self._get_value(value)) is None:
+        if (value := self._get_value(value)) is None and not self.process_if_missing:
             return
 
-        super().__set__(instance, self.transform_value(value))
+        value = self.transform_value(value)
+        if value is Skip:
+            return
+
+        super().__set__(instance, value)
 
 
 @overload
 def pb_field[T_ATTR](
-    attr: T_ATTR, transform: None = None
+    attr: T_ATTR,
+    transform: None = None,
 ) -> "ProtobufField[T_ATTR]": ...
 
 
 @overload
 def pb_field[T_ATTR, T_OUT](
-    attr: T_ATTR, transform: Callable[[T_ATTR], T_OUT]
+    attr: T_ATTR,
+    transform: Callable[[T_ATTR], T_OUT | type[Skip]],
 ) -> "ProtobufField[T_OUT]": ...
 
 
 def pb_field(
-    attr: Any, transform: Callable[[Any], Any] | None = None
+    attr: Any,
+    transform: Callable[[Any], Any] | None = None,
 ) -> "ProtobufField[Any]":
     """
     Create field that allows value assignment from protocol buffer messages
@@ -129,6 +154,7 @@ def pb_field(
     return ProtobufField(
         pb_field=attr,
         transform_value=transform if transform is not None else lambda x: x,
+        process_if_missing=isinstance(transform, TransformIfMissing),
     )
 
 

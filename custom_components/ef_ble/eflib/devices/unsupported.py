@@ -1,34 +1,73 @@
 import time
 from collections import deque
 
+from bleak.backends.device import BLEDevice
+from bleak.backends.scanner import AdvertisementData
+
+from custom_components.ef_ble.eflib.connection import ConnectionState
+
+from ..commands import TimeCommands
 from ..devicebase import DeviceBase
 from ..logging_util import LogOptions
 from ..packet import Packet
 
 
-class Device(DeviceBase):
+class UnsupportedDevice(DeviceBase):
     NAME_PREFIX = ""
 
-    _last_xor_payloads: deque[tuple[float, str]]
     _last_payloads: deque[tuple[float, str]]
+    _last_errors: deque[tuple[float, str]]
+    _connect_times: deque[float]
+    _disconnect_times: deque[float]
+    _state_history: deque[tuple[float, str]]
+    _skip_first_messages: int = 8
 
-    collecting_data: bool = False
+    collecting_data: str = "connecting"
+
+    def __init__(
+        self, ble_dev: BLEDevice, adv_data: AdvertisementData, sn: str
+    ) -> None:
+        super().__init__(ble_dev, adv_data, sn)
+        self._time_commands = TimeCommands(self)
+        self._start_time = time.time()
+        self._messages_skipped = 0
 
     @classmethod
     def check(cls, sn: bytes) -> bool:
         return True
 
     @property
-    def last_xor_payloads(self) -> deque[tuple[float, str]]:
-        if not hasattr(self, "_last_xor_payloads"):
-            setattr(self, "_last_xor_payloads", deque(maxlen=10))
-        return self._last_xor_payloads
+    def last_packets(self) -> deque[tuple[float, str]]:
+        if not hasattr(self, "_last_payloads"):
+            setattr(self, "_last_payloads", deque(maxlen=20))
+        return self._last_payloads
 
     @property
-    def last_payloads(self) -> deque[tuple[float, str]]:
-        if not hasattr(self, "_last_payloads"):
-            setattr(self, "_last_payloads", deque(maxlen=10))
-        return self._last_payloads
+    def last_errors(self) -> deque[tuple[float, str]]:
+        if not hasattr(self, "_last_errors"):
+            setattr(self, "_last_errors", deque(maxlen=20))
+        return self._last_errors
+
+    @property
+    def disconnect_times(self) -> deque[float]:
+        if not hasattr(self, "_disconnect_times"):
+            setattr(self, "_disconnect_times", deque(maxlen=20))
+        return self._disconnect_times
+
+    @property
+    def state_history(self) -> deque[tuple[float, str]]:
+        if not hasattr(self, "_state_history"):
+            setattr(self, "_state_history", deque(maxlen=20))
+        return self._state_history
+
+    def on_connection_state_change(self, state: ConnectionState):
+        self.state_history.append((time.time() - self._start_time, state.name))
+        if state.is_error():
+            self.collecting_data = "error"
+            self.update_callback("collecting_data")
+
+    def on_disconnected(self):
+        self.disconnect_times.append(time.time() - self._start_time)
 
     @property
     def device(self):
@@ -83,22 +122,40 @@ class Device(DeviceBase):
         return f"[Unsupported] {name}"
 
     async def packet_parse(self, data: bytes) -> Packet:
-        packet = Packet.fromBytes(data, is_xor=False)
-        packet_xor = Packet.fromBytes(data, is_xor=True)
+        self.collecting_data = "collecting"
+        self.last_packets.append(
+            (time.time() - self._start_time, bytearray(data).hex())
+        )
+        if len(self.last_packets) == self.last_packets.maxlen:
+            self._messages_skipped += 1
+            if self._messages_skipped < self._skip_first_messages:
+                self.last_packets.pop()
+            else:
+                self.collecting_data = "done"
 
-        self.last_payloads.append((time.time(), packet.payloadHex))
-        self.last_xor_payloads.append((time.time(), packet_xor.payloadHex))
+        packet = Packet.fromBytes(data, is_xor=True, return_error=True)
+        if isinstance(packet, str):
+            self.last_errors.append((time.time() - self._start_time, packet))
+            self.collecting_data = "error"
+            self.update_callback("collecting_data")
+            return None
 
-        self.collecting_data = True
-        if len(self.last_payloads) == self.last_payloads.maxlen:
-            self.collecting_data = False
-
-        self.update_state("collecting_data", self.collecting_data)
-
-        return packet_xor
+        self.update_callback("collecting_data")
+        return packet
 
     async def data_parse(self, packet: Packet) -> bool:
         self._logger.log_filtered(
             LogOptions.DESERIALIZED_MESSAGES, "Device message: %r", packet.payloadHex
         )
-        return await super().data_parse(packet)
+        processed = False
+
+        if (
+            packet.src == 0x35
+            and packet.cmdSet == 0x01
+            and packet.cmdId == Packet.NET_BLE_COMMAND_CMD_SET_RET_TIME
+        ):
+            if len(packet.payload) == 0:
+                self._time_commands.async_send_all()
+            processed = True
+
+        return processed

@@ -24,8 +24,10 @@ def sn_from_advertisement(adv_data: AdvertisementData):
     return man_data[1:17]
 
 
-def is_unsupported(device: DeviceBase | None) -> TypeGuard[unsupported.Device]:
-    return isinstance(device, unsupported.Device)
+def is_unsupported(
+    device: DeviceBase | None,
+) -> TypeGuard[unsupported.UnsupportedDevice]:
+    return isinstance(device, unsupported.UnsupportedDevice)
 
 
 def NewDevice(ble_dev: BLEDevice, adv_data: AdvertisementData) -> DeviceBase | None:
@@ -38,8 +40,7 @@ def NewDevice(ble_dev: BLEDevice, adv_data: AdvertisementData) -> DeviceBase | N
         if (device := getattr(item, "Device", None)) is not None and device.check(sn):
             return item.Device(ble_dev, adv_data, sn.decode("ASCII"))
 
-    _LOGGER.warning("%s: Unknown SN prefix: %s", ble_dev.address, sn[:4])
-    return None
+    return unsupported.UnsupportedDevice(ble_dev, adv_data, sn.decode("ASCII"))
 
 
 __all__ = [

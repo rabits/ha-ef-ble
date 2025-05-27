@@ -146,7 +146,7 @@ class EFBLEConfigFlow(ConfigFlow, domain=DOMAIN):
                 user_input[CONF_ADDRESS]
             ]
 
-            if isinstance(self._discovered_device, unsupported.Device):
+            if isinstance(self._discovered_device, unsupported.UnsupportedDevice):
                 return await self.async_step_unsupported_device()
 
             return await self.async_step_device_confirm()
@@ -154,6 +154,7 @@ class EFBLEConfigFlow(ConfigFlow, domain=DOMAIN):
         current_addresses = self._async_current_ids()
         for discovery_info in async_discovered_service_info(self.hass, False):
             address = discovery_info.address
+            self._set_name_from_discovery(discovery_info)
             if address in current_addresses or address in self._discovered_devices:
                 continue
 
@@ -183,15 +184,17 @@ class EFBLEConfigFlow(ConfigFlow, domain=DOMAIN):
         )
 
     def _set_name_from_discovery(
-        self, discovery_info: BluetoothServiceInfoBleak, default: str
+        self, discovery_info: BluetoothServiceInfoBleak, default: str | None = None
     ):
         if (
             local_name := discovery_info.advertisement.local_name
         ) is None or "ecoflow" in local_name.lower():
+            if default is None:
+                return
+
             local_name = default
 
         self._local_names[discovery_info.address] = local_name
-        return local_name
 
     async def async_step_device_confirm(self, user_input: dict[str, Any] | None = None):
         assert self._discovered_device is not None

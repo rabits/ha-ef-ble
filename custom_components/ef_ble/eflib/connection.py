@@ -4,6 +4,7 @@ import hashlib
 import logging
 import struct
 import traceback
+from collections import deque
 from collections.abc import Awaitable, Callable, Coroutine
 from enum import StrEnum, auto
 
@@ -136,6 +137,7 @@ class Connection:
         packet_parse: Callable[[bytes], Awaitable[Packet]],
         on_state_change: Callable[[ConnectionState], None] = lambda _: None,
         packet_version: int = 0x03,
+        on_disconnected: Callable[[], None] = lambda: None,
     ) -> None:
         self._ble_dev = ble_dev
         self._address = ble_dev.address
@@ -149,6 +151,7 @@ class Connection:
         self._packet_version = packet_version
 
         self._errors = 0
+        self._last_errors = deque(maxlen=10)
         self._client = None
         self._connected = asyncio.Event()
         self._disconnected = asyncio.Event()
@@ -160,6 +163,9 @@ class Connection:
         self._debug_mode = False
 
         self._logger = ConnectionLogger(self)
+        self._unprocessed_payloads = deque(maxlen=10)
+        self._on_state_change = on_state_change
+        self._on_disconnected = on_disconnected
 
         self._state_exception: Exception | type[Exception] | None = None
         self._last_exception: Exception | type[Exception] | None = None
@@ -208,6 +214,15 @@ class Connection:
 
     def ble_dev(self) -> BLEDevice:
         return self._ble_dev
+
+    @property
+    def _state(self) -> ConnectionState:
+        return self._connection_state
+
+    @_state.setter
+    def _state(self, value: ConnectionState):
+        self._connection_state = value
+        self._on_state_change(value)
 
     def with_logging_options(self, options: LogOptions):
         self._logger.set_options(options)
@@ -272,6 +287,7 @@ class Connection:
                 await self._client.disconnect()
 
             self._logger.error("Failed to connect to the device: %s", error)
+            self._last_errors.append(f"Failed to connect to the device: {error}")
             self.disconnected()
             return
 
@@ -365,6 +381,7 @@ class Connection:
         if self._client is not None and self._client.is_connected:
             self._set_state(ConnectionState.DISCONNECTING)
             await self._client.disconnect()
+            self._on_disconnected()
 
         self._client = None
         self._set_state(ConnectionState.DISCONNECTED)
@@ -516,6 +533,7 @@ class Connection:
             )
             payload_hex = bytearray(payload_data).hex()
             self._logger.error(error_msg, payload_hex)
+            self._last_errors.append(error_msg % bytearray(payload_data).hex())
             raise PacketParseError
 
         return payload_data
@@ -538,6 +556,7 @@ class Connection:
                 "parseEncPackets: Unable to parse encrypted packet - too small: %r"
             )
             self._logger.error(error_msg, bytearray(data).hex())
+            self._last_errors.append(error_msg % bytearray(data).hex())
             raise EncPacketParseError
 
         # Data can contain multiple EncPackets and even incomplete ones, so walking
@@ -550,6 +569,7 @@ class Connection:
                     "incorrect: %r"
                 )
                 self._logger.error(error_msg, bytearray(data).hex())
+                self._last_errors.append(error_msg % bytearray(data).hex())
                 return packets
 
             header = data[0:6]
@@ -569,6 +589,7 @@ class Connection:
                 if crc16(header + payload_data) != struct.unpack("<H", payload_crc)[0]:
                     error_msg = "Unable to parse encrypted packet - incorrect CRC16: %r"
                     self._logger.error(error_msg, bytearray(payload_data).hex())
+                    self._last_errors.append(error_msg % bytearray(payload_data).hex())
                     raise PacketParseError  # noqa: TRY301
 
                 # Decrypt the payload packet
@@ -840,6 +861,7 @@ class Connection:
                     self._logger.error(error_msg, packet)
                     exc = AuthFailedError(error_msg % packet)
                     self._set_state(ConnectionState.ERROR_AUTH_FAILED, exc)
+                    self._last_errors.append(f"Auth failed with response: {packet!r}")
 
                     if self._client is not None and self._client.is_connected:
                         await self._client.disconnect()
@@ -861,6 +883,7 @@ class Connection:
                     continue
 
             if not processed:
+                self._unprocessed_payloads.append(packet.payload)
                 self._logger.log_filtered(
                     LogOptions.CONNECTION_DEBUG, "listenForDataHandler: %r", packet
                 )

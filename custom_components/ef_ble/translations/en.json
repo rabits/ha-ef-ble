@@ -237,6 +237,9 @@
       }
     },
     "sensor": {
+      "collecting_data": {
+        "name": "Collecting diagnostics data"
+      },
       "battery_level": {
         "name": "Battery Level"
       },
@@ -616,16 +619,7 @@
           "battery_maintenance": "Battery Maintenance"
         }
       }
-    },
-    "binary_sensor": {
-      "collecting_data": {
-        "name": "Collecting diagnostics data",
-          "state": {
-            "on": "collecting",
-            "off": "done"
-          }
-      }
-
     }
+
   }
 }

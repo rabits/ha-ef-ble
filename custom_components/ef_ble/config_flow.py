@@ -376,11 +376,12 @@ class EFBLEConfigFlow(ConfigFlow, domain=DOMAIN):
 
         device.with_logging_options(ConfLogOptions.from_config(user_input))
 
-        await device.connect(self._user_id)
-        conn_state = await asyncio.wait_for(
-            device.wait_until_authenticated_or_error(), timeout
-        )
-        await device.disconnect()
+        with device.log_connection_to_file():
+            await device.connect(self._user_id)
+            conn_state = await asyncio.wait_for(
+                device.wait_until_authenticated_or_error(), timeout
+            )
+            await device.disconnect()
 
         error = None
         match conn_state:

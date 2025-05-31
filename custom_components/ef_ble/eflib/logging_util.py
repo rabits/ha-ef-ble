@@ -1,14 +1,19 @@
+import json
 import logging
 import re
+import time
+from collections import deque
 from collections.abc import Callable, Mapping, Sequence
+from dataclasses import dataclass
 from enum import Flag, auto
 from functools import cached_property
+from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 import bleak
 
 if TYPE_CHECKING:
-    from .connection import Connection
+    from .connection import Connection, ConnectionState
     from .devicebase import DeviceBase
 
 
@@ -186,3 +191,61 @@ class ConnectionLogger(MaskingLogger):
                 _mask_user_id(connection._user_id),
             ],
         )
+
+
+@dataclass
+class ConnectionLog:
+    name: str
+    maxlen: int = 20
+    cache_to_file: bool = False
+
+    def __post_init__(self):
+        self._history_start = time.time()
+
+    @property
+    def history(self) -> deque[dict[str, float | str]]:
+        history = getattr(self, "_history", None)
+        if history is None:
+            self._history = deque(maxlen=self.maxlen)
+        return self._history
+
+    @staticmethod
+    def cache_file_for(address: str):
+        path = (
+            Path(__file__).parent / ".cache" / f"{address.replace(':', '_')}_setup.log"
+        )
+        path.parent.mkdir(exist_ok=True)
+        return path
+
+    @property
+    def _cache_path(self):
+        return self.cache_file_for(self.name)
+
+    def append(self, state: "ConnectionState", reason: str | None = None):
+        entry: dict[str, float | str] = {
+            "time": time.time() - self._history_start,
+            "state": f"{state.name}",
+        }
+
+        if reason:
+            entry["reason"] = reason
+
+        self.history.append(entry)
+        if self.cache_to_file:
+            with self._cache_path.open("a") as f:
+                f.write(f"{json.dumps(entry)}\n")
+
+    def load_from_cache(self):
+        if self._cache_path.exists():
+            try:
+                return [
+                    json.loads(line)
+                    for line in self._cache_path.read_text().splitlines()
+                ]
+            except:  # noqa: E722
+                return []
+        return []
+
+    @staticmethod
+    def clean_cache_for(address: str):
+        ConnectionLog.cache_file_for(address).unlink(missing_ok=True)

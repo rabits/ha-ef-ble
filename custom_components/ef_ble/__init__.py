@@ -31,6 +31,7 @@ from .eflib.connection import (
     ConnectionTimeout,
     MaxConnectionAttemptsReached,
 )
+from .eflib.logging_util import ConnectionLog
 
 PLATFORMS: list[Platform] = [
     Platform.SENSOR,
@@ -149,6 +150,10 @@ async def async_unload_entry(hass: HomeAssistant, entry: DeviceConfigEntry) -> b
     await device.disconnect()
     device.with_logging_options(LogOptions.no_options())
     return await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
+
+
+async def async_remove_entry(hass: HomeAssistant, entry: DeviceConfigEntry):
+    ConnectionLog.clean_cache_for(entry.data[CONF_ADDRESS])
 
 
 def device_info(entry: ConfigEntry) -> DeviceInfo:

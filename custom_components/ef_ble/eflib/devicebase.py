@@ -1,6 +1,6 @@
 import abc
 import time
-from collections import defaultdict
+from collections import defaultdict, deque
 from collections.abc import Callable
 from typing import Any
 
@@ -154,8 +154,16 @@ class DeviceBase(abc.ABC):
 
         await self._conn.disconnect()
 
+    @property
+    def state_history(self) -> deque[tuple[float, str]]:
+        history_queue = getattr(self, "_state_history", None)
+        if not history_queue:
+            self._history_start = time.time()
+            self._state_history = deque(maxlen=20)
+        return self._state_history
+
     def on_connection_state_change(self, state: ConnectionState):
-        pass
+        self.state_history.append((time.time() - self._history_start, state.name))
 
     def on_disconnected(self):
         pass

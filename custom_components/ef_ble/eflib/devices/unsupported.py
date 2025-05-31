@@ -19,7 +19,6 @@ class UnsupportedDevice(DeviceBase):
     _last_errors: deque[tuple[float, str]]
     _connect_times: deque[float]
     _disconnect_times: deque[float]
-    _state_history: deque[tuple[float, str]]
     _skip_first_messages: int = 8
 
     collecting_data: str = "connecting"
@@ -54,20 +53,14 @@ class UnsupportedDevice(DeviceBase):
             setattr(self, "_disconnect_times", deque(maxlen=20))
         return self._disconnect_times
 
-    @property
-    def state_history(self) -> deque[tuple[float, str]]:
-        if not hasattr(self, "_state_history"):
-            setattr(self, "_state_history", deque(maxlen=20))
-        return self._state_history
+    def on_disconnected(self):
+        self.disconnect_times.append(time.time() - self._start_time)
 
     def on_connection_state_change(self, state: ConnectionState):
-        self.state_history.append((time.time() - self._start_time, state.name))
         if state.is_error():
             self.collecting_data = "error"
             self.update_callback("collecting_data")
-
-    def on_disconnected(self):
-        self.disconnect_times.append(time.time() - self._start_time)
+        return super().on_connection_state_change(state)
 
     @property
     def device(self):

@@ -2,7 +2,7 @@ from collections.abc import Callable
 from typing import Any
 
 from homeassistant.core import callback
-from homeassistant.helpers.device_registry import CONNECTION_NETWORK_MAC, DeviceInfo
+from homeassistant.helpers.device_registry import CONNECTION_BLUETOOTH, DeviceInfo
 from homeassistant.helpers.entity import Entity
 
 from .const import DOMAIN, MANUFACTURER
@@ -24,7 +24,7 @@ class EcoflowEntity(Entity):
                 (DOMAIN, self._device.address),
             },
             connections={
-                (CONNECTION_NETWORK_MAC, self._device.address),
+                (CONNECTION_BLUETOOTH, self._device.address),
             },
             name=self._device.name,
             manufacturer=MANUFACTURER,

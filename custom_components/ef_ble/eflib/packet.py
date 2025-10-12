@@ -88,11 +88,11 @@ class Packet:
     @staticmethod
     def fromBytes(data, is_xor=False):
         """Deserializes bytes stream into internal data"""
-        if len(data) < 20:
-            _LOGGER.error(
-                "Unable to parse packet - too small: %s", bytearray(data).hex()
-            )
-            return None
+        # if len(data) < 20:
+        #     _LOGGER.error(
+        #         "Unable to parse packet - too small: %s", bytearray(data).hex()
+        #     )
+        #     return None
 
         if not data.startswith(Packet.PREFIX):
             _LOGGER.error(
@@ -102,9 +102,15 @@ class Packet:
             return None
 
         version = data[1]
+        if (version == 2 and len(data) < 18) or (version == 3 and len(data) < 20):
+            _LOGGER.error(
+                "Unable to parse packet - too small: %s", bytearray(data).hex()
+            )
+            return None
+
         payload_length = struct.unpack("<H", data[2:4])[0]
 
-        if version == 3:
+        if version >= 2:
             # Check whole packet CRC16
             if crc16(data[:-2]) != struct.unpack("<H", data[-2:])[0]:
                 _LOGGER.error(
@@ -129,15 +135,24 @@ class Packet:
         # data[10:12] # static zeroes?
         src = data[12]
         dst = data[13]
-        dsrc = data[14]
-        ddst = data[15]
-        cmd_set = data[16]
-        cmd_id = data[17]
+
+        if version == 2:
+            dsrc = 0
+            ddst = 0
+            cmd_set = data[14]
+            cmd_id = data[15]
+        else:
+            dsrc = data[14]
+            ddst = data[15]
+            cmd_set = data[16]
+            cmd_id = data[17]
 
         payload = b""
         if payload_length > 0:
-            payload = data[18 : 18 + payload_length]
-
+            if version == 2:
+                payload = data[16 : 16 + payload_length]
+            else:
+                payload = data[18 : 18 + payload_length]
             # If first byte of seq is set - we need to xor payload with it to get the real data
             if is_xor is True and seq[0] != b"\x00":
                 payload = bytes([c ^ seq[0] for c in payload])
@@ -157,8 +172,13 @@ class Packet:
         # Additional data
         data += self.productByte() + self._seq
         data += b"\x00\x00"  # Unknown static zeroes, no strings attached right now
+
         data += struct.pack("<B", self._src) + struct.pack("<B", self._dst)
-        data += struct.pack("<B", self._dsrc) + struct.pack("<B", self._ddst)
+
+        # V3+ includes dsrc/ddst fields, V2 does not
+        if self._version >= 0x03:
+            data += struct.pack("<B", self._dsrc) + struct.pack("<B", self._ddst)
+
         data += struct.pack("<B", self._cmd_set) + struct.pack("<B", self._cmd_id)
         # Payload
         data += self._payload

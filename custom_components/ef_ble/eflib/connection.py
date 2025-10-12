@@ -144,6 +144,11 @@ class Connection:
         self._packet_parse = packet_parse
         self._authenticated = False
 
+        # Detect protocol version based on serial number prefix
+        # V2 devices: R33 (Delta 2 family), KT2 (Wave 2)
+        # V3 devices: HD31 (SHP2), Y711 (DPU), and most others
+        self._protocol_version = 0x02 if dev_sn.startswith(("R33", "KT2")) else 0x03
+
         self._errors = 0
         self._client = None
         self._connected = asyncio.Event()
@@ -772,7 +777,8 @@ class Connection:
         )
 
         # Preparing packet with empty payload
-        packet = Packet(0x21, 0x35, 0x35, 0x89, b"", 0x01, 0x01, 0x03)
+        # Use detected protocol version (V2 or V3)
+        packet = Packet(0x21, 0x35, 0x35, 0x89, b"", 0x01, 0x01, self._protocol_version)
 
         await self.sendPacket(packet, self.getAuthStatusHandler)
 
@@ -808,8 +814,8 @@ class Connection:
         # We need upper case in MD5 data here
         payload = ("".join(f"{c:02X}" for c in md5_data)).encode("ASCII")
 
-        # Forming packet
-        packet = Packet(0x21, 0x35, 0x35, 0x86, payload, 0x01, 0x01, 0x03)
+        # Forming packet - use detected protocol version (V2 or V3)
+        packet = Packet(0x21, 0x35, 0x35, 0x86, payload, 0x01, 0x01, self._protocol_version)
 
         # Sending request and starting the common listener
         await self.sendPacket(packet, self.listenForDataHandler)

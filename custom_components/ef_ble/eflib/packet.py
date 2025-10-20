@@ -88,12 +88,6 @@ class Packet:
     @staticmethod
     def fromBytes(data, is_xor=False):
         """Deserializes bytes stream into internal data"""
-        # if len(data) < 20:
-        #     _LOGGER.error(
-        #         "Unable to parse packet - too small: %s", bytearray(data).hex()
-        #     )
-        #     return None
-
         if not data.startswith(Packet.PREFIX):
             _LOGGER.error(
                 "Unable to parse packet - prefix is incorrect: %s",
@@ -136,23 +130,18 @@ class Packet:
         src = data[12]
         dst = data[13]
 
+        dsrc = ddst = 0
+        payload_start = 16 if version == 2 else 18
+
         if version == 2:
-            dsrc = 0
-            ddst = 0
-            cmd_set = data[14]
-            cmd_id = data[15]
+            cmd_set, cmd_id = data[14:payload_start]
         else:
-            dsrc = data[14]
-            ddst = data[15]
-            cmd_set = data[16]
-            cmd_id = data[17]
+            dsrc, ddst, cmd_set, cmd_id = data[14:payload_start]
 
         payload = b""
         if payload_length > 0:
-            if version == 2:
-                payload = data[16 : 16 + payload_length]
-            else:
-                payload = data[18 : 18 + payload_length]
+            payload = data[payload_start : payload_start + payload_length]
+
             # If first byte of seq is set - we need to xor payload with it to get the real data
             if is_xor is True and seq[0] != b"\x00":
                 payload = bytes([c ^ seq[0] for c in payload])
@@ -194,6 +183,17 @@ class Packet:
         return b"\x0c"
 
     def __repr__(self):
-        return "Packet(0x{_src:02X}, 0x{_dst:02X}, 0x{_cmd_set:02X}, 0x{_cmd_id:02X}, bytes.fromhex('{_payload_hex}'), 0x{_dsrc:02X}, 0x{_ddst:02X}, 0x{_version:02X}, {_seq}, 0x{_product_id:02X})".format(
-            **vars(self)
+        return (
+            "Packet("
+            f"src=0x{self._src:02X}, "
+            f"dst=0x{self._dst:02X}, "
+            f"cmd_set=0x{self._cmd_set:02X}, "
+            f"cmd_id=0x{self._cmd_id:02X}, "
+            f"payload=bytes.fromhex('{self._payload_hex}'), "
+            f"dsrc=0x{self._dsrc:02X}, "
+            f"ddst=0x{self._ddst:02X}, "
+            f"version=0x{self._version:02X}, "
+            f"seq={self._seq}, "
+            f"product_id=0x{self._product_id:02X}"
+            ")"
         )

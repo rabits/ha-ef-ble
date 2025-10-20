@@ -11,6 +11,10 @@ class Device(DeviceBase):
     SN_PREFIX = b"KT21"
     NAME_PREFIX = "EF-KT2"
 
+    @property
+    def packet_version(self):
+        return 2
+
     @classmethod
     def check(cls, sn):
         return sn.startswith(cls.SN_PREFIX)
@@ -26,6 +30,7 @@ class Device(DeviceBase):
 
     async def data_parse(self, packet: Packet) -> bool:
         """Processing the incoming notifications from the device"""
+
         # TODO: Wave 2 protobuf messages need to be identified
         # For now, just log unknown packets
         self._logger.debug(

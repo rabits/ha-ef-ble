@@ -74,6 +74,12 @@
             "manufacturer_id": 46517,
             "manufacturer_data_start": [19, 65, 67, 55, 49],
             "connectable": true
+        },
+        {
+            "local_name": "EF-R33*",
+            "manufacturer_id": 46517,
+            "manufacturer_data_start": [19, 82, 51, 51],
+            "connectable": true
         }
     ],
 

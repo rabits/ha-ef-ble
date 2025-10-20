@@ -84,6 +84,10 @@ class DeviceBase(abc.ABC):
         return self._conn is not None and self._conn.is_connected
 
     @property
+    def packet_version(self) -> int:
+        return 0x03
+
+    @property
     def connection_state(self):
         return None if self._conn is None else self._conn._state
 
@@ -125,6 +129,7 @@ class DeviceBase(abc.ABC):
                     user_id,
                     self.data_parse,
                     self.packet_parse,
+                    packet_version=self.packet_version,
                 )
                 .with_logging_options(self._logger.options)
                 .with_disabled_reconnect(self._reconnect_disabled)
@@ -135,7 +140,7 @@ class DeviceBase(abc.ABC):
                 for callback in self._disconnect_listeners:
                     callback(exc)
 
-            self._conn.on_disconnect(_disconnect_callback)
+            self._conn.on_disconnect(listener=_disconnect_callback)
         elif self._conn._user_id != user_id:
             self._conn._user_id = user_id
 

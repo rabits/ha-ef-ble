@@ -24,11 +24,9 @@ from homeassistant.const import (
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from custom_components.ef_ble.eflib.devices import delta3_classic
-
 from . import DeviceConfigEntry
 from .eflib import DeviceBase
-from .eflib.devices import delta_pro_3, shp2, smart_generator
+from .eflib.devices import delta3_classic, delta_pro_3, shp2, smart_generator, wave3
 from .entity import EcoflowEntity
 
 _UPPER_WORDS = ["ac", "dc", "lv", "hv", "tt", "5p8"]
@@ -698,6 +696,29 @@ SENSOR_TYPES: dict[str, SensorEntityDescription] = {
         )
         for i in range(5)
     },
+    # Wave 3
+    "ambient_temperature": SensorEntityDescription(
+        key="ambient_temperature",
+        device_class=SensorDeviceClass.TEMPERATURE,
+        state_class=SensorStateClass.MEASUREMENT,
+        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
+    ),
+    "ambient_humidity": SensorEntityDescription(
+        key="ambient_humidity",
+        device_class=SensorDeviceClass.HUMIDITY,
+        state_class=SensorStateClass.MEASUREMENT,
+        native_unit_of_measurement=PERCENTAGE,
+    ),
+    "operating_mode": SensorEntityDescription(
+        key="operating_mode",
+        device_class=SensorDeviceClass.ENUM,
+        options=wave3.OperatingMode.options(),
+    ),
+    "condensate_water_level": SensorEntityDescription(
+        key="condensate_water_level",
+        state_class=SensorStateClass.MEASUREMENT,
+        native_unit_of_measurement=PERCENTAGE,
+    ),
 }
 
 

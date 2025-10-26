@@ -490,6 +490,18 @@
       },
       "channel_error_count": {
         "name": "Channel {channel} Error Count"
+      },
+      "ambient_temperature": {
+        "name": "Temperature"
+      },
+      "ambient_humidity": {
+        "name": "Humidity"
+      },
+      "operating_mode": {
+        "name": "Operating Mode"
+      },
+      "condensate_water_level": {
+        "name": "Water Level"
       }
     },
     "select": {

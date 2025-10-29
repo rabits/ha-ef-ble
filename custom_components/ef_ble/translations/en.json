@@ -502,7 +502,71 @@
       },
       "condensate_water_level": {
         "name": "Water Level"
+      },
+      "battery_level": {
+        "name": "Battery Level"
+      },
+      "cell_temperature": {
+        "name": "Cell Temperature"
+      },
+      "pcs_fan_level": {
+        "name": "Fan Level"
+      },
+      "in_drainage": {
+        "name": "In Drainage"
+      },
+      "drainage_mode": {
+        "name": "Drainage Mode"
+      },
+      "lcd_show_temp_type": {
+        "name": "Display Temperature Type"
+      },
+      "pow_in_sum_w": {
+        "name": "Input Power"
+      },
+      "pow_out_sum_w": {
+        "name": "Output Power"
+      },
+      "bms_min_cell_temp": {
+        "name": "Min Cell Temperature"
+      },
+      "bms_min_mos_temp": {
+        "name": "Min MOS Temperature"
+      },
+      "bms_max_mos_temp": {
+        "name": "Max MOS Temperature"
+      },
+      "temp_indoor_supply_air": {
+        "name": "Indoor Supply Air Temp"
+      },
+      "temp_indoor_return_air": {
+        "name": "Indoor Return Air Temp"
+      },
+      "temp_outdoor_ambient": {
+        "name": "Outdoor Ambient Temp"
+      },
+      "temp_condenser": {
+        "name": "Condenser Temperature"
+      },
+      "temp_evaporator": {
+        "name": "Evaporator Temperature"
+      },
+      "temp_compressor_discharge": {
+        "name": "Compressor Discharge Temp"
+      },
+      "battery_charge_limit_min": {
+        "name": "Discharge Limit"
+      },
+      "battery_charge_limit_max": {
+        "name": "Charge Limit"
+      },
+      "sleep_state": {
+        "name": "Sleep State"
+      },
+      "power": {
+        "name": "Power"
       }
+
     },
     "select": {
       "led_mode": {

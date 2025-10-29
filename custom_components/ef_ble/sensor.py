@@ -719,8 +719,116 @@ SENSOR_TYPES: dict[str, SensorEntityDescription] = {
         state_class=SensorStateClass.MEASUREMENT,
         native_unit_of_measurement=PERCENTAGE,
     ),
+    "sleep_state": SensorEntityDescription(
+        key="sleep_state",
+        device_class=SensorDeviceClass.ENUM,
+        options=wave3.SleepState.options(),
+    ),
+    "battery_level": SensorEntityDescription(
+        key="battery_level",
+        device_class=SensorDeviceClass.BATTERY,
+        state_class=SensorStateClass.MEASUREMENT,
+        native_unit_of_measurement=PERCENTAGE,
+    ),
+    "cell_temperature": SensorEntityDescription(
+        key="cell_temperature",
+        device_class=SensorDeviceClass.TEMPERATURE,
+        state_class=SensorStateClass.MEASUREMENT,
+        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
+    ),
+    "pcs_fan_level": SensorEntityDescription(
+        key="pcs_fan_level",
+        state_class=SensorStateClass.MEASUREMENT,
+        native_unit_of_measurement=PERCENTAGE,
+    ),
+    "in_drainage": SensorEntityDescription(
+        key="in_drainage",
+    ),
+    "drainage_mode": SensorEntityDescription(
+        key="drainage_mode",
+    ),
+    "lcd_show_temp_type": SensorEntityDescription(
+        key="lcd_show_temp_type",
+    ),
+    "pow_in_sum_w": SensorEntityDescription(
+        key="pow_in_sum_w",
+        device_class=SensorDeviceClass.POWER,
+        state_class=SensorStateClass.MEASUREMENT,
+        native_unit_of_measurement=UnitOfPower.WATT,
+    ),
+    "pow_out_sum_w": SensorEntityDescription(
+        key="pow_out_sum_w",
+        device_class=SensorDeviceClass.POWER,
+        state_class=SensorStateClass.MEASUREMENT,
+        native_unit_of_measurement=UnitOfPower.WATT,
+    ),
+    "bms_min_cell_temp": SensorEntityDescription(
+        key="bms_min_cell_temp",
+        device_class=SensorDeviceClass.TEMPERATURE,
+        state_class=SensorStateClass.MEASUREMENT,
+        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
+    ),
+    "bms_min_mos_temp": SensorEntityDescription(
+        key="bms_min_mos_temp",
+        device_class=SensorDeviceClass.TEMPERATURE,
+        state_class=SensorStateClass.MEASUREMENT,
+        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
+    ),
+    "bms_max_mos_temp": SensorEntityDescription(
+        key="bms_max_mos_temp",
+        device_class=SensorDeviceClass.TEMPERATURE,
+        state_class=SensorStateClass.MEASUREMENT,
+        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
+    ),
+    "temp_indoor_supply_air": SensorEntityDescription(
+        key="temp_indoor_supply_air",
+        device_class=SensorDeviceClass.TEMPERATURE,
+        state_class=SensorStateClass.MEASUREMENT,
+        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
+    ),
+    "temp_indoor_return_air": SensorEntityDescription(
+        key="temp_indoor_return_air",
+        device_class=SensorDeviceClass.TEMPERATURE,
+        state_class=SensorStateClass.MEASUREMENT,
+        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
+    ),
+    "temp_outdoor_ambient": SensorEntityDescription(
+        key="temp_outdoor_ambient",
+        device_class=SensorDeviceClass.TEMPERATURE,
+        state_class=SensorStateClass.MEASUREMENT,
+        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
+    ),
+    "temp_condenser": SensorEntityDescription(
+        key="temp_condenser",
+        device_class=SensorDeviceClass.TEMPERATURE,
+        state_class=SensorStateClass.MEASUREMENT,
+        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
+    ),
+    "temp_evaporator": SensorEntityDescription(
+        key="temp_evaporator",
+        device_class=SensorDeviceClass.TEMPERATURE,
+        state_class=SensorStateClass.MEASUREMENT,
+        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
+    ),
+    "temp_compressor_discharge": SensorEntityDescription(
+        key="temp_compressor_discharge",
+        device_class=SensorDeviceClass.TEMPERATURE,
+        state_class=SensorStateClass.MEASUREMENT,
+        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
+    ),
+    "battery_charge_limit_min": SensorEntityDescription(
+        key="battery_charge_limit_min",
+        device_class=SensorDeviceClass.BATTERY,
+        state_class=SensorStateClass.MEASUREMENT,
+        native_unit_of_measurement=PERCENTAGE,
+    ),
+    "battery_charge_limit_max": SensorEntityDescription(
+        key="battery_charge_limit_max",
+        device_class=SensorDeviceClass.BATTERY,
+        state_class=SensorStateClass.MEASUREMENT,
+        native_unit_of_measurement=PERCENTAGE,
+    ),
 }
-
 
 async def async_setup_entry(
     hass: HomeAssistant,

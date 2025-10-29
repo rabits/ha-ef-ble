@@ -112,6 +112,12 @@ class Device(DeviceBase, ProtobufProps):
             )
             processed = True
 
+        if packet.src == 0x42 and packet.cmdSet == 0xFE and packet.cmdId == 0x16:
+            self.update_from_bytes(
+                ac517_apl_comm_pb2.RuntimePropertyUpload, packet.payload
+            )
+            processed = True
+
         for field_name in self.updated_fields:
             self.update_callback(field_name)
             self.update_state(field_name, getattr(self, field_name))

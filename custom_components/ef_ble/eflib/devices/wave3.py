@@ -9,6 +9,7 @@ from ..props.utils import pround
 from .alternator_charger import proto_attr_mapper
 
 pb = proto_attr_mapper(ac517_apl_comm_pb2.DisplayPropertyUpload)
+pb_run  = proto_attr_mapper(ac517_apl_comm_pb2.RuntimePropertyUpload)
 
 _LOGGER = logging.getLogger(__name__)
 

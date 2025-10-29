@@ -79,6 +79,11 @@ SWITCH_TYPES = [
         key="feed_grid",
         name="Feed Grid",
     ),
+    SwitchEntityDescription(
+        key="power",
+        name="Power",
+        device_class=SwitchDeviceClass.SWITCH,
+    ),
 ]
 
 

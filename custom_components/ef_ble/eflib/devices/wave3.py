@@ -122,6 +122,7 @@ class Device(DeviceBase, ProtobufProps):
             self.update_callback(field_name)
             self.update_state(field_name, getattr(self, field_name))
 
+        self.update_state("power", self.power)
         return processed
 
     async def _send_config_packet(self, message: ac517_apl_comm_pb2.ConfigWrite):
@@ -152,3 +153,11 @@ class Device(DeviceBase, ProtobufProps):
             ac517_apl_comm_pb2.ConfigWrite(cfg_max_chg_soc=limit)
         )
         return True
+
+
+    async def enable_power(self, enabled: bool):
+        # cfg_sys_pause=True means standby, False means running
+        await self._send_config_packet(            
+            ac517_apl_comm_pb2.ConfigWrite(cfg_sys_pause=not enabled)
+        )
+

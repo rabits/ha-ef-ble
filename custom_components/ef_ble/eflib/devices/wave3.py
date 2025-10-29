@@ -49,6 +49,13 @@ class TemperatureUnit(IntFieldValue):
         }[self]
 
 
+class SleepState(IntFieldValue):
+    UNKNOWN = -1
+
+    ON = 0
+    STANDBY = 1
+
+
 class Device(DeviceBase, ProtobufProps):
     """Wave 3"""
 

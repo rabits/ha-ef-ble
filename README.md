@@ -93,7 +93,7 @@ See more info in [this issue](https://github.com/rabits/ha-ef-ble/issues/78).
 </details>
 
 <details><summary>
-<b>Delta 3 (Classic, Plus) (EF-D3####)</b>
+<b>Delta 3 (Classic, Plus, Max Plus) (EF-D3####)</b>
 </summary>
 
 | *Sensors*                       | *Switches*     | *Sliders*                  |

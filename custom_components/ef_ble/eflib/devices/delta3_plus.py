@@ -10,7 +10,7 @@ from .delta3_classic import DCPortState, _DcAmpSettingField, _DcChargingMaxField
 class Device(delta3.Device):
     """Delta 3 Plus"""
 
-    SN_PREFIX = (b"P351",)
+    SN_PREFIX = (b"P351", b"D3M1")
 
     dc_charging_max_amps_2 = _DcAmpSettingField(
         pd335_sys_pb2.PV_CHG_VOL_SPEC_12V, pd335_sys_pb2.PV_PLUG_INDEX_2

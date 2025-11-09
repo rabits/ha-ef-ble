@@ -1,90 +1,128 @@
-import struct
-from typing import ClassVar
+from typing import Annotated
 
 from .base import RawData
 
 
 class BasePdHeart(RawData):
-    STRUCT_FORMAT: ClassVar[str] = (
-        "<"  # little-endian
-        "B"  # model
-        "4s"  # errorCode
-        "4s"  # sysVer
-        "4s"  # wifiVer
-        "B"  # wifiAutoRecovery
-        "B"  # soc
-        "H"  # wattsOutSum
-        "H"  # wattsInSum
-        "l"  # remainTime
-        "B"  # quietMode
-        "B"  # dcOutState
-        "B"  # usb1Watt
-        "B"  # usb2Watt
-        "B"  # qcUsb1Watt
-        "B"  # qcUsb2Watt
-        "B"  # typeC1Watts
-        "B"  # typeC2Watts
-        "B"  # typeC1Temp
-        "B"  # typeC2Temp
-        "B"  # carState
-        "B"  # carWatts
-        "B"  # carTemp
-        "H"  # standbyMin
-        "H"  # lcdOffSec
-        "B"  # lcdBrightness
-        "l"  # dcChgPower
-        "l"  # sunChgPower
-        "l"  # acChgPower
-        "l"  # dcDsgPower
-        "l"  # acDsgPower
-        "l"  # usbUsedTime
-        "l"  # usbQcUsedTime
-        "l"  # typeCUsedTime
-        "l"  # carUsedTime
-        "l"  # invUsedTime
-        "l"  # dcInUsedTime
-        "l"  # mpptUsedTime
-    )
+    model: Annotated[int, "B", "model"]
+    error_code: Annotated[bytes, "4s", "errorCode"]
+    sys_ver: Annotated[bytes, "4s", "sysVer"]
+    wifi_ver: Annotated[bytes, "4s", "wifiVer"]
+    wifi_auto_recovery: Annotated[int, "B", "wifiAutoRecovery"]
+    soc: Annotated[int, "B", "soc"]
+    watts_out_sum: Annotated[int, "H", "wattsOutSum"]
+    watts_in_sum: Annotated[int, "H", "wattsInSum"]
+    remain_time: Annotated[int, "l", "remainTime"]
+    quiet_mode: Annotated[int, "B", "quietMode"]
+    dc_out_state: Annotated[int, "B", "dcOutState"]
+    usb1_watt: Annotated[int, "B", "usb1Watt"]
+    usb2_watt: Annotated[int, "B", "usb2Watt"]
+    qc_usb1_watt: Annotated[int, "B", "qcUsb1Watt"]
+    qc_usb2_watt: Annotated[int, "B", "qcUsb2Watt"]
+    typec1_watts: Annotated[int, "B", "typeC1Watts"]
+    typec2_watts: Annotated[int, "B", "typeC2Watts"]
+    typec1_temp: Annotated[int, "B", "typeC1Temp"]
+    typec2_temp: Annotated[int, "B", "typeC2Temp"]
+    car_state: Annotated[int, "B", "carState"]
+    car_watts: Annotated[int, "B", "carWatts"]
+    car_temp: Annotated[int, "B", "carTemp"]
+    standby_min: Annotated[int, "H", "standbyMin"]
+    lcd_off_sec: Annotated[int, "H", "lcdOffSec"]
+    lcd_brightness: Annotated[int, "B", "lcdBrightness"]
+    dc_chg_power: Annotated[int, "l", "dcChgPower"]
+    sun_chg_power: Annotated[int, "l", "sunChgPower"]
+    ac_chg_power: Annotated[int, "l", "acChgPower"]
+    dc_dsg_power: Annotated[int, "l", "dcDsgPower"]
+    ac_dsg_power: Annotated[int, "l", "acDsgPower"]
+    usb_used_time: Annotated[int, "l", "usbUsedTime"]
+    usb_qc_used_time: Annotated[int, "l", "usbQcUsedTime"]
+    typec_used_time: Annotated[int, "l", "typeCUsedTime"]
+    car_used_time: Annotated[int, "l", "carUsedTime"]
+    inv_used_time: Annotated[int, "l", "invUsedTime"]
+    dc_in_used_time: Annotated[int, "l", "dcInUsedTime"]
+    mppt_used_time: Annotated[int, "l", "mpptUsedTime"]
 
-    model: int
-    error_code: bytes
-    sys_ver: bytes
-    wifi_ver: bytes
-    wifi_auto_recovery: int
-    soc: int
-    watts_out_sum: int
-    watts_in_sum: int
-    remain_time: bytes
-    quiet_mode: int
-    dc_out_state: int
-    usb1_watt: int
-    usb2_watt: int
-    qc_usb1_watt: int
-    qc_usb2_watt: int
-    typec1_watts: int
-    typec2_watts: int
-    typec1_temp: int
-    typec2_temp: int
-    car_state: int
-    car_watts: int
-    car_temp: int
-    standby_min: int
-    lcd_off_sec: int
-    lcd_brightness: int
-    dc_chg_power: int
-    sun_chg_power: int
-    ac_chg_power: int
-    dc_dsg_power: int
-    ac_dsg_power: int
-    usb_used_time: int
-    usb_qc_used_time: int
-    typec_used_time: int
-    car_used_time: int
-    inv_used_time: int
-    dc_in_used_time: int
-    mppt_used_time: int
 
-    @classmethod
-    def from_bytes(cls, data: bytes) -> "BasePdHeart":
-        unpacked = struct.unpack(cls.STRUCT_FORMAT, data[:89])
-        return cls(*unpacked)
+# class Mr330PdHeart(BasePdHeart):
+#     fan_state: Annotated[int, "B", "fanState"]
+#     usb_watts: Annotated[int, "B", "usbWatts"]
+#     qc_usb_watts: Annotated[int, "B", "qcUsbWatts"]
+#     typec_watts: Annotated[int, "B", "typecWatts"]
+#     dc_out_watts: Annotated[int, "B", "dcOutWatts"]
+#     lcd_state: Annotated[int, "B", "lcdState"]
+#     ac_in_vol: Annotated[int, "H", "acInVol"]
+#     ac_in_amp: Annotated[int, "H", "acInAmp"]
+#     ac_out_vol: Annotated[int, "H", "acOutVol"]
+#     ac_out_amp: Annotated[int, "H", "acOutAmp"]
+#     ac_in_freq: Annotated[int, "B", "acInFreq"]
+#     ac_out_freq: Annotated[int, "B", "acOutFreq"]
+#     ac_in_power: Annotated[int, "H", "acInPower"]
+#     ac_out_power: Annotated[int, "H", "acOutPower"]
+#     bms_temp: Annotated[int, "B", "bmsTemp"]
+#     inv_temp: Annotated[int, "B", "invTemp"]
+#     inv_load: Annotated[int, "B", "invLoad"]
+#     inv_state: Annotated[int, "B", "invState"]
+#     screen_state: Annotated[bytes, "14s", "screenState"]
+
+
+class Mr330PdHeart(BasePdHeart):
+    reverser: Annotated[int, "H", "reverser"]
+    screen_state: Annotated[str, "14s", "screenState"]
+    ext_rj45_port: Annotated[int, "B", "extRj45Port"]
+    ext_3p8_port: Annotated[int, "B", "ext3P8Port"]
+    ext_4p8_port: Annotated[int, "B", "ext4P8Port"]
+    syc_chg_dsg_state: Annotated[int, "B", "sycChgDsgState"]
+    wifi_rssi: Annotated[int, "B", "wifiRssi"]
+    wireless_watts: Annotated[int, "B", "wirelessWatts"]
+    charge_type: Annotated[int, "B", "chargeType"]
+    ac_input_watts: Annotated[int, "H", "acInputWatts"]
+    ac_output_watts: Annotated[int, "H", "acOutputWatts"]
+    dc_pv_input_watts: Annotated[int, "H", "dcPvInputWatts"]
+    dc_pv_output_watts: Annotated[int, "H", "dcPvOutputWatts"]
+    cfg_ac_enabled: Annotated[int, "B", "cfgAcEnabled"]
+    pv_priority: Annotated[int, "B", "pvPriority"]
+    ac_auto_on: Annotated[int, "B", "acAutoOn"]
+    watthis_config: Annotated[int, "B", "watthisConfig"]
+    bp_power_soc: Annotated[int, "B", "bppowerSoc"]
+    hysteresis_soc: Annotated[int, "B", "hysteresisSoc"]
+    reply_switchcnt: Annotated[int, "I", "replySwitchcnt"]  # 4 bytes unsigned int
+    ac_auto_out_config: Annotated[int, "B", "acAutoOutConfig"]
+    min_auto_soc: Annotated[int, "B", "minAutoSoc"]
+    ac_auto_out_pause: Annotated[int, "B", "acAutoOutPause"]
+    schedule_id: Annotated[int, "I", "scheduleId"]
+    heartbeat_duration: Annotated[int, "I", "heartbeatDuration"]
+    bkw_watts_in_power: Annotated[int, "H", "bkwWattsInPower"]
+    input_power_limit_flag: Annotated[int, "B", "inputPowerLimitFlag"]
+    ac_charge_flag: Annotated[int, "B", "acChargeFlag"]
+    cloud_ctrl_en: Annotated[int, "B", "cloudCtrlEn"]
+    redun_charge_flag: Annotated[int, "B", "redunChargeFlag"]
+
+
+class Mr350PdHeartbeat(BasePdHeart):
+    bms_kit_state: Annotated[bytes, "2s", "bmsKitState"]
+    other_kit_state: Annotated[bytes, "1s", "otherKitState"]
+    reversed: Annotated[bytes, "2s", "reversed"]
+    sys_chg_flag: Annotated[bytes, "1s", "sysChgFlag"]
+    wifi_rssi: Annotated[bytes, "1s", "wifiRssi"]
+    wireless_watts: Annotated[bytes, "1s", "wirelessWatts"]
+    screen_state: Annotated[bytes, "14s", "screenState"]
+    first_xt150_watts: Annotated[bytes, "2s", "firstXt150Watts"]
+    second_xt150_watts: Annotated[bytes, "2s", "secondXT150Watts"]
+    inv_in_watts: Annotated[bytes, "2s", "invInWatts"]
+    inv_in_type: Annotated[bytes, "1s", "invInType"]
+    inv_out_watts: Annotated[bytes, "2s", "invOutWatts"]
+    inv_out_type: Annotated[bytes, "1s", "invOutType"]
+    pv1_charge_type: Annotated[bytes, "1s", "pv1ChargeType"]
+    pv1_charge_watts: Annotated[bytes, "2s", "pv1ChargeWatts"]
+    pv2_charge_type: Annotated[bytes, "1s", "pv2ChargeType"]
+    pv2_charge_watts: Annotated[bytes, "2s", "pv2ChargeWatts"]
+    anderson_power: Annotated[bytes, "2s", "andersonPower"]
+    pv_charge_prio_set: Annotated[bytes, "1s", "pvChargePrioSet"]
+    ac_auto_on_cfg_set: Annotated[bytes, "1s", "acAutoOnCfgSet"]
+    ac_auto_out_config: Annotated[bytes, "1s", "acAutoOutConfig"]
+    main_ac_out_soc: Annotated[bytes, "1s", "mainAcOutSoc"]
+    ac_auto_out_pause: Annotated[bytes, "1s", "acAutoOutPause"]
+    watthisconfig: Annotated[bytes, "1s", "watthisconfig"]
+    bppower_soc: Annotated[bytes, "1s", "bppowerSoc"]
+    hysteresis_add: Annotated[bytes, "1s", "hysteresisAdd"]
+    relayswitchcnt: Annotated[bytes, "4s", "relayswitchcnt"]

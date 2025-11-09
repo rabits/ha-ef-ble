@@ -1,7 +1,11 @@
 import abc
 from collections import defaultdict
+from collections.abc import Callable
 from functools import cached_property
+from typing import Literal, overload
 
+from .. import devicebase
+from ..connection import LogOptions
 from ..model.base import RawData
 from .raw_data_field import RawDataField
 from .updatable_props import UpdatableProps
@@ -14,6 +18,51 @@ class RawDataProps(UpdatableProps, abc.ABC):
 
         for field in self._datatype_to_field[type(data)]:
             setattr(self, field.public_name, data)
+
+    @overload
+    def update_from_bytes[T: RawData](
+        self,
+        data: type[T],
+        payload: bytes,
+        as_list: Literal[False] = False,
+        reset: bool = False,
+    ) -> T: ...
+
+    @overload
+    def update_from_bytes[T: RawData](
+        self, data: type[T], payload: bytes, as_list: Literal[True], reset: bool = False
+    ) -> list[T]: ...
+
+    def update_from_bytes[T: RawData](
+        self, data: type[T], payload: bytes, as_list: bool = False, reset: bool = False
+    ) -> T | list[T]:
+        msgs = (
+            data.list_from_bytes(data=payload)
+            if as_list
+            else [data.from_bytes(data=payload)]
+        )
+
+        for msg in msgs:
+            self.update_from_data(msg, reset=reset)
+            self._log_message(msg)
+
+        return msgs if as_list else msgs[0]
+
+    @cached_property
+    def _log_message(self) -> Callable[[RawData], None]:
+        if not isinstance(self, devicebase.DeviceBase):
+            return lambda _: None
+
+        def _log_msg(msg: RawData):
+            return self._logger.log_filtered(
+                LogOptions.DESERIALIZED_MESSAGES,
+                "Message from %s, type: %s\n%s",
+                self.device,
+                msg.__class__.__name__,
+                str(msg),
+            )
+
+        return _log_msg
 
     @cached_property
     def _datatype_to_field(self) -> dict[type[RawData], list[RawDataField]]:

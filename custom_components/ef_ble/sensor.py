@@ -790,6 +790,21 @@ SENSOR_TYPES: dict[str, SensorEntityDescription] = {
         state_class=SensorStateClass.MEASUREMENT,
         native_unit_of_measurement_field=_wave3_unit,
     ),
+    # Delta 2
+    "dc12v_output_voltage": SensorEntityDescription(
+        key="dc12v_output_voltage",
+        native_unit_of_measurement=UnitOfElectricPotential.VOLT,
+        device_class=SensorDeviceClass.VOLTAGE,
+        state_class=SensorStateClass.MEASUREMENT,
+        suggested_display_precision=2,
+    ),
+    "dc12v_output_current": SensorEntityDescription(
+        key="dc12v_output_current",
+        native_unit_of_measurement=UnitOfElectricCurrent.AMPERE,
+        device_class=SensorDeviceClass.CURRENT,
+        state_class=SensorStateClass.MEASUREMENT,
+        suggested_display_precision=2,
+    ),
 }
 
 

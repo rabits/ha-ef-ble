@@ -1,6 +1,7 @@
+from collections.abc import Callable
 from dataclasses import dataclass, fields
 from functools import cached_property
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, overload
 
 from ..model.base import RawData
 from .updatable_props import Field
@@ -48,9 +49,11 @@ class RawDataField[T](Field[T]):
         self,
         data_attr: _DataclassAttr,
         identifier: str = "",
+        transform_value: Callable[[Any], T] = lambda x: x,
     ):
         self.data_attr = data_attr
         self.identifier = identifier
+        self._transform_value = transform_value
 
     def _get_value(self, value: Any):
         if not isinstance(value, RawData):
@@ -60,14 +63,34 @@ class RawDataField[T](Field[T]):
 
     def __set__(self, instance: "RawDataProps", value: Any):
         value = self._get_value(value)
+        value = self._transform_value(value)
         super().__set__(instance, value)
 
 
-def raw_field[T_ATTR](attr: T_ATTR) -> RawDataField[T_ATTR]:
+@overload
+def raw_field[T_ATTR](
+    attr: T_ATTR,
+    transform: None = None,
+) -> RawDataField[T_ATTR]: ...
+
+
+@overload
+def raw_field[T_ATTR, T_OUT](
+    attr: T_ATTR,
+    transform: Callable[[T_ATTR], T_OUT],
+) -> RawDataField[T_OUT]: ...
+
+
+def raw_field(
+    attr: Any, transform: Callable[[Any], Any] | None = None
+) -> RawDataField[Any]:
     if not isinstance(attr, _DataclassAttr):
         raise TypeError(
             "Attribute has to be an instance returned from `dataclass_attr_mapper` "
             f"after attribute access, but received value of '{attr}'"
         )
 
-    return RawDataField(data_attr=attr)
+    return RawDataField(
+        data_attr=attr,
+        transform_value=transform if transform is not None else lambda x: x,
+    )

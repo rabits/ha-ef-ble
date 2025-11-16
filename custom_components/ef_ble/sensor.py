@@ -816,18 +816,6 @@ SENSOR_TYPES: dict[str, SensorEntityDescription] = {
         state_class=SensorStateClass.MEASUREMENT,
         native_unit_of_measurement=UnitOfTemperature.CELSIUS,
     ),
-    "battery_charge_limit_min": SensorEntityDescription(
-        key="battery_charge_limit_min",
-        device_class=SensorDeviceClass.BATTERY,
-        state_class=SensorStateClass.MEASUREMENT,
-        native_unit_of_measurement=PERCENTAGE,
-    ),
-    "battery_charge_limit_max": SensorEntityDescription(
-        key="battery_charge_limit_max",
-        device_class=SensorDeviceClass.BATTERY,
-        state_class=SensorStateClass.MEASUREMENT,
-        native_unit_of_measurement=PERCENTAGE,
-    ),
 }
 
 async def async_setup_entry(

@@ -724,18 +724,6 @@ SENSOR_TYPES: dict[str, SensorEntityDescription] = {
         device_class=SensorDeviceClass.ENUM,
         options=wave3.SleepState.options(),
     ),
-    "battery_level": SensorEntityDescription(
-        key="battery_level",
-        device_class=SensorDeviceClass.BATTERY,
-        state_class=SensorStateClass.MEASUREMENT,
-        native_unit_of_measurement=PERCENTAGE,
-    ),
-    "cell_temperature": SensorEntityDescription(
-        key="cell_temperature",
-        device_class=SensorDeviceClass.TEMPERATURE,
-        state_class=SensorStateClass.MEASUREMENT,
-        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
-    ),
     "pcs_fan_level": SensorEntityDescription(
         key="pcs_fan_level",
         state_class=SensorStateClass.MEASUREMENT,

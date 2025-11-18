@@ -806,6 +806,7 @@ SENSOR_TYPES: dict[str, SensorEntityDescription] = {
     ),
 }
 
+
 async def async_setup_entry(
     hass: HomeAssistant,
     config_entry: DeviceConfigEntry,

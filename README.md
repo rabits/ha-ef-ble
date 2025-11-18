@@ -224,13 +224,25 @@ you have to create it yourself, see this section from the official
 <b>Wave 3</b>
 </summary>
 
-| *Sensors*              | *Sliders*       |
-|------------------------|-----------------|
-| Battery Level          | Charge Limit    |
-| Ambient Temperature    | Discharge Limit |
-| Ambient Humidity       |                 |
-| Operating Mode         |                 |
-| Condensate Water Level |                 |
+| *Sensors*                        | *Sliders*       | *Switches* |
+|----------------------------------|-----------------|------------|
+| Battery Level                    | Charge Limit    | Power      |
+| Ambient Temperature              | Discharge Limit |            |
+| Ambient Humidity                 |                 |            |
+| Operating Mode                   |                 |            |
+| Condensate Water Level           |                 |            |
+| Cell Temperature (disabled)      |                 |            |
+| Fan Level                        |                 |            |
+| Drainage Mode                    |                 |            |
+| Input Power                      |                 |            |
+| Output Power                     |                 |            |
+| Indoor Supply Air Temperature    |                 |            |
+| Indoor Return Air Temperature    |                 |            |
+| Outdoor Ambient Temperature      |                 |            |
+| Condenser Temperature            |                 |            |
+| Evaporator Temperature           |                 |            |
+| Compressor Discharge Temperature |                 |            |
+| Sleep State                      |                 |            |
 </details>
 
 </p>

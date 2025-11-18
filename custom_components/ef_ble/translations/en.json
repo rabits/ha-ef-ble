@@ -503,12 +503,6 @@
       "condensate_water_level": {
         "name": "Water Level"
       },
-      "battery_level": {
-        "name": "Battery Level"
-      },
-      "cell_temperature": {
-        "name": "Cell Temperature"
-      },
       "pcs_fan_level": {
         "name": "Fan Level"
       },
@@ -526,15 +520,6 @@
       },
       "pow_out_sum_w": {
         "name": "Output Power"
-      },
-      "bms_min_cell_temp": {
-        "name": "Min Cell Temperature"
-      },
-      "bms_min_mos_temp": {
-        "name": "Min MOS Temperature"
-      },
-      "bms_max_mos_temp": {
-        "name": "Max MOS Temperature"
       },
       "temp_indoor_supply_air": {
         "name": "Indoor Supply Air Temp"

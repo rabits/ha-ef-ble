@@ -27,7 +27,13 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from . import DeviceConfigEntry
 from .eflib import DeviceBase
-from .eflib.devices import delta3_classic, delta_pro_3, shp2, smart_generator, wave3
+from .eflib.devices import (
+    delta3_classic,
+    delta_pro_3,
+    shp2,
+    smart_generator,
+    wave3,
+)
 from .entity import EcoflowEntity
 
 _UPPER_WORDS = ["ac", "dc", "lv", "hv", "tt", "5p8"]
@@ -759,24 +765,6 @@ SENSOR_TYPES: dict[str, SensorEntityDescription] = {
         device_class=SensorDeviceClass.POWER,
         state_class=SensorStateClass.MEASUREMENT,
         native_unit_of_measurement=UnitOfPower.WATT,
-    ),
-    "bms_min_cell_temp": SensorEntityDescription(
-        key="bms_min_cell_temp",
-        device_class=SensorDeviceClass.TEMPERATURE,
-        state_class=SensorStateClass.MEASUREMENT,
-        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
-    ),
-    "bms_min_mos_temp": SensorEntityDescription(
-        key="bms_min_mos_temp",
-        device_class=SensorDeviceClass.TEMPERATURE,
-        state_class=SensorStateClass.MEASUREMENT,
-        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
-    ),
-    "bms_max_mos_temp": SensorEntityDescription(
-        key="bms_max_mos_temp",
-        device_class=SensorDeviceClass.TEMPERATURE,
-        state_class=SensorStateClass.MEASUREMENT,
-        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
     ),
     "temp_indoor_supply_air": EcoflowSensorEntityDescription(
         key="temp_indoor_supply_air",

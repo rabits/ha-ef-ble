@@ -77,10 +77,6 @@ class Device(DeviceBase, ProtobufProps):
     pow_in_sum_w = pb_field(pb_disp.pow_in_sum_w, pround(1))
     pow_out_sum_w = pb_field(pb_disp.pow_out_sum_w, pround(1))
 
-    bms_min_cell_temp = pb_field(pb_disp.bms_min_cell_temp)
-    bms_min_mos_temp = pb_field(pb_disp.bms_min_mos_temp)
-    bms_max_mos_temp = pb_field(pb_disp.bms_max_mos_temp)
-
     temp_indoor_supply_air = pb_field(pb_disp.temp_indoor_supply_air, pround(1))
     temp_indoor_return_air = pb_field(pb_run.temp_indoor_return_air, pround(1))
     temp_outdoor_ambient = pb_field(pb_run.temp_outdoor_ambient, pround(1))

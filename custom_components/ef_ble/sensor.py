@@ -754,18 +754,6 @@ SENSOR_TYPES: dict[str, SensorEntityDescription] = {
     "lcd_show_temp_type": SensorEntityDescription(
         key="lcd_show_temp_type",
     ),
-    "pow_in_sum_w": SensorEntityDescription(
-        key="pow_in_sum_w",
-        device_class=SensorDeviceClass.POWER,
-        state_class=SensorStateClass.MEASUREMENT,
-        native_unit_of_measurement=UnitOfPower.WATT,
-    ),
-    "pow_out_sum_w": SensorEntityDescription(
-        key="pow_out_sum_w",
-        device_class=SensorDeviceClass.POWER,
-        state_class=SensorStateClass.MEASUREMENT,
-        native_unit_of_measurement=UnitOfPower.WATT,
-    ),
     "temp_indoor_supply_air": EcoflowSensorEntityDescription(
         key="temp_indoor_supply_air",
         device_class=SensorDeviceClass.TEMPERATURE,

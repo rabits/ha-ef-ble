@@ -6,7 +6,7 @@ pb = delta3_classic.pb
 
 
 class Device(delta3_classic.Device):
-    """Delta 3 Classic"""
+    """Delta 3"""
 
     SN_PREFIX = (b"P231",)
     NAME_PREFIX = "EF-D3"

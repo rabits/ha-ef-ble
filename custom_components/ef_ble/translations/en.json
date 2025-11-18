@@ -515,12 +515,6 @@
       "lcd_show_temp_type": {
         "name": "Display Temperature Type"
       },
-      "pow_in_sum_w": {
-        "name": "Input Power"
-      },
-      "pow_out_sum_w": {
-        "name": "Output Power"
-      },
       "temp_indoor_supply_air": {
         "name": "Indoor Supply Air Temp"
       },

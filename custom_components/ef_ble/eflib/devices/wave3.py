@@ -5,8 +5,8 @@ from ..packet import Packet
 from ..pb import ac517_apl_comm_pb2
 from ..props import ProtobufProps, pb_field
 from ..props.enums import IntFieldValue
+from ..props.protobuf_field import proto_attr_mapper
 from ..props.utils import pround
-from .alternator_charger import proto_attr_mapper
 
 # Two mappers: Display and Runtime
 pb_disp = proto_attr_mapper(ac517_apl_comm_pb2.DisplayPropertyUpload)
@@ -74,8 +74,8 @@ class Device(DeviceBase, ProtobufProps):
     drainage_mode = pb_field(pb_disp.drainage_mode)
     lcd_show_temp_type = pb_field(pb_disp.lcd_show_temp_type)
 
-    pow_in_sum_w = pb_field(pb_disp.pow_in_sum_w, pround(1))
-    pow_out_sum_w = pb_field(pb_disp.pow_out_sum_w, pround(1))
+    input_power = pb_field(pb_disp.pow_in_sum_w, pround(1))
+    output_power = pb_field(pb_disp.pow_out_sum_w, pround(1))
 
     temp_indoor_supply_air = pb_field(pb_disp.temp_indoor_supply_air, pround(1))
     temp_indoor_return_air = pb_field(pb_run.temp_indoor_return_air, pround(1))

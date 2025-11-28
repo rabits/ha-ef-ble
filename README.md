@@ -199,10 +199,11 @@ you have to create it yourself, see this section from the official
 | *Sensors*                   | *Switches*  | *Sliders*             | *Selects*       |
 |-----------------------------|-------------|-----------------------|-----------------|
 | Battery Level               | Feed Grid   | Feed Grid Power Limit | Energy Strategy |
-| Grid Power                  | AC (1) ᴬᴹᴾᵁ | Backup Reserve Level  |                 |
-| Grid Voltage                | AC (2) ᴬᴾᵁ  | Charge Limit          |                 |
-| Grid Frequency              |             | Discharge Limit       |                 |
-| Load from Battery           |             | Base Load Power ¹     |                 |
+| Main Battery Level          | AC (1) ᴬᴹᴾᵁ | Backup Reserve Level  |                 |
+| Grid Power                  | AC (2) ᴬᴾᵁ  | Charge Limit          |                 |
+| Grid Voltage                |             | Discharge Limit       |                 |
+| Grid Frequency              |             | Base Load Power ¹     |                 |
+| Load from Battery           |             |                       |                 |
 | Load from Grid              |             |                       |                 |
 | Load from PVᴹᴾᵁ             |             |                       |                 |
 | AC (1) Power ᴬᴹᴾᵁ           |             |                       |                 |

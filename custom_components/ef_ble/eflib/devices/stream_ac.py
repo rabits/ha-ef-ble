@@ -80,6 +80,7 @@ class Device(DeviceBase, ProtobufProps):
     NAME_PREFIX = "EF-6"
 
     battery_level = pb_field(pb.cms_batt_soc)
+    battery_level_main = pb_field(pb.bms_batt_soc)
     cell_temperature = pb_field(pb.bms_max_cell_temp)
 
     grid_power = pb_field(pb.grid_connection_power)

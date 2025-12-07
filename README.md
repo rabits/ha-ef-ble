@@ -216,8 +216,8 @@ you have to create it yourself, see this section from the official
 ᴬ Only available on AC Pro variant  
 ᴹ Only available on Max variant  
 ᴾ Only available on Pro variant  
-ᵁ Only available on Ultra and Ultra X variants
-¹ Not available when there's no base load timeframe or more than 1 timeframe configured.
+ᵁ Only available on Ultra and Ultra X variants  
+¹ Not available when there's no base load timeframe or more than 1 timeframe configured.  
 </details>
 
 <details><summary>
@@ -243,6 +243,26 @@ you have to create it yourself, see this section from the official
 | Evaporator Temperature           |                 |            |
 | Compressor Discharge Temperature |                 |            |
 | Sleep State                      |                 |            |
+</details>
+
+<details><summary>
+<b>Delta 2 (Delta 3 1500)</b>
+</summary>
+
+| *Sensors*                   | *Switches*  | *Sliders*           |
+|-----------------------------|-------------|---------------------|
+| Battery Level               | AC Ports    | Max Charge Limit    |
+| Input Power                 | DC 12V Port | Min Discharge Limit |
+| Output Power                | USB Ports   |                     |
+| AC Input Power              |             |                     |
+| AC Output Power             |             |                     |
+| DC Output Power             |             |                     |
+| DC 12V Output Voltage       |             |                     |
+| DC 12V Output Current       |             |                     |
+| USB A Output Power          |             |                     |
+| USB C Output Power          |             |                     |
+| Cell Temperature (disabled) |             |                     |
+
 </details>
 
 </p>

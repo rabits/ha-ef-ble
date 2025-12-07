@@ -265,6 +265,12 @@
       "dc12v_output_energy": {
         "name": "DC 12V Output Energy"
       },
+      "dc12v_output_current": {
+        "name": "DC 12V Output Current"
+      },
+      "dc12v_output_voltage": {
+        "name": "DC 12V Output Voltage"
+      },
       "usbc_output_power": {
         "name": "USB C Output Power"
       },

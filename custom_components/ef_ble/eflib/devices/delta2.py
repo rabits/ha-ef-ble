@@ -20,7 +20,7 @@ pb_bms = dataclass_attr_mapper(DirectBmsMDeltaHeartbeatPack)
 class Device(DeviceBase, RawDataProps):
     """Delta 2"""
 
-    SN_PREFIX = (b"R331", b"R335", b"D361")
+    SN_PREFIX = (b"R331", b"R335")
     NAME_PREFIX = "EF-R33"
 
     @property

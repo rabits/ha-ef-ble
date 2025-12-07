@@ -1,10 +1,12 @@
 from ..devicebase import DeviceBase
-from ..model.direct_bms_heartbeat_pack import DirectBmsMDeltaHeartbeatPack
-from ..model.direct_ems_heartbeat_pack import DirectEmsDeltaHeartbeatPack
-from ..model.direct_mppt_heartbeat_pack import DirectMpptHeartbeatPack
-from ..model.kit_info import AllKitDetailData
-from ..model.mppt_heart import Mr330MpptHeart
-from ..model.pd_heart import Mr330PdHeart
+from ..model import (
+    AllKitDetailData,
+    DirectBmsMDeltaHeartbeatPack,
+    DirectEmsDeltaHeartbeatPack,
+    DirectMpptHeartbeatPack,
+    Mr330MpptHeart,
+    Mr330PdHeart,
+)
 from ..packet import Packet
 from ..props.raw_data_field import dataclass_attr_mapper, raw_field
 from ..props.raw_data_props import RawDataProps

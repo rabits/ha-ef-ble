@@ -93,6 +93,8 @@ class Device(DeviceBase, RawDataProps):
         match self._sn[:4]:
             case "D361":
                 model = "3 1500"
+            case "R351" | "R354":
+                model = "2 Max"
 
         return f"Delta {model}"
 

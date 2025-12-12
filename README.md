@@ -267,7 +267,7 @@ you have to create it yourself, see this section from the official
 </details>
 
 <details><summary>
-<b>Delta 2 (Delta 3 1500)</b>
+<b>Delta 2 (Max, Delta 3 1500)</b>
 </summary>
 
 | *Sensors*                   | *Switches*  | *Sliders*           |

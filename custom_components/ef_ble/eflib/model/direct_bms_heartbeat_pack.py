@@ -1,4 +1,4 @@
-from typing import Annotated, Self
+from typing import Annotated
 
 from .pd_heart import RawData
 
@@ -32,16 +32,3 @@ class DirectBmsMDeltaHeartbeatPack(RawData):
     input_watts: Annotated[int, "I", "inputWatts"]
     output_watts: Annotated[int, "I", "outputWatts"]
     remain_time: Annotated[int, "I", "remainTime"]
-
-    @classmethod
-    def list_from_bytes(cls, data: bytes) -> list[Self]:
-        obj_1 = super().from_bytes(data)
-        obj_size = obj_1.SIZE
-        ret_list = [obj_1]
-
-        offset = obj_size
-
-        if len(data[offset:]) > obj_1.SIZE:
-            ret_list.append(super().from_bytes(data[offset:]))
-            offset += obj_size
-        return ret_list

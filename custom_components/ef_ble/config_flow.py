@@ -21,7 +21,7 @@ from homeassistant.config_entries import (
     ConfigFlowResult,
     OptionsFlow,
 )
-from homeassistant.const import CONF_ADDRESS, CONF_EMAIL, CONF_PASSWORD
+from homeassistant.const import CONF_ADDRESS, CONF_EMAIL, CONF_PASSWORD, CONF_REGION
 from homeassistant.core import callback
 from homeassistant.data_entry_flow import section
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
@@ -196,6 +196,10 @@ class EFBLEConfigFlow(ConfigFlow, domain=DOMAIN):
                     {
                         vol.Optional(CONF_EMAIL, default=self._email): str,
                         vol.Optional(CONF_PASSWORD, default=""): str,
+                        vol.Optional(
+                            CONF_REGION,
+                            default="Auto",
+                        ): vol.In(["Auto", "EU", "US"]),
                     }
                 ),
                 {"collapsed": self._collapsed},
@@ -247,6 +251,7 @@ class EFBLEConfigFlow(ConfigFlow, domain=DOMAIN):
 
         self._email = user_input.get("login", {}).get(CONF_EMAIL, "")
         password = user_input.get("login", {}).get(CONF_PASSWORD, "")
+        region = user_input.get("login", {}).get(CONF_REGION, "")
         user_id = user_input.get(CONF_USER_ID, "")
         timeout = user_input.get(CONF_CONNECTION_TIMEOUT, 20)
 
@@ -260,7 +265,7 @@ class EFBLEConfigFlow(ConfigFlow, domain=DOMAIN):
                 return {"login": "email_empty"}
             if not password:
                 return {"login": "password_empty"}
-            return await self._ecoflow_login(self._email, password)
+            return await self._ecoflow_login(self._email, password, region)
 
         self._user_id = user_id
 
@@ -300,10 +305,19 @@ class EFBLEConfigFlow(ConfigFlow, domain=DOMAIN):
     def _store(self):
         return Store(self.hass, self.VERSION, f"{DOMAIN}.user_id")
 
-    async def _ecoflow_login(self, email: str, password: str):
+    async def _ecoflow_login(self, email: str, password: str, region: str):
         session = async_get_clientsession(self.hass)
+
+        match region:
+            case "EU":
+                base_url = "api-e.ecoflow.com"
+            case "US":
+                base_url = "api-a.ecoflow.com"
+            case _:
+                base_url = "api.ecoflow.com"
+
         async with session.post(
-            url="https://api.ecoflow.com/auth/login",
+            url=f"https://{base_url}/auth/login",
             json={
                 "scene": "IOT_APP",
                 "appVersion": "1.0.0",

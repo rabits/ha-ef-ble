@@ -36,7 +36,8 @@
             "name": "EcoFlow Login (skip if you already know your user ID)",
             "data": {
               "email": "Email",
-              "password": "Password"
+              "password": "Password",
+              "region": "Region (try different region if you get 'Account does not exist' or 'user ID may be incorrect' error)"
             }
           },
           "log_options": {
@@ -71,7 +72,8 @@
             "name": "EcoFlow Login (skip if you already know your user ID)",
             "data": {
               "email": "Email",
-              "password": "Password"
+              "password": "Password",
+              "region": "Region (try different region if you get 'Account does not exist' or 'user ID may be incorrect' error)"
             }
           },
           "log_options": {

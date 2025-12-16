@@ -104,7 +104,8 @@ class Packet:
 
         payload_length = struct.unpack("<H", data[2:4])[0]
 
-        if version >= 2:
+        # there are also version 19 packets that do not contain crc16 checksum
+        if version in [2, 3]:
             # Check whole packet CRC16
             if crc16(data[:-2]) != struct.unpack("<H", data[-2:])[0]:
                 _LOGGER.error(

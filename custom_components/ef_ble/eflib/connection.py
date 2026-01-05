@@ -1,12 +1,14 @@
 import asyncio
 import contextlib
+import functools
 import hashlib
 import logging
 import struct
 import traceback
 from collections import deque
-from collections.abc import Awaitable, Callable, Coroutine
+from collections.abc import Awaitable, Callable, Collection, Coroutine, MutableSequence
 from enum import StrEnum, auto
+from functools import cached_property
 
 import ecdsa
 from bleak import BleakClient
@@ -34,13 +36,25 @@ from .exceptions import (
     PacketParseError,
     PacketReceiveError,
 )
+from .listeners import ListenerGroup
 from .logging_util import ConnectionLogger, LogOptions
 from .packet import Packet
+from .props.utils import classproperty
 
 MAX_RECONNECT_ATTEMPTS = 2
 MAX_CONNECTION_ATTEMPTS = 10
 
 type DisconnectListener = Callable[[Exception | type[Exception] | None], None]
+
+
+def _state_in(states: "Collection[ConnectionState | str]"):
+    return cached_property(lambda self: self in states)
+
+
+def _combine_state(
+    prop: cached_property[bool], states: "Collection[ConnectionState | str]"
+):
+    return cached_property(lambda self: prop.__get__(self) or self in states)
 
 
 class ConnectionState(StrEnum):
@@ -73,50 +87,76 @@ class ConnectionState(StrEnum):
     DISCONNECTING = auto()
     DISCONNECTED = auto()
 
-    def connection_error(self):
-        return self in [
-            ConnectionState.ERROR_TIMEOUT,
-            ConnectionState.ERROR_NOT_FOUND,
-            ConnectionState.ERROR_BLEAK,
+    # helper state descriptor flags
+    connection_error = _state_in(
+        [
+            ERROR_TIMEOUT,
+            ERROR_NOT_FOUND,
+            ERROR_BLEAK,
         ]
+    )
 
-    def is_connecting(self):
-        return self in [
-            ConnectionState.ESTABLISHING_CONNECTION,
+    is_error = _combine_state(
+        connection_error,
+        [
+            ERROR_MAX_RECONNECT_ATTEMPTS_REACHED,
+            ERROR_AUTH_FAILED,
+            ERROR_TOO_MANY_ERRORS,
+            ERROR_UNKNOWN,
+        ],
+    )
+
+    is_connected = _state_in(
+        [
+            CONNECTED,
+            PUBLIC_KEY_EXCHANGE,
+            PUBLIC_KEY_RECEIVED,
+            SESSION_KEY_RECEIVED,
+            REQUESTING_AUTH_STATUS,
+            AUTH_STATUS_RECEIVED,
+            AUTHENTICATING,
+        ]
+    )
+
+    is_connecting = _combine_state(
+        is_connected,
+        [ESTABLISHING_CONNECTION, RECONNECTING],
+    )
+    authenticated = _state_in([AUTHENTICATED])
+    is_terminal = _combine_state(
+        is_error,
+        [
+            AUTHENTICATED,
+            DISCONNECTED,
+            NOT_CONNECTED,
+        ],
+    )
+
+    @classproperty
+    @functools.cache
+    def step_order(self):
+        return [
             ConnectionState.CONNECTED,
             ConnectionState.PUBLIC_KEY_EXCHANGE,
             ConnectionState.PUBLIC_KEY_RECEIVED,
+            ConnectionState.REQUESTING_SESSION_KEY,
             ConnectionState.SESSION_KEY_RECEIVED,
             ConnectionState.REQUESTING_AUTH_STATUS,
             ConnectionState.AUTH_STATUS_RECEIVED,
             ConnectionState.AUTHENTICATING,
+            ConnectionState.AUTHENTICATED,
         ]
 
-    def is_error(self):
-        return (
-            self
-            in [
-                ConnectionState.ERROR_MAX_RECONNECT_ATTEMPTS_REACHED,
-                ConnectionState.ERROR_AUTH_FAILED,
-                ConnectionState.ERROR_TOO_MANY_ERRORS,
-                ConnectionState.ERROR_UNKNOWN,
-            ]
-            or self.connection_error()
-        )
+    @cached_property
+    def step_index(self):
+        if self in self.step_order:
+            return self.step_order.index(self)
+        return None
 
-    def authenticated(self):
-        return self is ConnectionState.AUTHENTICATED
 
-    def is_terminal(self):
-        return (
-            self
-            in [
-                ConnectionState.AUTHENTICATED,
-                ConnectionState.DISCONNECTED,
-                ConnectionState.NOT_CONNECTED,
-            ]
-            or self.is_error()
-        )
+type ConnectionStateListener = Callable[[ConnectionState], None]
+type PacketReceivedListener = Callable[[bytes], None]
+type PacketParsedListener = Callable[[Packet], None]
 
 
 class Connection:
@@ -135,9 +175,7 @@ class Connection:
         user_id: str,
         data_parse: Callable[[Packet], Awaitable[bool]],
         packet_parse: Callable[[bytes], Awaitable[Packet]],
-        on_state_change: Callable[[ConnectionState], None] = lambda _: None,
         packet_version: int = 0x03,
-        on_disconnected: Callable[[], None] = lambda: None,
     ) -> None:
         self._ble_dev = ble_dev
         self._address = ble_dev.address
@@ -146,8 +184,6 @@ class Connection:
 
         self._data_parse = data_parse
         self._packet_parse = packet_parse
-        self._authenticated = False
-
         self._packet_version = packet_version
 
         self._errors = 0
@@ -160,29 +196,36 @@ class Connection:
         self._enc_packet_buffer = b""
 
         self._tasks: set[asyncio.Task] = set()
-        self._debug_mode = False
 
         self._logger = ConnectionLogger(self)
-        self._unprocessed_payloads = deque(maxlen=10)
-        self._on_state_change = on_state_change
-        self._on_disconnected = on_disconnected
+        self._state_changed = asyncio.Event()
 
         self._state_exception: Exception | type[Exception] | None = None
         self._last_exception: Exception | type[Exception] | None = None
-        self._on_state_change = on_state_change
-        self._state_changed = asyncio.Event()
         self._reconnect_task: asyncio.Task | None = None
         self._connection_attempt: int = 0
         self._reconnect_attempt: int = 0
         self._reconnect = True
 
-        self._disconnect_listeners: list[DisconnectListener] = []
-        self._connection_state = None
+        self._on_disconnect = ListenerGroup[DisconnectListener]()
+        self._on_state_change = ListenerGroup[ConnectionStateListener]()
+        self._on_packet_data_received = ListenerGroup[PacketReceivedListener]()
+        self._on_packet_parsed = ListenerGroup[PacketParsedListener]()
+
+        self._connection_state: ConnectionState = None  # pyright: ignore[reportAttributeAccessIssue]
         self._set_state(ConnectionState.CREATED)
 
     @property
     def is_connected(self) -> bool:
         return self._client is not None and self._client.is_connected
+
+    def _add_listener(self, collection: MutableSequence[Callable], listener: Callable):
+        collection.append(listener)
+
+        def _unlisten():
+            collection.remove(value=listener)
+
+        return _unlisten
 
     def on_disconnect(self, listener: DisconnectListener):
         """
@@ -198,31 +241,25 @@ class Connection:
         -------
         Function to remove this listener
         """
-        self._disconnect_listeners.append(listener)
+        return self._add_listener(self._on_disconnect, listener)
 
-        def _unlisten():
-            self._disconnect_listeners.remove(listener)
+    def on_state_change(self, listener: ConnectionStateListener):
+        return self._add_listener(self._on_state_change, listener)
 
-        return _unlisten
+    def on_packet_data_received(self, listener: PacketReceivedListener):
+        return self._add_listener(self._on_packet_data_received, listener)
+
+    def on_packet_parsed(self, listener: PacketParsedListener):
+        return self._add_listener(self._on_packet_parsed, listener)
 
     def _notify_disconnect(self, exception: Exception | type[Exception] | None = None):
         if exception is None:
             exception = self._last_exception
 
-        for listener in self._disconnect_listeners:
-            listener(exception)
+        self._on_disconnect(exception)
 
     def ble_dev(self) -> BLEDevice:
         return self._ble_dev
-
-    @property
-    def _state(self) -> ConnectionState:
-        return self._connection_state
-
-    @_state.setter
-    def _state(self, value: ConnectionState):
-        self._connection_state = value
-        self._on_state_change(value)
 
     def with_logging_options(self, options: LogOptions):
         self._logger.set_options(options)
@@ -237,17 +274,19 @@ class Connection:
         max_attempts: int = MAX_CONNECT_ATTEMPTS,
         timeout: int = 20,
     ):
-        if self._state.is_connecting():
+        if self._state.is_connecting:
             return
 
         self._connection_attempt += 1
         if self._connection_attempt > MAX_CONNECTION_ATTEMPTS:
             self._connection_attempt = 0
-            self._notify_disconnect(self._last_exception)
-            raise MaxConnectionAttemptsReached(
+            err = MaxConnectionAttemptsReached(
                 last_error=self._last_exception,
                 attempts=MAX_CONNECTION_ATTEMPTS,
             )
+            self._set_state(ConnectionState.ERROR_MAX_RECONNECT_ATTEMPTS_REACHED, err)
+            self._notify_disconnect(self._last_exception)
+            raise err
 
         self._connected.clear()
         self._disconnected.clear()
@@ -291,6 +330,7 @@ class Connection:
             self.disconnected()
             return
 
+        self._set_state(ConnectionState.CONNECTED)
         self._logger.info("Connected")
         self._errors = 0
         self._retry_on_disconnect = self._reconnect
@@ -381,14 +421,17 @@ class Connection:
         if self._client is not None and self._client.is_connected:
             self._set_state(ConnectionState.DISCONNECTING)
             await self._client.disconnect()
-            self._on_disconnected()
 
         self._client = None
-        self._set_state(ConnectionState.DISCONNECTED)
+        if self._state == ConnectionState.DISCONNECTING:
+            self._set_state(ConnectionState.DISCONNECTED)
 
     async def wait_connected(self, timeout: int = 20):
         """Will release when connection is happened and authenticated"""
         last_state = self._state
+        if self.is_connected:
+            return
+
         try:
             await asyncio.wait_for(self._connected.wait(), timeout=timeout)
         except TimeoutError as e:
@@ -404,7 +447,7 @@ class Connection:
             )
 
     async def wait_until_authenticated_or_error(self, raise_on_error: bool = False):
-        while not self._state.is_terminal():
+        while not self._state.is_terminal:
             await self._state_changed.wait()
 
             if (
@@ -426,8 +469,16 @@ class Connection:
 
         return self._state
 
+    async def observe_connection(self):
+        while True:
+            yield self._state
+            await self._state_changed.wait()
+
     async def wait_disconnected(self):
         """Will release when client got disconnected from the device"""
+        if not self.is_connected:
+            return
+
         await self._disconnected.wait()
 
     async def add_error(self, exception: Exception):
@@ -449,6 +500,7 @@ class Connection:
 
     @_state.setter
     def _state(self, value: ConnectionState):
+        self._last_state = self._connection_state
         self._connection_state = value
         self._state_changed.set()
         self._state_changed.clear()
@@ -461,10 +513,9 @@ class Connection:
         if exc is not None:
             self._last_exception = exc
 
-        self._last_state = self._state
         self._state = state
 
-        if state.is_error():
+        if state.is_error:
             self._notify_disconnect(exc)
 
     # En/Decrypt functions must create AES object every time, because
@@ -601,13 +652,15 @@ class Connection:
                 )
 
                 # Parse packet
+                self._on_packet_data_received(payload)
                 packet = await self._packet_parse(payload)
+                self._on_packet_parsed(packet)
                 self._logger.log_filtered(
                     LogOptions.PACKETS,
                     "Parsed packet: %s",
                     packet,
                 )
-                if packet is not None:
+                if not Packet.is_invalid(packet):
                     packets.append(packet)
             except Exception as e:  # noqa: BLE001
                 await self.add_error(e)
@@ -883,7 +936,6 @@ class Connection:
                     continue
 
             if not processed:
-                self._unprocessed_payloads.append(packet.payload)
                 self._logger.log_filtered(
                     LogOptions.CONNECTION_DEBUG, "listenForDataHandler: %r", packet
                 )

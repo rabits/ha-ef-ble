@@ -1,5 +1,6 @@
 import logging
 import struct
+from typing import TypeGuard
 
 from .crc import crc8, crc16
 
@@ -86,42 +87,34 @@ class Packet:
         return self._product_id
 
     @staticmethod
-    def fromBytes(data, is_xor=False, return_error: bool = False):
+    def fromBytes(data, is_xor=False):
         """Deserializes bytes stream into internal data"""
         if not data.startswith(Packet.PREFIX):
             error_msg = "Unable to parse packet - prefix is incorrect: %s"
             _LOGGER.error(error_msg, bytearray(data).hex())
-            if return_error:
-                return error_msg % bytearray(data).hex()
-            return None
+            return InvalidPacket(error_msg % bytearray(data).hex())
 
         version = data[1]
-        if (version == 2 and len(data) < 18) or (version == 3 and len(data) < 20):
-            _LOGGER.error(
-                "Unable to parse packet - too small: %s", bytearray(data).hex()
-            )
-            return None
+        if (version == 2 and len(data) < 18) or (version in [3, 4] and len(data) < 20):
+            error_msg = "Unable to parse packet - too small: %s"
+            _LOGGER.error(error_msg, bytearray(data).hex())
+            return InvalidPacket(error_msg % bytearray(data).hex())
 
         payload_length = struct.unpack("<H", data[2:4])[0]
 
         # there are also version 19 packets that do not contain crc16 checksum
-        if version in [2, 3]:
+        if version in [2, 3, 4]:
             # Check whole packet CRC16
             if crc16(data[:-2]) != struct.unpack("<H", data[-2:])[0]:
                 error_msg = "Unable to parse packet - incorrect CRC16: %s"
                 _LOGGER.error(error_msg, bytearray(data).hex())
-                if return_error:
-                    return error_msg % bytearray(data).hex()
-
-                return None
+                return InvalidPacket(error_msg % bytearray(data).hex())
 
         # Check header CRC8
         if crc8(data[:4]) != data[4]:
             error_msg = "Unable to parse packet - incorrect header CRC8: %s"
             _LOGGER.error(error_msg, bytearray(data).hex())
-            if return_error:
-                return error_msg % bytearray(data).hex()
-            return None
+            return InvalidPacket(error_msg % bytearray(data).hex())
 
         # data[4] # crc8 of header
         # product_id = data[5] # We can't determine the product id from the bytestream
@@ -151,7 +144,17 @@ class Packet:
             if version == 19 and payload[-2:] == b"\xbb\xbb":
                 payload = payload[:-2]
 
-        return Packet(src, dst, cmd_set, cmd_id, payload, dsrc, ddst, version, seq)
+        return Packet(
+            src=src,
+            dst=dst,
+            cmd_set=cmd_set,
+            cmd_id=cmd_id,
+            payload=payload,
+            dsrc=dsrc,
+            ddst=ddst,
+            version=version,
+            seq=seq,
+        )
 
     def toBytes(self):
         """Will serialize the internal data to bytes stream"""
@@ -199,3 +202,22 @@ class Packet:
             f"product_id=0x{self._product_id:02X}"
             ")"
         )
+
+    @staticmethod
+    def is_invalid(packet: "Packet") -> TypeGuard["InvalidPacket"]:
+        """Check if the given packet is invalid"""
+        return isinstance(packet, InvalidPacket)
+
+
+class InvalidPacket(Packet):
+    """Represents an invalid packet that could not be parsed"""
+
+    def __init__(self, error_message: str):
+        super().__init__(src=0, dst=0, cmd_set=0, cmd_id=0, payload=b"")
+        self.error_message = error_message
+
+    def __bool__(self):
+        return False
+
+    def __repr__(self):
+        return f"InvalidPacket(error_message='{self.error_message}')"

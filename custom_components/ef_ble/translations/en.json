@@ -16,7 +16,8 @@
       "bt_timeout": "Could not connect to the device - connection timed out",
       "bt_not_found": "Device was not found - try refreshing the bluetooth integration if this error occurs repeatedly",
       "bt_general_error": "Could not connect to the device - see the logs for more details",
-      "error_try_refresh": "Connection disconnected before it could authenticate - try refreshing before adding the device"
+      "error_try_refresh": "Device disconnected before it could authenticate - try refreshing and reloading the bluetooth adapter",
+      "error_try_refresh_unsupported": "Device disconnected before it could authenticate - try changing packet version. If that does not help and resubmitting after reloading does not work, this device probably uses different auth procedure and has to be reverse engineered."
     },
     "step": {
       "bluetooth_confirm": {
@@ -33,11 +34,15 @@
         },
         "sections": {
           "login": {
-            "name": "EcoFlow Login (skip if you already know your user ID)",
+            "name": "EcoFlow Login (skip if you already have your user ID)",
+            "description": "After you click Submit with your login information filled in, your EcoFlow User ID will be automatically populated and this form will clear itself. Only your user ID is required so you will not be able to proceed to the next page unless this section is empty.",
             "data": {
               "email": "Email",
               "password": "Password",
-              "region": "Region (try different region if you get 'Account does not exist' or 'user ID may be incorrect' error)"
+              "region": "Region"
+            },
+            "data_description": {
+              "region": "If you receive an \"Account does not exist\" message after logging in, or if the connection fails with \"User ID may be incorrect\", try selecting a different region."
             }
           },
           "log_options": {
@@ -57,6 +62,7 @@
       },
       "user": {
         "title": "Add EcoFlow Device",
+        "description": "Devices labeled as [Unsupported] do not expose any sensors but can be used to provide data for implementing support. Refer to the wiki for additional information.",
         "data": {
           "address": "BLE Device"
         }
@@ -75,11 +81,15 @@
         },
         "sections": {
           "login": {
-            "name": "EcoFlow Login (skip if you already know your user ID)",
+            "name": "EcoFlow Login (skip if you already have your user ID)",
+            "description": "After you click Submit with your login information filled in, your EcoFlow User ID will be automatically populated and this form will clear itself. Only your user ID is required so you will not be able to proceed to the next page unless this section is empty.",
             "data": {
               "email": "Email",
               "password": "Password",
-              "region": "Region (try different region if you get 'Account does not exist' or 'user ID may be incorrect' error)"
+              "region": "Region"
+            },
+            "data_description": {
+              "region": "If you receive an \"Account does not exist\" message after logging in, or if the connection fails with \"User ID may be incorrect\", try selecting a different region."
             }
           },
           "log_options": {
@@ -102,22 +112,30 @@
         "data": {
           "user_id": "EcoFlow User ID",
           "update_period": "Update Period",
-          "is_xor": "Use XOR for packet decoding"
+          "packet_version": "Packet Version",
+          "connection_timeout": "Connection Timeout"
         },
         "data_description": {
-          "update_period": "Number of seconds to wait before processing the next device update. A default value of 0 means all updates are processed immediately (may result in a high number of DB writes)."
+          "update_period": "Number of seconds to wait before processing the next device update. A default value of 0 means all updates are processed immediately (may result in a high number of DB writes).",
+          "packet_version": "Version of packets to use - depends on the generation and firmware of this device. Try different version if connection/authentication fails.\nNote that some devices may use packet version that is not yet supported by this integration.",
+          "connection_timeout": "Number of seconds to wait for the device to connect and authenticate."
         },
         "sections": {
           "login": {
-            "name": "EcoFlow Login (skip if you already know your user ID)",
+            "name": "EcoFlow Login (skip if you already have your user ID)",
+            "description": "After you click Submit with your login information filled in, your EcoFlow User ID will be automatically populated and this form will clear itself. Only your user ID is required so you will not be able to proceed to the next page unless this section is empty.",
             "data": {
               "email": "Email",
-              "password": "Password"
+              "password": "Password",
+              "region": "Region"
+            },
+            "data_description": {
+              "region": "If you receive an \"Account does not exist\" message after logging in, or if the connection fails with \"User ID may be incorrect\", try selecting a different region."
             }
           },
           "log_options": {
             "name": "Logging Options",
-            "description": "Detailed logging options. Most of these will flood your logs, so avoid leaving them enabled for long periods.",
+            "description": "Advanced logging options. Most of these settings will generate a large volume of log output, so it is recommended not to leave them enabled for extended periods.",
             "data": {
                 "log_masked": "Mask sensitive information (useful when sharing logs publicly)",
                 "log_connection": "Log device connection requests and responses",
@@ -134,7 +152,15 @@
         "data": {
           "user_id": "EcoFlow User ID"
         }
+      },
+      "connecting": {
+        "title": "Connecting to device"
       }
+    },
+    "progress": {
+      "connecting": "Connecting to device...",
+      "authenticating": "Connection successful, running authentication procedure...",
+      "disconnecting": "Sucess! Disconnecting from device..."
     }
   },
   "options": {
@@ -142,10 +168,13 @@
       "init": {
         "title": "Options for {device_name}",
         "data": {
-          "update_period": "Update Period"
+          "update_period": "Update Period",
+          "collect_packets": "Enable packet collection for diagnostics",
+          "collect_packets_amount": "Number of packets to store for diagnostics"
         },
         "data_description": {
-          "update_period": "Number of seconds to wait before processing the next device update. Value of 0 means all updates are processed immediately (will result in a high number of DB writes)."
+          "update_period": "Number of seconds to wait before processing the next device update. Value of 0 means all updates are processed immediately (will result in a high number of DB writes).",
+          "collect_packets": "Enabling this option will start storing packets for diagnostics info - wait a minute after you enable this option before downloading diagnostics info and don't forget to turn it off.\nSome devices may contain identifying information in their messages such as your exact location so be careful when sharing info with this option enabled."
         },
         "sections": {
           "log_options": {

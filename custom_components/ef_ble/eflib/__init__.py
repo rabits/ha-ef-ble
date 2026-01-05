@@ -1,6 +1,5 @@
 """Library for EcoFlow BLE protocol"""
 
-import logging
 from typing import TypeGuard
 
 from bleak.backends.device import BLEDevice
@@ -9,8 +8,6 @@ from bleak.backends.scanner import AdvertisementData
 from . import devices
 from .devicebase import DeviceBase
 from .devices import unsupported
-
-_LOGGER = logging.getLogger(__name__)
 
 
 def sn_from_advertisement(adv_data: AdvertisementData):

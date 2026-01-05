@@ -1,7 +1,6 @@
 from homeassistant.core import HomeAssistant
 
 from . import DeviceConfigEntry
-from .eflib import is_unsupported
 
 
 async def async_get_config_entry_diagnostics(
@@ -16,22 +15,14 @@ async def async_get_config_entry_diagnostics(
         "default_name": device._default_name,
         "sn_prefix": device._sn[:4],
         "connection_state": device.connection_state,
-        "connection_state_history": list(device._connection_log.history),
+        "connection_state_history": list(device.connection_log.history),
     }
 
-    if is_unsupported(device):
+    if device.diagnostics.is_enabled:
         connection_setup = await hass.async_add_executor_job(
-            device._connection_log.load_from_cache
+            device.connection_log.load_from_cache
         )
-
-        diagnostics |= {
-            "last_packets": list(device.last_packets),
-            "last_packet_errors": list(device.last_errors),
-            "last_error": (
-                list(device._conn._last_errors) if device._conn is not None else None
-            ),
-            "diconnect_times": list(device.disconnect_times),
-            "connection_setup": connection_setup,
-        }
+        diagnostics |= device.diagnostics.as_dict()
+        diagnostics |= {"connection_setup": connection_setup}
 
     return diagnostics

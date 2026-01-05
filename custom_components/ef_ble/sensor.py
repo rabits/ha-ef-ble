@@ -810,6 +810,7 @@ SENSOR_TYPES: dict[str, SensorEntityDescription] = {
         name="Collecting data",
         translation_key="collecting_data",
         device_class=SensorDeviceClass.ENUM,
+        entity_category=EntityCategory.DIAGNOSTIC,
     ),
 }
 

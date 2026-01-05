@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import base64
+import enum
 import logging
 from collections.abc import Mapping
 from functools import cached_property
@@ -25,12 +26,17 @@ from homeassistant.const import CONF_ADDRESS, CONF_EMAIL, CONF_PASSWORD, CONF_RE
 from homeassistant.core import callback
 from homeassistant.data_entry_flow import section
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
+from homeassistant.helpers.selector import (
+    SelectSelector,
+    SelectSelectorConfig,
+    SelectSelectorMode,
+)
 from homeassistant.helpers.storage import Store
-
-from custom_components.ef_ble.eflib.devices import unsupported
 
 from . import eflib
 from .const import (
+    CONF_COLLECT_PACKETS,
+    CONF_COLLECT_PACKETS_AMOUNT,
     CONF_CONNECTION_TIMEOUT,
     CONF_LOG_BLEAK,
     CONF_LOG_CONNECTION,
@@ -39,6 +45,7 @@ from .const import (
     CONF_LOG_MESSAGES,
     CONF_LOG_PACKETS,
     CONF_LOG_PAYLOADS,
+    CONF_PACKET_VERSION,
     CONF_UPDATE_PERIOD,
     CONF_USER_ID,
     DEFAULT_CONNECTION_TIMEOUT,
@@ -49,6 +56,25 @@ from .eflib.connection import ConnectionState
 from .eflib.logging_util import LogOptions
 
 _LOGGER = logging.getLogger(__name__)
+
+
+class PacketVersion(enum.StrEnum):
+    """Enum for mapping packet version numbers to strings used from HA"""
+
+    V2 = "v2"
+    V3 = "v3"
+
+    def to_num(self):
+        """Get packet version as number used for device config"""
+        return int(self.value.split("v")[1])
+
+    @classmethod
+    def from_str(cls, value: str | None):
+        """Get PacketVersion from string, defaulting to V3 if invalid"""
+        try:
+            return cls(value)
+        except ValueError:
+            return PacketVersion.V3
 
 
 class EFBLEConfigFlow(ConfigFlow, domain=DOMAIN):
@@ -122,17 +148,15 @@ class EFBLEConfigFlow(ConfigFlow, domain=DOMAIN):
             step_id="bluetooth_confirm",
             description_placeholders=placeholders,
             errors=errors,
-            data_schema=vol.Schema(
-                {
-                    vol.Optional(CONF_USER_ID, default=self._user_id): str,
-                    **self._login_option(),
-                    vol.Required(CONF_ADDRESS): vol.In([full_name]),
-                    **_update_period_option(),
-                    **_timeout_option(),
-                    **ConfLogOptions.schema(
-                        ConfLogOptions.to_config(self._log_options)
-                    ),
-                }
+            data_schema=(
+                schema_builder()
+                .user_id(self._user_id)
+                .login(self._email, self._collapsed)
+                .required(CONF_ADDRESS, vol.In([full_name]))
+                .update_period()
+                .timeout()
+                .conf_log(self._log_options)
+                .build()
             ),
         )
 
@@ -146,13 +170,14 @@ class EFBLEConfigFlow(ConfigFlow, domain=DOMAIN):
                 user_input[CONF_ADDRESS]
             ]
 
-            if isinstance(self._discovered_device, unsupported.UnsupportedDevice):
+            if eflib.is_unsupported(self._discovered_device):
                 return await self.async_step_unsupported_device()
 
             return await self.async_step_device_confirm()
 
         current_addresses = self._async_current_ids()
-        for discovery_info in async_discovered_service_info(self.hass, False):
+
+        for discovery_info in async_discovered_service_info(self.hass):
             address = discovery_info.address
             self._set_name_from_discovery(discovery_info)
             if address in current_addresses or address in self._discovered_devices:
@@ -165,21 +190,28 @@ class EFBLEConfigFlow(ConfigFlow, domain=DOMAIN):
             if device is not None:
                 self._discovered_devices[address] = device
                 self._set_name_from_discovery(discovery_info, device.name)
-                name = f"{device.device} - {self._local_names[address]}"
+                name = f"{self._local_names[address]} - {device.device}"
+                if eflib.is_unsupported(device):
+                    name = f"[Unsupported] {name.replace('[Unsupported]', '')}"
                 self._device_by_display_name[f"{name} ({address})"] = device
 
         if not self._discovered_devices:
             return self.async_abort(reason="no_devices_found")
 
+        device_by_name_sorted = dict(
+            sorted(
+                self._device_by_display_name.items(),
+                key=lambda item: eflib.is_unsupported(item[1]),
+            )
+        )
+
         return self.async_show_form(
             step_id="user",
             last_step=False,
-            data_schema=vol.Schema(
-                {
-                    vol.Required(CONF_ADDRESS): vol.In(
-                        self._device_by_display_name.keys()
-                    ),
-                }
+            data_schema=(
+                schema_builder()
+                .required(CONF_ADDRESS, vol.In(device_by_name_sorted.keys()))
+                .build()
             ),
         )
 
@@ -217,16 +249,14 @@ class EFBLEConfigFlow(ConfigFlow, domain=DOMAIN):
             step_id="device_confirm",
             errors=errors,
             description_placeholders=placeholders,
-            data_schema=vol.Schema(
-                {
-                    vol.Optional(CONF_USER_ID, default=self._user_id): str,
-                    **self._login_option(),
-                    **_update_period_option(),
-                    **_timeout_option(),
-                    **ConfLogOptions.schema(
-                        ConfLogOptions.to_config(self._log_options)
-                    ),
-                }
+            data_schema=(
+                schema_builder()
+                .user_id(self._user_id)
+                .login(self._email, self._collapsed)
+                .update_period()
+                .timeout()
+                .conf_log(self._log_options)
+                .build()
             ),
         )
 
@@ -252,15 +282,23 @@ class EFBLEConfigFlow(ConfigFlow, domain=DOMAIN):
             step_id="unsupported_device",
             errors=errors,
             description_placeholders=placeholders,
-            data_schema=vol.Schema(
-                {
-                    vol.Optional(CONF_USER_ID, default=self._user_id): str,
-                    **self._login_option(),
-                    **_update_period_option(),
-                    **ConfLogOptions.schema(
-                        ConfLogOptions.to_config(self._log_options)
+            data_schema=(
+                schema_builder()
+                .user_id(self._user_id)
+                .optional(
+                    CONF_PACKET_VERSION,
+                    SelectSelector(
+                        SelectSelectorConfig(
+                            options=list(PacketVersion),
+                            mode=SelectSelectorMode.DROPDOWN,
+                        ),
                     ),
-                }
+                    default=PacketVersion.from_str(f"v{device.packet_version}"),
+                )
+                .login(self._email, self._collapsed)
+                .timeout()
+                .conf_log(self._log_options)
+                .build()
             ),
         )
 
@@ -285,12 +323,10 @@ class EFBLEConfigFlow(ConfigFlow, domain=DOMAIN):
 
         return self.async_show_form(
             step_id="reconfigure",
-            data_schema=vol.Schema(
-                {
-                    vol.Required(
-                        CONF_USER_ID, default=reconfigure_entry.data.get(CONF_USER_ID)
-                    ): str,
-                }
+            data_schema=(
+                schema_builder()
+                .user_id(reconfigure_entry.data.get(CONF_USER_ID))
+                .build()
             ),
             errors=errors,
         )
@@ -302,13 +338,16 @@ class EFBLEConfigFlow(ConfigFlow, domain=DOMAIN):
     ) -> OptionsFlow:
         return OptionsFlowHandler()
 
-    async def _validate_current_device(self, user_input: dict[str, Any]):
+    async def _validate_current_device(
+        self, user_input: dict[str, Any]
+    ) -> dict[str, Any]:
         errors = {}
         try:
             assert self._discovered_device is not None
 
             device = self._discovered_device
             address = device.address
+
             await self.async_set_unique_id(address, raise_on_progress=False)
             self._abort_if_unique_id_configured()
 
@@ -328,26 +367,7 @@ class EFBLEConfigFlow(ConfigFlow, domain=DOMAIN):
         entry_data["local_name"] = self._local_names.get(device.address, None)
         entry_data.pop("login", None)
 
-        return self.async_create_entry(
-            title=self._local_names[device.address], data=entry_data
-        )
-
-    def _login_option(self):
-        return {
-            vol.Required("login"): section(
-                vol.Schema(
-                    {
-                        vol.Optional(CONF_EMAIL, default=self._email): str,
-                        vol.Optional(CONF_PASSWORD, default=""): str,
-                        vol.Optional(
-                            CONF_REGION,
-                            default="Auto",
-                        ): vol.In(["Auto", "EU", "US"]),
-                    }
-                ),
-                {"collapsed": self._collapsed},
-            ),
-        }
+        return self.async_create_entry(title=device.name, data=entry_data)
 
     async def _validate_user_id(
         self, device: eflib.DeviceBase, user_input: dict[str, Any]
@@ -358,7 +378,8 @@ class EFBLEConfigFlow(ConfigFlow, domain=DOMAIN):
         password = user_input.get("login", {}).get(CONF_PASSWORD, "")
         region = user_input.get("login", {}).get(CONF_REGION, "")
         user_id = user_input.get(CONF_USER_ID, "")
-        timeout = user_input.get(CONF_CONNECTION_TIMEOUT, 20)
+        timeout = user_input.get(CONF_CONNECTION_TIMEOUT, DEFAULT_CONNECTION_TIMEOUT)
+        packet_version = PacketVersion.from_str(user_input.get(CONF_PACKET_VERSION))
 
         self._collapsed = False
 
@@ -374,14 +395,19 @@ class EFBLEConfigFlow(ConfigFlow, domain=DOMAIN):
 
         self._user_id = user_id
 
-        device.with_logging_options(ConfLogOptions.from_config(user_input))
+        device.with_logging_options(
+            ConfLogOptions.from_config(user_input)
+        ).with_packet_version(packet_version.to_num())
 
-        with device.log_connection_to_file():
-            await device.connect(self._user_id)
+        await device.connect(self._user_id)
+        try:
             conn_state = await asyncio.wait_for(
                 device.wait_until_authenticated_or_error(), timeout
             )
-            await device.disconnect()
+        except TimeoutError:
+            conn_state = device.connection_state
+
+        await device.disconnect()
 
         error = None
         match conn_state:
@@ -399,7 +425,11 @@ class EFBLEConfigFlow(ConfigFlow, domain=DOMAIN):
                 self._user_id_validated = True
                 await self._store.async_save(data={"user_id": self._user_id})
             case _:
-                error = "error_try_refresh"
+                error = (
+                    "error_try_refresh"
+                    if not eflib.is_unsupported(device)
+                    else "error_try_refresh_unsupported"
+                )
 
         await device.wait_disconnected()
 
@@ -462,25 +492,38 @@ class OptionsFlowHandler(OptionsFlow):
         if user_input is not None:
             return self.async_create_entry(data=user_input)
 
+        device: eflib.DeviceBase | None = getattr(
+            self.config_entry, "runtime_data", None
+        )
+
         merged_entry = self.config_entry.data | self.config_entry.options
         options = {
             CONF_UPDATE_PERIOD: merged_entry.get(
                 CONF_UPDATE_PERIOD, DEFAULT_UPDATE_PERIOD
             ),
+            CONF_COLLECT_PACKETS: merged_entry.get(
+                CONF_COLLECT_PACKETS, eflib.is_unsupported(device)
+            ),
         }
-
-        device: eflib.DeviceBase | None = getattr(
-            self.config_entry, "runtime_data", None
-        )
 
         return self.async_show_form(
             step_id="init",
             data_schema=self.add_suggested_values_to_schema(
-                vol.Schema(
-                    {
-                        **_update_period_option(),
-                        **ConfLogOptions.schema(merged_entry, False),
-                    }
+                (
+                    schema_builder()
+                    .update_period(condition=not eflib.is_unsupported(device))
+                    .optional(CONF_COLLECT_PACKETS, bool, eflib.is_unsupported(device))
+                    .optional(
+                        key=CONF_COLLECT_PACKETS_AMOUNT,
+                        selector=int,
+                        default=(
+                            device.diagnostics.packet_buffer_size
+                            if device is not None
+                            else 100
+                        ),
+                    )
+                    .update(ConfLogOptions.schema(merged_entry, collapsed=False))
+                    .build()
                 ),
                 options,
             ),
@@ -543,17 +586,75 @@ class ConfLogOptions:
         }
 
 
-def _update_period_option(default: int = DEFAULT_UPDATE_PERIOD):
-    return {
-        vol.Optional(CONF_UPDATE_PERIOD, default=default): vol.All(
-            int, vol.Range(min=0)
+class _SchemaBuilder:
+    def __init__(self, schema: dict | None = None):
+        self._schema = schema or {}
+
+    def user_id(self, user_id: str, required: bool = False):
+        marker = vol.Required if required else vol.Optional
+
+        return self.update({marker(CONF_USER_ID, default=user_id): str})
+
+    def login(self, email: str, collapsed: bool = True):
+        return self.update(
+            {
+                vol.Required("login"): section(
+                    schema=(
+                        schema_builder()
+                        .optional(CONF_EMAIL, str, email)
+                        .optional(CONF_PASSWORD, str, "")
+                        .optional(CONF_REGION, vol.In(["Auto", "EU", "US"]), "Auto")
+                        .build()
+                    ),
+                    options={"collapsed": collapsed},
+                ),
+            }
         )
-    }
+
+    def update_period(
+        self, default: int = DEFAULT_UPDATE_PERIOD, condition: bool = True
+    ):
+        return self.optional(
+            key=CONF_UPDATE_PERIOD,
+            selector=vol.All(int, vol.Range(min=0)),
+            default=default,
+            condition=condition,
+        )
+
+    def timeout(self, default: int = DEFAULT_CONNECTION_TIMEOUT):
+        return self.optional(
+            key=CONF_CONNECTION_TIMEOUT,
+            selector=vol.All(int, vol.Range(min=0)),
+            default=default,
+        )
+
+    def conf_log(self, options: LogOptions):
+        return self.update(ConfLogOptions.schema(ConfLogOptions.to_config(options)))
+
+    def build(self):
+        return vol.Schema(self._schema)
+
+    def update(self, entry: dict):
+        return _SchemaBuilder(self._schema | entry)
+
+    def required(self, key: str, selector: Any, condition: bool = True):
+        if not condition:
+            return self
+
+        return self.update({vol.Required(key): selector})
+
+    def optional(
+        self,
+        key: str,
+        selector: Any,
+        default: Any = vol.UNDEFINED,
+        condition: bool = True,
+    ):
+        if not condition:
+            return self
+
+        return self.update({vol.Optional(key, default=default): selector})
 
 
-def _timeout_option(default: int = DEFAULT_CONNECTION_TIMEOUT):
-    return {
-        vol.Optional(CONF_CONNECTION_TIMEOUT, default=default): vol.All(
-            int, vol.Range(min=0)
-        )
-    }
+def schema_builder():
+    return _SchemaBuilder()

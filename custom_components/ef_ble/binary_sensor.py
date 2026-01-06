@@ -117,6 +117,11 @@ BINARY_SENSOR_TYPES = {
     ),
     # SHP2 Binary Sensors - dynamically generated
     **_create_shp2_binary_sensors(),
+    "collecting_data": BinarySensorEntityDescription(
+        key="collecting_data",
+        name="Collecting data",
+        translation_key="collecting_data",
+    ),
 }
 
 

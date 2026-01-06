@@ -28,7 +28,7 @@ class DeviceBase(abc.ABC):
         self._sn = sn
         # We can't use advertisement name here - it's prone to change to "Ecoflow-dev"
         self._name = self.NAME_PREFIX + self._sn[-4:]
-        self._name_by_user = self._name
+        self._name_by_user = None
         self._ble_dev = ble_dev
         self._address = ble_dev.address
 
@@ -68,8 +68,8 @@ class DeviceBase(abc.ABC):
         return self._name
 
     @property
-    def name_by_user(self):
-        return self._name_by_user
+    def name_by_user(self) -> str:
+        return self._name_by_user if self._name_by_user is not None else self.name
 
     @property
     def serial_number(self):

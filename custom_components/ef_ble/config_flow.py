@@ -27,6 +27,8 @@ from homeassistant.data_entry_flow import section
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.storage import Store
 
+from custom_components.ef_ble.eflib.devices import unsupported
+
 from . import eflib
 from .const import (
     CONF_CONNECTION_TIMEOUT,
@@ -62,6 +64,8 @@ class EFBLEConfigFlow(ConfigFlow, domain=DOMAIN):
         self._discovery_info: BluetoothServiceInfoBleak | None = None
         self._discovered_device: eflib.DeviceBase | None = None
         self._discovered_devices: dict[str, eflib.DeviceBase] = {}
+        self._device_by_display_name: dict[str, eflib.DeviceBase] = {}
+        self._local_names: dict[str, str] = {}
 
         self._user_id: str = ""
         self._email: str = ""
@@ -81,6 +85,8 @@ class EFBLEConfigFlow(ConfigFlow, domain=DOMAIN):
             return self.async_abort(reason="not_supported")
         self._discovery_info = discovery_info
         self._discovered_device = device
+        self._set_name_from_discovery(self._discovery_info, device.name)
+
         _LOGGER.debug("Discovered device: %s", device)
         return await self.async_step_bluetooth_confirm()
 
@@ -93,7 +99,7 @@ class EFBLEConfigFlow(ConfigFlow, domain=DOMAIN):
         assert self._discovery_info is not None
 
         errors = {}
-        title = device.name_by_user or device.name
+        title = f"{device.device} ({self._local_names[device.address]})"
 
         if data := await self._store.async_load():
             self._user_id = data["user_id"]
@@ -106,11 +112,12 @@ class EFBLEConfigFlow(ConfigFlow, domain=DOMAIN):
         if user_input is not None:
             errors |= await self._validate_user_id(self._discovered_device, user_input)
             if not errors and self._user_id_validated:
-                user_input[CONF_ADDRESS] = device.address
-                user_input.pop("login", None)
-                return self.async_create_entry(title=title, data=user_input)
+                return self._create_entry(user_input, device)
             self._log_options = ConfLogOptions.from_config(user_input)
 
+        full_name = (
+            f"{device.device} - {self._local_names[device.address]} [{device.address}]"
+        )
         return self.async_show_form(
             step_id="bluetooth_confirm",
             description_placeholders=placeholders,
@@ -119,7 +126,7 @@ class EFBLEConfigFlow(ConfigFlow, domain=DOMAIN):
                 {
                     vol.Optional(CONF_USER_ID, default=self._user_id): str,
                     **self._login_option(),
-                    vol.Required(CONF_ADDRESS): vol.In([f"{title} ({device.address})"]),
+                    vol.Required(CONF_ADDRESS): vol.In([full_name]),
                     **_update_period_option(),
                     **_timeout_option(),
                     **ConfLogOptions.schema(
@@ -133,53 +140,84 @@ class EFBLEConfigFlow(ConfigFlow, domain=DOMAIN):
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
         """Handle the user step to pick discovered device."""
-        errors = {}
-
-        if data := await self._store.async_load():
-            self._user_id = data["user_id"]
 
         if user_input is not None:
-            try:
-                device = self._discovered_devices[user_input[CONF_ADDRESS]]
-                address = device.address
-                await self.async_set_unique_id(address, raise_on_progress=False)
-                self._abort_if_unique_id_configured()
-                title = device.name_by_user or device.name
+            self._discovered_device = self._device_by_display_name[
+                user_input[CONF_ADDRESS]
+            ]
 
-                errors |= await self._validate_user_id(device, user_input)
-                if not errors and self._user_id_validated:
-                    user_input[CONF_ADDRESS] = device.address
-                    user_input.pop("login")
+            if isinstance(self._discovered_device, unsupported.Device):
+                return await self.async_step_unsupported_device()
 
-                    return self.async_create_entry(title=title, data=user_input)
-                self._log_options = ConfLogOptions.from_config(user_input)
-            except Exception:  # pylint: disable=broad-except
-                _LOGGER.exception("Unexpected exception")
-                errors["base"] = "unknown"
+            return await self.async_step_device_confirm()
 
         current_addresses = self._async_current_ids()
         for discovery_info in async_discovered_service_info(self.hass, False):
             address = discovery_info.address
             if address in current_addresses or address in self._discovered_devices:
                 continue
+
             device = eflib.NewDevice(
                 discovery_info.device, discovery_info.advertisement
             )
+
             if device is not None:
-                name = device.name_by_user or device.name
-                self._discovered_devices[f"{name} ({address})"] = device
+                self._discovered_devices[address] = device
+                self._set_name_from_discovery(discovery_info, device.name)
+                name = f"{device.device} - {self._local_names[address]}"
+                self._device_by_display_name[f"{name} ({address})"] = device
 
         if not self._discovered_devices:
             return self.async_abort(reason="no_devices_found")
 
         return self.async_show_form(
             step_id="user",
+            last_step=False,
+            data_schema=vol.Schema(
+                {
+                    vol.Required(CONF_ADDRESS): vol.In(
+                        self._device_by_display_name.keys()
+                    ),
+                }
+            ),
+        )
+
+    def _set_name_from_discovery(
+        self, discovery_info: BluetoothServiceInfoBleak, default: str
+    ):
+        if (
+            local_name := discovery_info.advertisement.local_name
+        ) is None or "ecoflow" in local_name.lower():
+            local_name = default
+
+        self._local_names[discovery_info.address] = local_name
+        return local_name
+
+    async def async_step_device_confirm(self, user_input: dict[str, Any] | None = None):
+        assert self._discovered_device is not None
+        device = self._discovered_device
+
+        errors = {}
+
+        if data := await self._store.async_load():
+            self._user_id = data["user_id"]
+
+        if user_input is not None:
+            errors |= await self._validate_current_device(user_input)
+            if not errors:
+                return self._create_entry(user_input, device)
+
+        placeholders = {"name": device.device}
+        self.context["title_placeholders"] = placeholders
+
+        return self.async_show_form(
+            step_id="device_confirm",
             errors=errors,
+            description_placeholders=placeholders,
             data_schema=vol.Schema(
                 {
                     vol.Optional(CONF_USER_ID, default=self._user_id): str,
                     **self._login_option(),
-                    vol.Required(CONF_ADDRESS): vol.In(self._discovered_devices.keys()),
                     **_update_period_option(),
                     **_timeout_option(),
                     **ConfLogOptions.schema(
@@ -189,22 +227,39 @@ class EFBLEConfigFlow(ConfigFlow, domain=DOMAIN):
             ),
         )
 
-    def _login_option(self):
-        return {
-            vol.Required("login"): section(
-                vol.Schema(
-                    {
-                        vol.Optional(CONF_EMAIL, default=self._email): str,
-                        vol.Optional(CONF_PASSWORD, default=""): str,
-                        vol.Optional(
-                            CONF_REGION,
-                            default="Auto",
-                        ): vol.In(["Auto", "EU", "US"]),
-                    }
-                ),
-                {"collapsed": self._collapsed},
+    async def async_step_unsupported_device(
+        self, user_input: dict[str, Any] | None = None
+    ):
+        assert eflib.is_unsupported(self._discovered_device)
+        device = self._discovered_device
+
+        if data := await self._store.async_load():
+            self._user_id = data["user_id"]
+
+        errors = {}
+        if user_input is not None:
+            errors |= await self._validate_current_device(user_input)
+            if not errors:
+                return self._create_entry(user_input, device)
+
+        placeholders = {"name": device.device}
+        self.context["title_placeholders"] = placeholders
+
+        return self.async_show_form(
+            step_id="unsupported_device",
+            errors=errors,
+            description_placeholders=placeholders,
+            data_schema=vol.Schema(
+                {
+                    vol.Optional(CONF_USER_ID, default=self._user_id): str,
+                    **self._login_option(),
+                    **_update_period_option(),
+                    **ConfLogOptions.schema(
+                        ConfLogOptions.to_config(self._log_options)
+                    ),
+                }
             ),
-        }
+        )
 
     async def async_step_reconfigure(
         self, user_input: dict[str, Any] | None = None
@@ -243,6 +298,53 @@ class EFBLEConfigFlow(ConfigFlow, domain=DOMAIN):
         config_entry: ConfigEntry[eflib.DeviceBase],
     ) -> OptionsFlow:
         return OptionsFlowHandler()
+
+    async def _validate_current_device(self, user_input: dict[str, Any]):
+        errors = {}
+        try:
+            assert self._discovered_device is not None
+
+            device = self._discovered_device
+            address = device.address
+            await self.async_set_unique_id(address, raise_on_progress=False)
+            self._abort_if_unique_id_configured()
+
+            errors |= await self._validate_user_id(device, user_input)
+            if not errors and self._user_id_validated:
+                return {}
+
+            self._log_options = ConfLogOptions.from_config(user_input)
+        except Exception:  # pylint: disable=broad-except
+            _LOGGER.exception("Unexpected exception")
+            errors["base"] = "unknown"
+        return errors
+
+    def _create_entry(self, user_input: dict[str, Any], device: eflib.DeviceBase):
+        entry_data = user_input.copy()
+        entry_data[CONF_ADDRESS] = device.address
+        entry_data["local_name"] = self._local_names.get(device.address, None)
+        entry_data.pop("login", None)
+
+        return self.async_create_entry(
+            title=self._local_names[device.address], data=entry_data
+        )
+
+    def _login_option(self):
+        return {
+            vol.Required("login"): section(
+                vol.Schema(
+                    {
+                        vol.Optional(CONF_EMAIL, default=self._email): str,
+                        vol.Optional(CONF_PASSWORD, default=""): str,
+                        vol.Optional(
+                            CONF_REGION,
+                            default="Auto",
+                        ): vol.In(["Auto", "EU", "US"]),
+                    }
+                ),
+                {"collapsed": self._collapsed},
+            ),
+        }
 
     async def _validate_user_id(
         self, device: eflib.DeviceBase, user_input: dict[str, Any]

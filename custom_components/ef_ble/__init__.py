@@ -154,7 +154,7 @@ async def async_unload_entry(hass: HomeAssistant, entry: DeviceConfigEntry) -> b
 def device_info(entry: ConfigEntry) -> DeviceInfo:
     """Device info."""
     return DeviceInfo(
-        identifiers={(DOMAIN, entry.data.get(CONF_ADDRESS))},
+        identifiers={(DOMAIN, entry.data[CONF_ADDRESS])},
         name=entry.title,
         manufacturer=MANUFACTURER,
         model=entry.data.get(CONF_TYPE),

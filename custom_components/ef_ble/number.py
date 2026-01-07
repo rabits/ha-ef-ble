@@ -228,7 +228,32 @@ NUMBER_TYPES: list[EcoflowNumberEntityDescription] = [
         async_set_native_value=(
             lambda device, value: device.set_load_power(int(value))
         ),
-        availability_prop="_load_power_enabled",
+        availability_prop="load_power_enabled",
+    ),
+    EcoflowNumberEntityDescription[stream_ac.Device](
+        key="grid_in_power_limit",
+        name="Grid Input Power Limit",
+        device_class=NumberDeviceClass.POWER,
+        native_unit_of_measurement=UnitOfPower.WATT,
+        native_step=1,
+        native_min_value=0,
+        max_value_prop="max_ac_in_power",
+        async_set_native_value=(
+            lambda device, value: device.set_grid_in_pow_limit(int(value))
+        ),
+    ),
+    EcoflowNumberEntityDescription[stream_ac.Device](
+        key="charging_grid_power_limit",
+        name="Charging Power Limit",
+        device_class=NumberDeviceClass.POWER,
+        native_unit_of_measurement=UnitOfPower.WATT,
+        native_step=1,
+        native_min_value=0,
+        max_value_prop="max_bp_input",
+        async_set_native_value=(
+            lambda device, value: device.set_charging_grid_power_limit(int(value))
+        ),
+        availability_prop="charging_grid_power_limit_enabled",
     ),
     EcoflowNumberEntityDescription[wave2.Device](
         key="target_temperature",

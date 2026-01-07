@@ -43,7 +43,9 @@ class Field[T]:
 
     def __set_name__[T_PROPS: UpdatableProps](self, owner: type[T_PROPS], name: str):
         self.public_name = name
-        self.private_name = f"_{name}"
+        self.private_name = (
+            f"_{name}" if not hasattr(owner, f"_{name}") else f"__{name}"
+        )
         owner._fields = [*owner._fields, self]
 
     def __set__(self, instance: UpdatableProps, value: Any):

@@ -3,7 +3,7 @@ syntax = "proto3";
 package bk_series;
 
 enum PANEL_GRID_STA {
-  PANEL_GRID_STA_NO_VAILD = 0;
+  PANEL_GRID_STA_NO_VALID = 0;
   PANEL_GRID_IN = 1;
   PANEL_GRID_NOT_ONLINE = 2;
   PANEL_FEED_GRID = 3;
@@ -44,6 +44,8 @@ enum GRID_STD_CODE {
   GRID_STD_CODE_SLOVENIA = 31;
   GRID_STD_CODE_BULGARIA = 32;
   GRID_STD_CODE_EU_GENERAL = 33;
+  GRID_STD_CODE_JAPAN = 34;
+  GRID_STD_CODE_PHILIPPINES = 35;
   GRID_STD_CODE_NORTH_AMERICA = 1001;
 }
 
@@ -253,6 +255,53 @@ message gridConnectionPortBind {
   optional uint32 err = 3;
 }
 
+message ControllableLoadInfo {
+  optional string sn = 1;
+  optional bool enabled = 2;
+  optional bool scheduling = 3;
+}
+
+message ControllableLoadList {
+  repeated ControllableLoadInfo list = 1;
+}
+
+message ControllableLoadHeartbeat {
+  optional string sn = 1;
+  optional uint32 heartbeat_duration = 2;
+  optional int32 power = 3;
+  optional bool input_power_limited = 4;
+  optional uint32 schedule_id = 5;
+}
+
+message DeviceTargetSoc {
+  optional string sn = 1;
+  optional uint32 target_soc = 2;
+  optional uint32 chg_from_grid_power_limited = 3;
+}
+
+message ChgTask {
+  optional uint32 chg_source = 1;
+  optional uint32 chg_mode = 2;
+  repeated DeviceTargetSoc dev_target_soc = 3;
+}
+
+message TimerTask {
+  optional uint32 role = 1;
+  optional uint32 is_cfg = 2;
+  optional uint32 task_index = 3;
+  optional bool is_enable = 4;
+  optional bool is_effect = 5;
+  optional uint32 time_mode = 8;
+  optional uint32 time_param = 9;
+  repeated uint32 time_table = 10;
+  optional ChgTask chg_task = 11;
+  optional uint32 home_need_power_limited = 12;
+}
+
+message AllTimerTask {
+  repeated TimerTask time_task = 1;
+}
+
 message ConfigWrite {
   optional bool cfg_power_off = 3;
   optional bool cfg_power_on = 4;
@@ -301,6 +350,11 @@ message ConfigWrite {
   optional gridConnectionPortBind grid_connection_port_bind = 564;
   optional string scoket1_bind_device_sn = 565;
   optional string scoket2_bind_device_sn = 566;
+  optional uint32 cfg_sys_grid_in_pwr_limit = 579;
+  optional uint32 cfg_feed_grid_safety_pow_max = 591;
+  optional ControllableLoadList cfg_controllable_load_list = 592;
+  optional ControllableLoadHeartbeat controllable_load_heartbeat = 593;
+  optional AllTimerTask cfg_all_timer_task = 595;
 }
 
 message ConfigWriteAck {
@@ -350,6 +404,11 @@ message ConfigWriteAck {
   optional gridConnectionPortBind grid_connection_port_bind = 564;
   optional string scoket1_bind_device_sn = 565;
   optional string scoket2_bind_device_sn = 566;
+  optional uint32 cfg_sys_grid_in_pwr_limit = 579;
+  optional uint32 cfg_feed_grid_safety_pow_max = 591;
+  optional ControllableLoadList cfg_controllable_load_list = 592;
+  optional ControllableLoadHeartbeat controllable_load_heartbeat = 593;
+  optional AllTimerTask cfg_all_timer_task = 595;
 }
 
 message ConfigRead {
@@ -408,12 +467,14 @@ message DisplayPropertyUpload {
   optional bool bms_batt_heating = 1212;
   optional STD_LIGHT_LANGUAGE light_language = 761;
   optional float inv_target_pwr = 638;
+  optional uint32 sys_grid_in_pwr_limit = 1495;
   optional uint32 energy_backup_state = 6;
   optional CfgEnergyStrategyOperateMode energy_strategy_operate_mode = 393;
   optional uint32 backup_reverse_soc = 461;
   optional uint32 feed_grid_mode = 520;
   optional uint32 feed_grid_mode_pow_limit = 521;
   optional uint32 feed_grid_mode_pow_max = 727;
+  optional uint32 feed_grid_safety_pow_max = 1543;
   optional MASTER_AND_SLAVE distributed_device_status = 990;
   optional MASTER_AND_SLAVE series_connect_device_status = 991;
   optional float pow_get_sys_load = 516;
@@ -473,6 +534,10 @@ message DisplayPropertyUpload {
   optional gridConnectionPortBind grid_connection_port_bind = 1293;
   optional string scoket1_bind_device_sn = 1294;
   optional string scoket2_bind_device_sn = 1295;
+  optional bool socket1_pwr_in_unbind = 1496;
+  optional bool socket2_pwr_in_unbind = 1497;
+  optional ControllableLoadList controllable_load_list = 1549;
+  optional AllTimerTask all_timer_task = 584;
 }
 
 message ScheduleOutput {
@@ -646,6 +711,12 @@ message RuntimePropertyUpload {
   optional uint32 pfc_vbus_tag = 1446;
 }
 
+message ControllableLoadReq {
+  optional string sn = 1;
+  optional int32 remain_power = 2;
+  optional uint32 schedule_id = 3;
+}
+
 message DevRequest {
   optional uint32 dev_utc_time = 1;
   optional float dev_utc_timezone = 2;
@@ -656,6 +727,7 @@ message DevRequest {
   optional bool subscribe_cloud_meter = 9;
   optional bool unsubscribe_cloud_meter = 10;
   optional ReqIntelligentSchedule require_intelligent_schedule = 11;
+  optional ControllableLoadReq controllable_load_req = 12;
 }
 
 message DevRequestAck {

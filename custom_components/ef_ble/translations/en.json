@@ -62,7 +62,7 @@
       },
       "user": {
         "title": "Add EcoFlow Device",
-        "description": "Devices labeled as [Unsupported] do not expose any sensors but can be used to provide data for implementing support. Refer to the wiki for additional information.",
+        "description": "Devices labeled as **[Unsupported]** do not expose any sensors but can be used to provide data for implementing support. Refer to [this wiki](https://github.com/rabits/ha-ef-ble/wiki/Requesting-Support-for-New-Devices) page for additional information.",
         "data": {
           "address": "BLE Device"
         }
@@ -109,6 +109,7 @@
       },
       "unsupported_device": {
         "title": "{name} config options",
+        "description": "This device is currently unsupported but can be connected to for the purpose of gathering raw data. Refer to [this wiki](https://github.com/rabits/ha-ef-ble/wiki/Requesting-Support-for-New-Devices) page for additional information.",
         "data": {
           "user_id": "EcoFlow User ID",
           "update_period": "Update Period",

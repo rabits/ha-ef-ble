@@ -115,6 +115,8 @@ class Device(DeviceBase, ProtobufProps):
 
     async def data_parse(self, packet: Packet):
         processed = False
+        self.reset_updated()
+
         if packet.src == 0x02 and packet.cmdSet == 0xFE and packet.cmdId == 0x15:
             self.update_from_bytes(bk_series_pb2.DisplayPropertyUpload, packet.payload)
             processed = True

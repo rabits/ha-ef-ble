@@ -96,29 +96,29 @@ See more info in [this issue](https://github.com/rabits/ha-ef-ble/issues/78).
 <b>Delta 3 (Classic, Plus, Max, Max Plus, Ultra) (EF-D3####)</b>
 </summary>
 
-| *Sensors*                       | *Switches*     | *Sliders*                  |
-|---------------------------------|----------------|----------------------------|
-| Main Battery Level              | AC Ports       | Backup Reserve Level       |
-| Battery Level                   | DC Ports       | Max Charge Limit           |
-| AC Input Power                  | Backup Reserve | Min Discharge Limit        |
-| AC Output Power                 | USB Ports ¹    | AC Charging Speed          |
-| DC 12V Port Output Power        |                | DC Charging Max Amps       |
-| DC Port Input Power             |                | DC (2) Charging Max Amps ⁺ |
-| DC Port Input State             |                |                            |
-| DC Port (2) Input Power⁺        |                |                            |
-| DC Port (2) Input State⁺        |                |                            |
-| Solar Power                     |                |                            |
-| Solar Power (2) ⁺               |                |                            |
-| Input Power Total               |                |                            |
-| Output Power Total              |                |                            |
-| USB A Output Power              |                |                            |
-| USB A (2) Output Power          |                |                            |
-| USB C Output Power              |                |                            |
-| USB C (2) Output Power          |                |                            |
-| AC Plugged In                   |                |                            |
-| Battery Input Power (disabled)  |                |                            |
-| Battery Output Power (disabled) |                |                            |
-| Cell Temperature (disabled)     |                |                            |
+| *Sensors*                       | *Switches*                     | *Sliders*                  |
+|---------------------------------|--------------------------------|----------------------------|
+| Main Battery Level              | AC Ports                       | Backup Reserve Level       |
+| Battery Level                   | DC Ports                       | Max Charge Limit           |
+| AC Input Power                  | Backup Reserve                 | Min Discharge Limit        |
+| AC Output Power                 | USB Ports ¹                    | AC Charging Speed          |
+| DC 12V Port Output Power        | Disable Grid Bypass (disabled) | DC Charging Max Amps       |
+| DC Port Input Power             |                                | DC (2) Charging Max Amps ⁺ |
+| DC Port Input State             |                                |                            |
+| DC Port (2) Input Power⁺        |                                |                            |
+| DC Port (2) Input State⁺        |                                |                            |
+| Solar Power                     |                                |                            |
+| Solar Power (2) ⁺               |                                |                            |
+| Input Power Total               |                                |                            |
+| Output Power Total              |                                |                            |
+| USB A Output Power              |                                |                            |
+| USB A (2) Output Power          |                                |                            |
+| USB C Output Power              |                                |                            |
+| USB C (2) Output Power          |                                |                            |
+| AC Plugged In                   |                                |                            |
+| Battery Input Power (disabled)  |                                |                            |
+| Battery Output Power (disabled) |                                |                            |
+| Cell Temperature (disabled)     |                                |                            |
 
 ⁺ Only available on Plus variant  
 ¹ Not available on Classic

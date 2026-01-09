@@ -106,6 +106,7 @@ class Device(DeviceBase, ProtobufProps):
     cell_temperature = pb_field(pb.bms_max_cell_temp)
     dc_12v_port = pb_field(pb.flow_info_12v, _flow_is_on)
     ac_ports = pb_field(pb.flow_info_ac_out, _flow_is_on)
+    disable_grid_bypass = pb_field(pb.bypass_out_disable)
 
     solar_input_power = Field[float]()
 
@@ -253,3 +254,8 @@ class Device(DeviceBase, ProtobufProps):
 
         await self._send_config_packet(config)
         return True
+
+    async def enable_disable_grid_bypass(self, enabled: bool):
+        await self._send_config_packet(
+            pd335_sys_pb2.ConfigWrite(cfg_bypass_out_disable=enabled)
+        )

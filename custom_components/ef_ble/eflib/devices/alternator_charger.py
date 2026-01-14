@@ -74,6 +74,8 @@ class Device(DeviceBase, ProtobufProps):
     reverse_charging_current_max = pb_field(pb.sp_charger_car_batt_chg_amp_max)
     charging_current_max = pb_field(pb.sp_charger_dev_batt_chg_amp_max)
 
+    emergency_reverse_charging = pb_field(pb.sp_charger_car_batt_urgent_chg_switch)
+
     def __init__(
         self, ble_dev: BLEDevice, adv_data: AdvertisementData, sn: str
     ) -> None:
@@ -181,3 +183,10 @@ class Device(DeviceBase, ProtobufProps):
             dc009_apl_comm_pb2.ConfigWrite(cfg_sp_charger_dev_batt_chg_amp_limit=value)
         )
         return True
+
+    async def enable_emergency_reverse_charging(self, enabled: bool):
+        await self._send_config_packet(
+            dc009_apl_comm_pb2.ConfigWrite(
+                cfg_sp_charger_car_batt_urgent_chg_switch=enabled
+            )
+        )

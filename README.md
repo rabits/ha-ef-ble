@@ -184,12 +184,12 @@ you have to create it yourself, see this section from the official
 <b>Alternator Charger</b>
 </summary>
 
-| *Sensors*           | *Switches* | *Sliders*                | *Selects*    |
-|---------------------|------------|--------------------------|--------------|
-| Battery Level       | Charger    | Start Voltage            | Charger Mode |
-| Battery Temperature |            | Reverse Charging Current |              |
-| DC Power            |            | Charging Current         |              |
-| Battery Voltage     |            | Power Limit              |              |
+| *Sensors*           | *Switches*                 | *Sliders*                | *Selects*    |
+|---------------------|----------------------------|--------------------------|--------------|
+| Battery Level       | Charger                    | Start Voltage            | Charger Mode |
+| Battery Temperature | Emergency Reverse Charging | Reverse Charging Current |              |
+| DC Power            |                            | Charging Current         |              |
+| Battery Voltage     |                            | Power Limit              |              |
 </details>
 
 <details><summary>

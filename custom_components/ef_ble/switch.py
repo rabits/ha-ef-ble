@@ -54,6 +54,18 @@ SWITCH_TYPES = [
         translation_key="battery_sync",
     ),
     SwitchEntityDescription(
+        key="ac_xboost",
+        name="X-Boost",
+        device_class=SwitchDeviceClass.SWITCH,
+        icon="mdi:flash",
+    ),
+    SwitchEntityDescription(
+        key="ac_always_on",
+        name="AC Always On",
+        device_class=SwitchDeviceClass.SWITCH,
+        icon="mdi:power-socket-us",
+    ),
+    SwitchEntityDescription(
         key="usb_ports",
         name="USB Ports",
         icon="mdi:usb",

@@ -5,6 +5,7 @@ from homeassistant.components.select import (
     SelectEntity,
     SelectEntityDescription,
 )
+from homeassistant.const import EntityCategory
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
@@ -12,6 +13,7 @@ from . import DeviceConfigEntry
 from .eflib import DeviceBase
 from .eflib.devices import (
     alternator_charger,
+    river2_pro,
     river3,
     river3_plus,
     smart_generator,
@@ -27,8 +29,176 @@ class EcoflowSelectEntityDescription[T: DeviceBase](SelectEntityDescription):
 
     availability_prop: str | None = None
 
+    # Optional mapping from device property -> displayed option.
+    # If omitted, we try to render enums as value.name.lower().
+    get_state: Callable[[object], str] | None = None
+
+
+def _default_select_state(value: object):
+    """Best-effort conversion of a device property into an HA select option."""
+    if value is None:
+        return EcoflowEntity.SkipWrite
+
+    # EcoFlow enums (IntFieldValue etc.)
+    if hasattr(value, "state_name"):
+        return getattr(value, "state_name")
+
+    if hasattr(value, "name"):
+        return getattr(value, "name").lower()
+
+    if isinstance(value, (str, int)):
+        return str(value)
+
+    return EcoflowEntity.SkipWrite
+
 
 SELECT_TYPES: list[EcoflowSelectEntityDescription] = [
+    # River 2 Pro
+    EcoflowSelectEntityDescription[river2_pro.Device](
+        key="car_input_current_limit_ma",
+        name="Car Input",
+        entity_category=EntityCategory.CONFIG,
+        options=["4A", "6A", "8A"],
+        get_state=(
+            lambda v: {4000: "4A", 6000: "6A", 8000: "8A"}.get(
+                int(v) if v is not None else 6000,
+                "6A",
+            )
+        ),
+        set_state=(
+            lambda device, opt: device.set_car_input_current_limit_ma(
+                {"4A": 4000, "6A": 6000, "8A": 8000}[opt]
+            )
+        ),
+    ),
+    EcoflowSelectEntityDescription[river2_pro.Device](
+        key="dc_mode",
+        name="DC Mode",
+        entity_category=EntityCategory.CONFIG,
+        options=["Car Recharging", "Solar Recharging", "Auto"],
+        get_state=(
+            lambda v: {0: "Auto", 1: "Solar Recharging", 2: "Car Recharging"}.get(
+                int(v) if v is not None else 0,
+                "Auto",
+            )
+        ),
+        set_state=(
+            lambda device, opt: device.set_dc_mode(
+                {"Auto": 0, "Solar Recharging": 1, "Car Recharging": 2}[opt]
+            )
+        ),
+    ),
+    EcoflowSelectEntityDescription[river2_pro.Device](
+        key="device_timeout_minutes",
+        name="Device Timeout",
+        entity_category=EntityCategory.CONFIG,
+        options=[
+            "30 min",
+            "1 hr",
+            "2 hr",
+            "4 hr",
+            "6 hr",
+            "12 hr",
+            "24 hr",
+            "Never",
+        ],
+        get_state=(
+            lambda v: {
+                30: "30 min",
+                60: "1 hr",
+                120: "2 hr",
+                240: "4 hr",
+                360: "6 hr",
+                720: "12 hr",
+                1440: "24 hr",
+                0: "Never",
+            }.get(int(v) if v is not None else 0, "Never")
+        ),
+        set_state=(
+            lambda device, opt: device.set_device_timeout_minutes(
+                {
+                    "30 min": 30,
+                    "1 hr": 60,
+                    "2 hr": 120,
+                    "4 hr": 240,
+                    "6 hr": 360,
+                    "12 hr": 720,
+                    "24 hr": 1440,
+                    "Never": 0,
+                }[opt]
+            )
+        ),
+    ),
+    EcoflowSelectEntityDescription[river2_pro.Device](
+        key="lcd_timeout_seconds",
+        name="LCD Timeout",
+        entity_category=EntityCategory.CONFIG,
+        options=["10 s", "30 s", "1 min", "5 min", "30 min", "Never"],
+        get_state=(
+            lambda v: {
+                10: "10 s",
+                30: "30 s",
+                60: "1 min",
+                300: "5 min",
+                1800: "30 min",
+                0: "Never",
+            }.get(int(v) if v is not None else 0, "Never")
+        ),
+        set_state=(
+            lambda device, opt: device.set_lcd_timeout_seconds(
+                {
+                    "10 s": 10,
+                    "30 s": 30,
+                    "1 min": 60,
+                    "5 min": 300,
+                    "30 min": 1800,
+                    "Never": 0,
+                }[opt]
+            )
+        ),
+    ),
+    EcoflowSelectEntityDescription[river2_pro.Device](
+        key="ac_timeout_minutes",
+        name="AC Timeout",
+        entity_category=EntityCategory.CONFIG,
+        options=[
+            "30 min",
+            "1 hr",
+            "2 hr",
+            "4 hr",
+            "6 hr",
+            "12 hr",
+            "24 hr",
+            "Never",
+        ],
+        get_state=(
+            lambda v: {
+                30: "30 min",
+                60: "1 hr",
+                120: "2 hr",
+                240: "4 hr",
+                360: "6 hr",
+                720: "12 hr",
+                1440: "24 hr",
+                0: "Never",
+            }.get(int(v) if v is not None else 0, "Never")
+        ),
+        set_state=(
+            lambda device, opt: device.set_ac_timeout_minutes(
+                {
+                    "30 min": 30,
+                    "1 hr": 60,
+                    "2 hr": 120,
+                    "4 hr": 240,
+                    "6 hr": 360,
+                    "12 hr": 720,
+                    "24 hr": 1440,
+                    "Never": 0,
+                }[opt]
+            )
+        ),
+    ),
+
     # River 3 Plus
     EcoflowSelectEntityDescription[river3_plus.Device](
         key="led_mode",
@@ -164,6 +334,7 @@ class EcoflowSelect(EcoflowEntity, SelectEntity):
         self._set_state = description.set_state
         self._attr_current_option = None
         self._availability_prop = description.availability_prop
+        self._get_state = description.get_state or _default_select_state
 
         if self.entity_description.translation_key is None:
             self._attr_translation_key = self.entity_description.key
@@ -171,9 +342,9 @@ class EcoflowSelect(EcoflowEntity, SelectEntity):
         self._register_update_callback(
             entity_attr="_attr_current_option",
             prop_name=self._prop_name,
-            get_state=(
-                lambda value: value.name.lower()
-                if value is not None
+            get_state=lambda value: (
+                self._get_state(value)
+                if self._get_state(value) is not None
                 else self.SkipWrite
             ),
         )
@@ -217,9 +388,9 @@ class EcoflowSelect(EcoflowEntity, SelectEntity):
         self._register_update_callback(
             entity_attr="_attr_current_option",
             prop_name=self._prop_name,
-            get_state=(
-                lambda value: value.name.lower()
-                if value is not None
+            get_state=lambda value: (
+                self._get_state(value)
+                if self._get_state(value) is not None
                 else self.SkipWrite
             ),
         )

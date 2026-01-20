@@ -29,6 +29,7 @@ from .eflib.devices import (
     smart_generator_4k,
     stream_ac,
     wave2,
+    river2_pro,
 )
 from .entity import EcoflowEntity
 
@@ -43,6 +44,21 @@ class EcoflowNumberEntityDescription[Device: DeviceBase](NumberEntityDescription
 
 
 NUMBER_TYPES: list[EcoflowNumberEntityDescription] = [
+    # River 2 Pro
+    EcoflowNumberEntityDescription[river2_pro.Device](
+        key="ac_charge_speed_watts",
+        name="AC Charge Speed",
+        device_class=NumberDeviceClass.POWER,
+        native_unit_of_measurement=UnitOfPower.WATT,
+        mode=NumberMode.SLIDER,
+        native_step=50,
+        native_min_value=100,
+        native_max_value=940,
+        async_set_native_value=(
+            lambda device, value: device.set_ac_charge_speed_watts(int(value))
+        ),
+    ),
+
     EcoflowNumberEntityDescription[river3.Device](
         key="energy_backup_battery_level",
         name="Backup Reserve",
@@ -290,9 +306,40 @@ async def async_setup_entry(
 ) -> None:
     device = config_entry.runtime_data
 
+    def _override_description(desc: EcoflowNumberEntityDescription) -> EcoflowNumberEntityDescription:
+        # River 2 Pro app UI clamps Energy Management bounds
+        if isinstance(device, river2_pro.Device):
+            if desc.key == 'battery_charge_limit_min':
+                return EcoflowNumberEntityDescription[river2_pro.Device](
+                    key=desc.key,
+                    name='Energy Management Lower',
+                    icon=desc.icon,
+                    device_class=desc.device_class,
+                    native_unit_of_measurement=desc.native_unit_of_measurement,
+                    mode=NumberMode.SLIDER,
+                    native_step=1.0,
+                    native_min_value=0,
+                    native_max_value=30,
+                    async_set_native_value=desc.async_set_native_value,
+                )
+            if desc.key == 'battery_charge_limit_max':
+                return EcoflowNumberEntityDescription[river2_pro.Device](
+                    key=desc.key,
+                    name='Energy Management Upper',
+                    icon=desc.icon,
+                    device_class=desc.device_class,
+                    native_unit_of_measurement=desc.native_unit_of_measurement,
+                    mode=NumberMode.SLIDER,
+                    native_step=1.0,
+                    native_min_value=50,
+                    native_max_value=100,
+                    async_set_native_value=desc.async_set_native_value,
+                )
+        return desc
+
     async_add_entities(
         [
-            EcoflowNumber(device, entity_description)
+            EcoflowNumber(device, _override_description(entity_description))
             for entity_description in NUMBER_TYPES
             if hasattr(device, entity_description.key)
         ]

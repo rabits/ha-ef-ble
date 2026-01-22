@@ -37,6 +37,86 @@ _LOGGER = logging.getLogger(__name__)
 pb_pd = dataclass_attr_mapper(Mr330PdHeart)
 pb_mppt = dataclass_attr_mapper(Mr330MpptHeart)
 pb_ems = dataclass_attr_mapper(DirectEmsDeltaHeartbeatPack)
+pb_bms = dataclass_attr_mapper(DirectBmsMDeltaHeartbeatPack)
+
+
+def _normalize_watts(v: int | None) -> int | None:
+    """Normalize watt values.
+
+    Some River firmware variants report subsystem powers as signed ints. Treat
+    negative values as 0/unknown for HA's power sensors.
+
+    We also apply a small heuristic for occasional scale glitches: if the value
+    looks like it could be deci/centi-watts (e.g. 1230 meaning 123W), downscale
+    to a plausible watt range.
+    """
+
+    if v is None:
+        return None
+
+    try:
+        iv = int(v)
+    except Exception:
+        return None
+
+    if iv < 0:
+        return 0
+
+    # Heuristic: if it looks like 10x or 100x watts, scale down.
+    if iv > 5000:
+        if iv % 100 == 0 and (iv // 100) <= 5000:
+            return iv // 100
+        if iv % 10 == 0 and (iv // 10) <= 5000:
+            return iv // 10
+
+    return iv
+
+
+def _sum_ints(*vals: int | None) -> int | None:
+    total = 0
+    seen = False
+    for v in vals:
+        if v is None:
+            continue
+        try:
+            total += int(v)
+            seen = True
+        except Exception:
+            continue
+    return total if seen else None
+
+
+def _clamp_nonneg(v: int | None) -> int | None:
+    if v is None:
+        return None
+    try:
+        iv = int(v)
+    except Exception:
+        return None
+    return 0 if iv < 0 else iv
+
+
+def _u16le(buf: bytes, offset: int) -> int | None:
+    """Read little-endian u16 from buf at offset, or None if out of range."""
+    if offset < 0 or offset + 1 >= len(buf):
+        return None
+    return buf[offset] | (buf[offset + 1] << 8)
+
+def _remain_time_to_minutes(v: int | None) -> int | None:
+    """Normalize remain_time to minutes.
+
+    River firmware variants report remain_time either as minutes or as seconds.
+    Heuristic: values > 2000 are treated as seconds.
+    """
+    if v is None:
+        return None
+    try:
+        iv = int(v)
+    except Exception:
+        return None
+    if iv < 0:
+        return None
+    return iv // 60 if iv > 2000 else iv
 
 
 class Device(DeviceBase, RawDataProps):
@@ -73,6 +153,36 @@ class Device(DeviceBase, RawDataProps):
     # Discharge/charge limits (percent)
     battery_charge_limit_min = raw_field(pb_ems.min_dsg_soc)
     battery_charge_limit_max = raw_field(pb_ems.max_charge_soc)
+
+    # -----------------
+    # Telemetry sensors (heartbeat)
+    # -----------------
+    # Standard keys used by sensor.py (kept consistent with other devices).
+    battery_level = raw_field(pb_pd.soc)
+    battery_temperature = raw_field(pb_bms.temp)
+    battery_time_remaining = raw_field(pb_pd.remain_time, _remain_time_to_minutes)
+
+    input_power = raw_field(pb_pd.watts_in_sum)
+    output_power = raw_field(pb_pd.watts_out_sum)
+
+    # River 2 Pro note:
+    # The protobuf/dataclass PD heartbeat mapping is sufficient for many config
+    # fields, but the instantaneous power rails can drift/scale on some firmware
+    # (you observed absurd kW readings). For R2P we therefore decode the power
+    # rails from fixed offsets within the PD heartbeat payload (Packet v2,
+    # src=0x02 cmdSet=0x20 cmdId=0x02), based on your plaintext captures.
+    #
+    # These are populated in data_parse().
+    ac_input_power: int | None = None
+    ac_output_power: int | None = None
+
+    # The following are derived in data_parse() from decoded PD/MPPT heartbeats.
+    # They are defined here so HA creates entities at setup time.
+    dc_input_power: int | None = None
+    solar_input_power: int | None = None
+    dc_output_power: int | None = None
+    usbc_output_power: int | None = None
+    usba_output_power: int | None = None
 
     # -----------------
     # Config/select/number properties (heartbeat)
@@ -148,11 +258,57 @@ class Device(DeviceBase, RawDataProps):
         self.reset_updated()
         processed = False
 
+        def _set_metric(attr_name: str, ha_key: str, value: int | None) -> None:
+            """Set an ad-hoc metric and notify HA only if it changed."""
+            if value is None:
+                return
+            if value != getattr(self, attr_name, None):
+                setattr(self, attr_name, value)
+                self.update_state(ha_key, value)
+
         try:
             match (packet.src, packet.cmdSet, packet.cmdId):
                 case (0x02, 0x20, 0x02):
                     # PD heartbeat
+                    # Keep the mapped dataclass/protobuf decode for config fields.
                     self.update_from_bytes(Mr330PdHeart, packet.payload)
+
+                    # Power rails: decode from fixed offsets in the PD payload.
+                    # Offsets are 0-based within packet.payload (payload_len=0x79).
+                    payload = packet.payload
+
+                    # SOC is at payload[14] in your plaintext captures.
+                    if len(payload) > 14:
+                        soc = payload[14]
+                        if soc != getattr(self, "battery_level", None):
+                            self.battery_level = soc
+
+                    ac_out = _normalize_watts(_u16le(payload, 15))
+                    ac_in = _normalize_watts(_u16le(payload, 17))
+                    usbc = _normalize_watts(_u16le(payload, 50))
+                    dc_out = _normalize_watts(_u16le(payload, 75))
+                    usba = _normalize_watts(_u16le(payload, 112))
+
+                    _set_metric("ac_output_power", "ac_output_power", ac_out)
+                    _set_metric("ac_input_power", "ac_input_power", ac_in)
+                    _set_metric("usbc_output_power", "usbc_output_power", usbc)
+                    _set_metric("usba_output_power", "usba_output_power", usba)
+                    _set_metric("dc_output_power", "dc_output_power", dc_out)
+
+                    # If total in/out rails look bogus (e.g. huge kW values),
+                    # override with the sum of the decoded sub-rails.
+                    out_sum = _sum_ints(ac_out, dc_out, usba, usbc)
+                    if out_sum is not None:
+                        cur_out = getattr(self, "output_power", None)
+                        if cur_out is None or cur_out < 0 or cur_out > 5000:
+                            self.output_power = int(out_sum)
+
+                    in_sum = _sum_ints(ac_in, getattr(self, "dc_input_power", None))
+                    if in_sum is not None:
+                        cur_in = getattr(self, "input_power", None)
+                        if cur_in is None or cur_in < 0 or cur_in > 5000:
+                            self.input_power = int(in_sum)
+
                     processed = True
 
                 case (0x03, 0x20, 0x02):
@@ -167,7 +323,35 @@ class Device(DeviceBase, RawDataProps):
 
                 case (0x05, 0x20, 0x02):
                     # MPPT heartbeat
-                    self.update_from_bytes(Mr330MpptHeart, packet.payload)
+                    mppt = self.update_from_bytes(Mr330MpptHeart, packet.payload)
+
+                    # XT60 input (solar or car).
+                    dc_in = getattr(mppt, "in_watts", None)
+                    self.dc_input_power = dc_in
+                    self.update_state("dc_input_power", dc_in)
+
+                    # 12V/Car DC outputs (sum of known DC rails).
+                    dc_out = _sum_ints(
+                        getattr(mppt, "car_out_watts", None),
+                        getattr(mppt, "dcdc_12v_watts", None),
+                    )
+                    self.dc_output_power = dc_out
+                    self.update_state("dc_output_power", dc_out)
+
+                    # Best-effort solar split: if we can identify the XT60 charge type
+                    # as PV/solar, mirror dc_in into solar_input_power, else 0.
+                    xt60_type = getattr(mppt, "xt60_chg_type", None)
+                    chg_type = getattr(mppt, "chg_type", None)
+                    cfg_type = getattr(mppt, "cfg_chg_type", None)
+                    is_solar = (
+                        xt60_type == 1
+                        or chg_type == 1
+                        or cfg_type == 1
+                        or (dc_in not in (None, 0) and (xt60_type in (None, 0)))
+                    )
+                    solar_in = dc_in if is_solar else 0
+                    self.solar_input_power = solar_in
+                    self.update_state("solar_input_power", solar_in)
                     processed = True
 
                 case _:

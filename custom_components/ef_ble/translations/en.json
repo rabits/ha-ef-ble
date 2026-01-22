@@ -49,13 +49,13 @@
             "name": "Logging Options",
             "description": "Detailed logging options. Most of these will flood your logs, so avoid leaving them enabled for long periods.",
             "data": {
-                "log_masked": "Mask sensitive information (useful when sharing logs publicly)",
-                "log_connection": "Log device connection requests and responses",
-                "log_messages": "Log deserialized device update messages",
-                "log_packets": "Log packet objects",
-                "log_encrypted_payloads": "Log encrypted payloads",
-                "log_payloads": "Log decrypted payloads",
-                "log_bleak": "Enable bleak debug log level (not masked and not filtered to this device)"
+              "log_masked": "Mask sensitive information (useful when sharing logs publicly)",
+              "log_connection": "Log device connection requests and responses",
+              "log_messages": "Log deserialized device update messages",
+              "log_packets": "Log packet objects",
+              "log_encrypted_payloads": "Log encrypted payloads",
+              "log_payloads": "Log decrypted payloads",
+              "log_bleak": "Enable bleak debug log level (not masked and not filtered to this device)"
             }
           }
         }
@@ -96,13 +96,13 @@
             "name": "Logging Options",
             "description": "Detailed logging options. Most of these will flood your logs, so avoid leaving them enabled for long periods.",
             "data": {
-                "log_masked": "Mask sensitive information (useful when sharing logs publicly)",
-                "log_connection": "Log device connection requests and responses",
-                "log_messages": "Log deserialized device update messages",
-                "log_packets": "Log packet objects",
-                "log_encrypted_payloads": "Log encrypted payloads",
-                "log_payloads": "Log decrypted payloads",
-                "log_bleak": "Enable bleak debug log level (not masked and not filtered to this device)"
+              "log_masked": "Mask sensitive information (useful when sharing logs publicly)",
+              "log_connection": "Log device connection requests and responses",
+              "log_messages": "Log deserialized device update messages",
+              "log_packets": "Log packet objects",
+              "log_encrypted_payloads": "Log encrypted payloads",
+              "log_payloads": "Log decrypted payloads",
+              "log_bleak": "Enable bleak debug log level (not masked and not filtered to this device)"
             }
           }
         }
@@ -138,13 +138,13 @@
             "name": "Logging Options",
             "description": "Advanced logging options. Most of these settings will generate a large volume of log output, so it is recommended not to leave them enabled for extended periods.",
             "data": {
-                "log_masked": "Mask sensitive information (useful when sharing logs publicly)",
-                "log_connection": "Log device connection requests and responses",
-                "log_messages": "Log deserialized device update messages",
-                "log_packets": "Log packet objects",
-                "log_encrypted_payloads": "Log encrypted payloads",
-                "log_payloads": "Log decrypted payloads",
-                "log_bleak": "Enable bleak debug log level (not masked and not filtered to this device)"
+              "log_masked": "Mask sensitive information (useful when sharing logs publicly)",
+              "log_connection": "Log device connection requests and responses",
+              "log_messages": "Log deserialized device update messages",
+              "log_packets": "Log packet objects",
+              "log_encrypted_payloads": "Log encrypted payloads",
+              "log_payloads": "Log decrypted payloads",
+              "log_bleak": "Enable bleak debug log level (not masked and not filtered to this device)"
             }
           }
         }
@@ -182,13 +182,13 @@
             "name": "Logging Options",
             "description": "Detailed logging options. Most of these will flood your logs, so avoid leaving them enabled for long periods.",
             "data": {
-                "log_masked": "Mask sensitive information (useful when sharing logs publicly)",
-                "log_connection": "Log device connection requests and responses",
-                "log_messages": "Log deserialized device update messages",
-                "log_packets": "Log packet objects",
-                "log_encrypted_payloads": "Log encrypted payloads",
-                "log_payloads": "Log decrypted payloads",
-                "log_bleak": "Enable bleak debug log level (not masked and not filtered to this device)"
+              "log_masked": "Mask sensitive information (useful when sharing logs publicly)",
+              "log_connection": "Log device connection requests and responses",
+              "log_messages": "Log deserialized device update messages",
+              "log_packets": "Log packet objects",
+              "log_encrypted_payloads": "Log encrypted payloads",
+              "log_payloads": "Log decrypted payloads",
+              "log_bleak": "Enable bleak debug log level (not masked and not filtered to this device)"
             }
           }
         }
@@ -272,6 +272,9 @@
       },
       "battery_level": {
         "name": "Battery Level"
+      },
+      "battery_time_remaining": {
+        "name": "Battery Time Remaining"
       },
       "additional_battery_level": {
         "name": "Battery {index} Level"

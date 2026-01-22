@@ -342,6 +342,9 @@
       "dc_input_power": {
         "name": "DC Input Power"
       },
+      "car_input_power": {
+        "name": "Car Input Power"
+      },
       "dc_input_energy": {
         "name": "DC Input Energy"
       },

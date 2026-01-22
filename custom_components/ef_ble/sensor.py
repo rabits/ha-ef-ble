@@ -454,6 +454,15 @@ SENSOR_TYPES: dict[str, SensorEntityDescription] = {
         state_class=SensorStateClass.MEASUREMENT,
         suggested_display_precision=2,
     ),
+    # River 2 Pro (XT60): split DC input into Solar vs Car based on cfgChgType
+    "car_input_power": SensorEntityDescription(
+        key="car_input_power",
+        native_unit_of_measurement=UnitOfPower.WATT,
+        device_class=SensorDeviceClass.POWER,
+        state_class=SensorStateClass.MEASUREMENT,
+        suggested_display_precision=2,
+        entity_registry_enabled_default=False,
+    ),
     "dc_input_energy": SensorEntityDescription(
         key="dc_input_energy",
         native_unit_of_measurement=UnitOfEnergy.WATT_HOUR,
@@ -963,15 +972,20 @@ async def async_setup_entry(
                 if entry.domain != "sensor":
                     continue
 
-                # Most reliable signal: the old entity's original name was just
-                # "Power".
-                if getattr(entry, "original_name", None) == "Power":
+                # Most reliable signal: the legacy entity's original name.
+                # Older experimental builds used either "Power" or "R2P Power".
+                if getattr(entry, "original_name", None) in ("Power", "R2P Power"):
                     ent_reg.async_remove(entry.entity_id)
                     continue
 
-                # Backup: unique_id like "<devicename>_power" (single underscore).
+                # Backup: unique_id created by this integration is always
+                # f"{device.name}_{sensor}". Remove ONLY the legacy power sensor
+                # for this specific River 2 Pro device.
                 uid = getattr(entry, "unique_id", "") or ""
-                if uid.endswith("_power") and uid.count("_") == 1:
+                target_uid = f"{device.name}_power"
+                if uid == target_uid or (
+                    uid.endswith("_power") and uid.startswith(f"{device.name}_")
+                ):
                     ent_reg.async_remove(entry.entity_id)
         except Exception:  # noqa: BLE001
             # Never fail setup on registry cleanup.

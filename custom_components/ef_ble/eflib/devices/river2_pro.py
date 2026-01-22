@@ -43,33 +43,17 @@ pb_bms = dataclass_attr_mapper(DirectBmsMDeltaHeartbeatPack)
 def _normalize_watts(v: int | None) -> int | None:
     """Normalize watt values.
 
-    Some River firmware variants report subsystem powers as signed ints. Treat
-    negative values as 0/unknown for HA's power sensors.
-
-    We also apply a small heuristic for occasional scale glitches: if the value
-    looks like it could be deci/centi-watts (e.g. 1230 meaning 123W), downscale
-    to a plausible watt range.
+    River heartbeats sometimes contain signed values for power rails.
+    For HA power sensors we clamp negatives to 0.
     """
 
     if v is None:
         return None
-
     try:
         iv = int(v)
     except Exception:
         return None
-
-    if iv < 0:
-        return 0
-
-    # Heuristic: if it looks like 10x or 100x watts, scale down.
-    if iv > 5000:
-        if iv % 100 == 0 and (iv // 100) <= 5000:
-            return iv // 100
-        if iv % 10 == 0 and (iv // 10) <= 5000:
-            return iv // 10
-
-    return iv
+    return 0 if iv < 0 else iv
 
 
 def _sum_ints(*vals: int | None) -> int | None:
@@ -180,6 +164,7 @@ class Device(DeviceBase, RawDataProps):
     # They are defined here so HA creates entities at setup time.
     dc_input_power: int | None = None
     solar_input_power: int | None = None
+    car_input_power: int | None = None
     dc_output_power: int | None = None
     usbc_output_power: int | None = None
     usba_output_power: int | None = None
@@ -284,10 +269,20 @@ class Device(DeviceBase, RawDataProps):
                             self.battery_level = soc
 
                     ac_out = _normalize_watts(_u16le(payload, 15))
+                    # When AC ports are disabled, EcoFlow may still report a
+                    # small non-zero value here. Gate AC output by the AC-ports
+                    # enable flag to avoid phantom AC load in Home Assistant.
+                    if getattr(self, "ac_ports", None) is False:
+                        ac_out = 0
+
                     ac_in = _normalize_watts(_u16le(payload, 17))
                     usbc = _normalize_watts(_u16le(payload, 50))
                     dc_out = _normalize_watts(_u16le(payload, 75))
-                    usba = _normalize_watts(_u16le(payload, 112))
+                    # USB-A output in PD heartbeat is a single-byte watts value.
+                    # Using u16 would combine the following flag byte and create
+                    # bogus spikes like 261W (0x0105).
+                    usba_raw = payload[112] if len(payload) > 112 else None
+                    usba = _normalize_watts(usba_raw)
 
                     _set_metric("ac_output_power", "ac_output_power", ac_out)
                     _set_metric("ac_input_power", "ac_input_power", ac_in)
@@ -295,19 +290,17 @@ class Device(DeviceBase, RawDataProps):
                     _set_metric("usba_output_power", "usba_output_power", usba)
                     _set_metric("dc_output_power", "dc_output_power", dc_out)
 
-                    # If total in/out rails look bogus (e.g. huge kW values),
-                    # override with the sum of the decoded sub-rails.
+                    # Total input/output power for R2P is derived from the same
+                    # rail values (AC/DC/USB). This keeps the totals independent
+                    # of any protobuf mapping quirks and prevents stale/absurd
+                    # values from sticking in HA.
                     out_sum = _sum_ints(ac_out, dc_out, usba, usbc)
                     if out_sum is not None:
-                        cur_out = getattr(self, "output_power", None)
-                        if cur_out is None or cur_out < 0 or cur_out > 5000:
-                            self.output_power = int(out_sum)
+                        _set_metric("output_power", "output_power", int(out_sum))
 
                     in_sum = _sum_ints(ac_in, getattr(self, "dc_input_power", None))
                     if in_sum is not None:
-                        cur_in = getattr(self, "input_power", None)
-                        if cur_in is None or cur_in < 0 or cur_in > 5000:
-                            self.input_power = int(in_sum)
+                        _set_metric("input_power", "input_power", int(in_sum))
 
                     processed = True
 
@@ -326,32 +319,32 @@ class Device(DeviceBase, RawDataProps):
                     mppt = self.update_from_bytes(Mr330MpptHeart, packet.payload)
 
                     # XT60 input (solar or car).
-                    dc_in = getattr(mppt, "in_watts", None)
-                    self.dc_input_power = dc_in
-                    self.update_state("dc_input_power", dc_in)
+                    dc_in = _normalize_watts(getattr(mppt, "in_watts", None))
+                    if dc_in is None:
+                        dc_in = 0
+                    _set_metric("dc_input_power", "dc_input_power", dc_in)
 
                     # 12V/Car DC outputs (sum of known DC rails).
                     dc_out = _sum_ints(
-                        getattr(mppt, "car_out_watts", None),
-                        getattr(mppt, "dcdc_12v_watts", None),
+                        _normalize_watts(getattr(mppt, "car_out_watts", None)),
+                        _normalize_watts(getattr(mppt, "dcdc_12v_watts", None)),
                     )
-                    self.dc_output_power = dc_out
-                    self.update_state("dc_output_power", dc_out)
+                    if dc_out is None:
+                        dc_out = 0
+                    _set_metric("dc_output_power", "dc_output_power", int(dc_out))
 
-                    # Best-effort solar split: if we can identify the XT60 charge type
-                    # as PV/solar, mirror dc_in into solar_input_power, else 0.
-                    xt60_type = getattr(mppt, "xt60_chg_type", None)
-                    chg_type = getattr(mppt, "chg_type", None)
+                    # Solar vs car input split uses the device's own configured
+                    # charge type (cfgChgType): 0=Auto, 1=Solar, 2=Car.
                     cfg_type = getattr(mppt, "cfg_chg_type", None)
-                    is_solar = (
-                        xt60_type == 1
-                        or chg_type == 1
-                        or cfg_type == 1
-                        or (dc_in not in (None, 0) and (xt60_type in (None, 0)))
-                    )
-                    solar_in = dc_in if is_solar else 0
-                    self.solar_input_power = solar_in
-                    self.update_state("solar_input_power", solar_in)
+                    solar_in = dc_in if cfg_type == 1 else 0
+                    car_in = dc_in if cfg_type == 2 else 0
+                    _set_metric("solar_input_power", "solar_input_power", int(solar_in))
+                    _set_metric("car_input_power", "car_input_power", int(car_in))
+
+                    # Keep input_power independent and up-to-date.
+                    in_sum = _sum_ints(getattr(self, "ac_input_power", None), dc_in)
+                    if in_sum is not None:
+                        _set_metric("input_power", "input_power", int(in_sum))
                     processed = True
 
                 case _:

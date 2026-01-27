@@ -45,3 +45,18 @@ class Mr330MpptHeart(BaseMpptHeart):
     screen_standby_mins: Annotated[int, "H", "screenStandbyMins"]
     pay_flag: Annotated[int, "H", "payFlag"]
     reserved: Annotated[bytes, "8s", "res"]
+
+
+class Mr350MpptHeart(BaseMpptHeart):
+    pv2_in_vol: Annotated[int, "I", "pv2InVol"]
+    pv2_in_amp: Annotated[int, "I", "pv2InAmp"]
+    pv2_in_watts: Annotated[int, "H", "pv2InWatts"]
+    pv2_mppt_temp: Annotated[int, "H", "pv2MpptTemp"]
+    pv2_xt60_chg_type: Annotated[int, "B", "pv2Xt60ChgType"]
+    pv2_cfg_chg_type: Annotated[int, "B", "pv2CfgChgType"]
+    pv2_chg_type: Annotated[int, "B", "pv2ChgType"]
+    pv2_chg_state: Annotated[int, "B", "pv2ChgState"]
+    pv2_chg_pause_flag: Annotated[int, "B", "pv2ChgPauseGlag"]
+    car_standby_mins: Annotated[int, "H", "carStandbyMins"]
+    res: Annotated[bytes, "8s", "res"]
+    padding: Annotated[bytes, "s", "padding"]

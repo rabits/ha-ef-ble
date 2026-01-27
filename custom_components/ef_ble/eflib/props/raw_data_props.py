@@ -16,8 +16,9 @@ class RawDataProps(UpdatableProps, abc.ABC):
         if reset:
             self.reset_updated()
 
-        for field in self._datatype_to_field[type(data)]:
-            setattr(self, field.public_name, data)
+        for base in type(data).get_bases():
+            for field in self._datatype_to_field[base]:
+                setattr(self, field.public_name, data)
 
     @overload
     def update_from_bytes[T: RawData](

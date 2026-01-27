@@ -13,7 +13,7 @@ if TYPE_CHECKING:
 __all__ = [
     f.stem
     for f in Path(__file__).parent.glob("*.py")
-    if f.is_file() and f.stem != "__init__"
+    if f.is_file() and not f.stem.startswith("_")
 ]
 
 devices: list["ModuleWithDevice | ModuleType"] = [

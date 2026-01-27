@@ -1,8 +1,34 @@
-from . import delta2
+from bleak.backends.device import BLEDevice
+from bleak.backends.scanner import AdvertisementData
+
+from ..model import Mr350MpptHeart, Mr350PdHeart
+from ..props import dataclass_attr_mapper, raw_field
+from ._delta2_base import Delta2Base, pb_inv
+
+pb_pd = dataclass_attr_mapper(Mr350PdHeart)
+pb_mppt = dataclass_attr_mapper(Mr350MpptHeart)
 
 
-class Device(delta2.Device):
+class Device(Delta2Base):
     """Delta 2 Max"""
 
     SN_PREFIX = (b"R351", b"R354")
     NAME_PREFIX = "EF-R35"
+
+    ac_input_power = raw_field(pb_inv.input_watts)
+    ac_charging_speed = raw_field(pb_inv.cfg_slow_chg_watts)
+    dc_output_power = raw_field(pb_pd.car_watts)
+
+    def __init__(
+        self, ble_dev: BLEDevice, adv_data: AdvertisementData, sn: str
+    ) -> None:
+        super().__init__(ble_dev, adv_data, sn)
+        self.max_ac_charging_power = 1800
+
+    @property
+    def pd_heart_type(self):
+        return Mr350PdHeart
+
+    @property
+    def mppt_heart_type(self):
+        return Mr350MpptHeart

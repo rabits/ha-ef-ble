@@ -1,11 +1,12 @@
 from bleak.backends.device import BLEDevice
 from bleak.backends.scanner import AdvertisementData
 
-from ..model import Mr350MpptHeart, Mr350PdHeart
+from ..model import Mr350MpptHeart, Mr350PdHeartbeat
+from ..packet import Packet
 from ..props import dataclass_attr_mapper, raw_field
 from ._delta2_base import Delta2Base, pb_inv
 
-pb_pd = dataclass_attr_mapper(Mr350PdHeart)
+pb_pd = dataclass_attr_mapper(Mr350PdHeartbeat)
 pb_mppt = dataclass_attr_mapper(Mr350MpptHeart)
 
 
@@ -27,8 +28,11 @@ class Device(Delta2Base):
 
     @property
     def pd_heart_type(self):
-        return Mr350PdHeart
+        return Mr350PdHeartbeat
 
     @property
     def mppt_heart_type(self):
         return Mr350MpptHeart
+
+    async def packet_parse(self, data: bytes) -> Packet:
+        return Packet.fromBytes(data, is_xor=False)

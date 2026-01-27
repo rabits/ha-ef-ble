@@ -76,7 +76,7 @@ class Mr330PdHeart(BasePdHeart):
     redun_charge_flag: Annotated[int, "B", "redunChargeFlag"]
 
 
-class Mr350PdHeart(BasePdHeart):
+class Mr350PdHeartbeat(BasePdHeart):
     bms_kit_state: Annotated[bytes, "2s", "bmsKitState"]
     other_kit_state: Annotated[bytes, "1s", "otherKitState"]
     reversed: Annotated[bytes, "2s", "reversed"]

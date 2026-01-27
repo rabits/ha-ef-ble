@@ -270,19 +270,21 @@ you have to create it yourself, see this section from the official
 <b>Delta 2 (Max, Delta 3 1500)</b>
 </summary>
 
-| *Sensors*                   | *Switches*  | *Sliders*           |
-|-----------------------------|-------------|---------------------|
-| Battery Level               | AC Ports    | Max Charge Limit    |
-| Input Power                 | DC 12V Port | Min Discharge Limit |
-| Output Power                | USB Ports   |                     |
-| AC Input Power              |             |                     |
-| AC Output Power             |             |                     |
-| DC Output Power             |             |                     |
-| DC 12V Output Voltage       |             |                     |
-| DC 12V Output Current       |             |                     |
-| USB A Output Power          |             |                     |
-| USB C Output Power          |             |                     |
-| Cell Temperature (disabled) |             |                     |
+| *Sensors*                      | *Switches*  | *Sliders*           |
+|--------------------------------|-------------|---------------------|
+| Battery Level                  | AC Ports    | Max Charge Limit    |
+| Main Battery Level             | DC 12V Port | Min Discharge Limit |
+| Addon Battery Level (disabled) | USB Ports   | Energy Backup       |
+| Input Power                    |             | AC Charging Speed   |
+| Output Power                   |             |                     |
+| AC Input Power                 |             |                     |
+| AC Output Power                |             |                     |
+| DC Output Power                |             |                     |
+| DC 12V Output Voltage          |             |                     |
+| DC 12V Output Current          |             |                     |
+| USB A Output Power             |             |                     |
+| USB C Output Power             |             |                     |
+| Cell Temperature (disabled)    |             |                     |
 
 </details>
 

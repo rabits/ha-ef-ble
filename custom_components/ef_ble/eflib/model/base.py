@@ -1,7 +1,7 @@
 import struct
 from dataclasses import dataclass, fields
 from functools import cache
-from inspect import get_annotations
+from inspect import get_annotations, getmro
 from typing import Annotated, ClassVar, Self, dataclass_transform, get_args, get_origin
 
 
@@ -46,7 +46,7 @@ class RawData:
     def __init_subclass__(cls) -> None:
         # set byte order to litte-endian (or for subclasses, get the full format str
         # from parent)
-        format_str = getattr(cls, "_STRUCT_FMT", ["<"])
+        format_str = getattr(cls, "_FULL_STRUCT_FMT", ["<"])
 
         for name, annotation in get_annotations(cls).items():
             if get_origin(annotation) is Annotated:
@@ -55,7 +55,7 @@ class RawData:
                 _, *metadata = get_args(annotation)
                 if not metadata:
                     continue
-                format_str += metadata[0]
+                format_str.append(metadata[0])
 
                 # by setting all defaults to None, we can construct the class only
                 # partially - messages can be defined with optional extensions depending
@@ -158,3 +158,14 @@ class RawData:
             size = struct.calcsize(reduced_fmt)
 
         return "".join(cls._FULL_STRUCT_FMT[:-i]), size
+
+    @classmethod
+    @cache
+    def get_bases(cls):
+        parents = []
+        for parent in getmro(cls):
+            if parent == RawData:
+                break
+
+            parents.append(parent)
+        return parents

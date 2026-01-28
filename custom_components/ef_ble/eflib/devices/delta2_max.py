@@ -34,5 +34,9 @@ class Device(Delta2Base):
     def mppt_heart_type(self):
         return Mr350MpptHeart
 
+    @property
+    def ac_commands_dst(self):
+        return 0x05
+
     async def packet_parse(self, data: bytes) -> Packet:
         return Packet.fromBytes(data, is_xor=False)

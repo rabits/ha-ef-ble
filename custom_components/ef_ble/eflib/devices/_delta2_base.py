@@ -142,6 +142,10 @@ class Delta2Base(DeviceBase, RawDataProps):
 
         return processed
 
+    @property
+    def ac_commands_dst(self):
+        return 0x05
+
     async def set_ac_charging_speed(self, value: int):
         if self.max_ac_charging_power is None:
             return
@@ -153,7 +157,7 @@ class Delta2Base(DeviceBase, RawDataProps):
 
         packet = Packet(
             0x21,
-            0x05,
+            self.ac_commands_dst,
             0x20,
             0x45,
             payload,
@@ -193,7 +197,7 @@ class Delta2Base(DeviceBase, RawDataProps):
 
     async def enable_ac_ports(self, enabled: bool):
         payload = bytes([1 if enabled else 0, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF])
-        packet = Packet(0x21, 0x05, 0x20, 0x42, payload, version=0x02)
+        packet = Packet(0x21, self.ac_commands_dst, 0x20, 0x42, payload, version=0x02)
         await self._conn.sendPacket(packet)
 
     async def packet_parse(self, data: bytes) -> Packet:

@@ -17,11 +17,8 @@ class Device(Delta2Base):
 
     ac_input_power = raw_field(pb_pd.ac_input_watts)
     plugged_in_ac = raw_field(pb_pd.ac_charge_flag, lambda x: x == 1)
-
     energy_backup_battery_level = raw_field(pb_pd.bp_power_soc)
-
     dc_output_power = raw_field(pb_pd.dc_pv_output_watts)
-
     ac_charging_speed = raw_field(pb_mppt.cfg_chg_watts)
 
     @property

@@ -20,6 +20,9 @@ class Device(Delta2Base):
     ac_charging_speed = raw_field(pb_inv.cfg_slow_chg_watts)
     dc_output_power = raw_field(pb_pd.car_watts)
 
+    usbc2_output_power = raw_field(pb_pd.typec2_watts)
+    usba2_output_power = raw_field(pb_pd.usb2_watt)
+
     def __init__(
         self, ble_dev: BLEDevice, adv_data: AdvertisementData, sn: str
     ) -> None:

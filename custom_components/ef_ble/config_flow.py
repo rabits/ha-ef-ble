@@ -51,6 +51,7 @@ from .const import (
     DEFAULT_CONNECTION_TIMEOUT,
     DEFAULT_UPDATE_PERIOD,
     DOMAIN,
+    LINK_WIKI_SUPPORTING_NEW_DEVICES,
 )
 from .eflib.connection import ConnectionState
 from .eflib.logging_util import LogOptions
@@ -208,6 +209,9 @@ class EFBLEConfigFlow(ConfigFlow, domain=DOMAIN):
         return self.async_show_form(
             step_id="user",
             last_step=False,
+            description_placeholders={
+                "wiki_link": LINK_WIKI_SUPPORTING_NEW_DEVICES,
+            },
             data_schema=(
                 schema_builder()
                 .required(CONF_ADDRESS, vol.In(device_by_name_sorted.keys()))
@@ -275,7 +279,10 @@ class EFBLEConfigFlow(ConfigFlow, domain=DOMAIN):
             if not errors:
                 return self._create_entry(user_input, device)
 
-        placeholders = {"name": device.device}
+        placeholders = {
+            "name": device.device,
+            "wiki_link": LINK_WIKI_SUPPORTING_NEW_DEVICES,
+        }
         self.context["title_placeholders"] = placeholders
 
         return self.async_show_form(

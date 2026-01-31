@@ -21,3 +21,8 @@ CONF_LOG_BLEAK = "log_bleak"
 
 DEFAULT_UPDATE_PERIOD = 10
 DEFAULT_CONNECTION_TIMEOUT = 20
+
+
+LINK_WIKI_SUPPORTING_NEW_DEVICES = (
+    "https://github.com/rabits/ha-ef-ble/wiki/Requesting-Support-for-New-Devices"
+)

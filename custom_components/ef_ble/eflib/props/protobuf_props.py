@@ -117,3 +117,13 @@ class ProtobufProps(UpdatableProps):
         self.update_from_message(msg, reset=reset)
         self._log_message(msg)
         return msg
+
+    def __str__(self):
+        field_values = []
+        for field in self._fields:
+            if hasattr(self, field.public_name):
+                value = getattr(self, field.public_name)
+                field_values.append(f"{field.public_name}={value}")
+
+        class_name = self.__class__.__name__
+        return f"{class_name}(\n  {',\n  '.join(field_values)}\n)"

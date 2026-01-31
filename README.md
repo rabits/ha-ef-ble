@@ -246,6 +246,24 @@ you have to create it yourself, see this section from the official
 </details>
 
 <details><summary>
+<b>Smart Meter</b>
+</summary>
+
+| *Sensors*  |
+|------------|
+| Grid Power |
+| L1 Power   |
+| L1 Current |
+| L1 Voltage |
+| L2 Power   |
+| L2 Current |
+| L2 Voltage |
+| L3 Power   |
+| L3 Current |
+| L3 Voltage |
+</details>
+
+<details><summary>
 <b>Delta 2 (Delta 3 1500)</b>
 </summary>
 

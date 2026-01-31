@@ -92,6 +92,12 @@
             "manufacturer_id": 46517,
             "manufacturer_data_start": [19, 75, 84, 50, 49],
             "connectable": true
+        },
+        {
+            "local_name": "EF-WN2*",
+            "manufacturer_id": 46517,
+            "manufacturer_data_start": [19, 66, 75, 50, 49],
+            "connectable": true
         }
     ],
 

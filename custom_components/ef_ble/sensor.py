@@ -716,6 +716,40 @@ SENSOR_TYPES: dict[str, SensorEntityDescription] = {
         )
         for i in range(5)
     },
+    # Smart Meter
+    **{
+        f"l{i}_power": SensorEntityDescription(
+            key=f"l{i}_power",
+            native_unit_of_measurement=UnitOfPower.WATT,
+            device_class=SensorDeviceClass.POWER,
+            state_class=SensorStateClass.MEASUREMENT,
+            translation_key="port_power",
+            translation_placeholders={"name": f"L{i}"},
+        )
+        for i in range(4)
+    },
+    **{
+        f"l{i}_current": SensorEntityDescription(
+            key=f"l{i}_current",
+            native_unit_of_measurement=UnitOfElectricCurrent.AMPERE,
+            device_class=SensorDeviceClass.CURRENT,
+            state_class=SensorStateClass.MEASUREMENT,
+            translation_key="port_current",
+            translation_placeholders={"name": f"L{i}"},
+        )
+        for i in range(4)
+    },
+    **{
+        f"l{i}_voltage": SensorEntityDescription(
+            key=f"l{i}_voltage",
+            native_unit_of_measurement=UnitOfElectricPotential.VOLT,
+            device_class=SensorDeviceClass.VOLTAGE,
+            state_class=SensorStateClass.MEASUREMENT,
+            translation_key="port_voltage",
+            translation_placeholders={"name": f"L{i}"},
+        )
+        for i in range(4)
+    },
     # Wave 3
     "ambient_temperature": EcoflowSensorEntityDescription[wave3.Device](
         key="ambient_temperature",

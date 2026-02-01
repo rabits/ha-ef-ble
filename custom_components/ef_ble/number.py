@@ -267,6 +267,19 @@ NUMBER_TYPES: list[EcoflowNumberEntityDescription] = [
             lambda device, value: device.set_temperature(int(value))
         ),
     ),
+    EcoflowNumberEntityDescription[stream_ac.Device](
+        key="charging_grid_target_soc",
+        name="Charging Target SOC",
+        device_class=NumberDeviceClass.BATTERY,
+        native_unit_of_measurement=PERCENTAGE,
+        native_step=1,
+        native_min_value=0,
+        native_max_value=100,
+        async_set_native_value=(
+            lambda device, value: device.set_charging_grid_target_soc(int(value))
+        ),
+        availability_prop="charging_grid_power_limit_enabled",
+    ),
 ]
 
 

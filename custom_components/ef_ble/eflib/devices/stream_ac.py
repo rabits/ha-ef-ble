@@ -39,7 +39,7 @@ class ChargingTimerTask(repeated_pb_field_type(pb.all_timer_task.time_task)):
         for task in value:
             if (
                 proto_has_attr(task, pb_time_task.chg_task)
-                and len(task.chg_task.dev_target_soc) == 1
+                and len(task.chg_task.dev_target_soc) > 0
             ):
                 return task
 
@@ -133,6 +133,7 @@ class Device(DeviceBase, ProtobufProps):
     _all_timer_tasks = pb_field(pb.all_timer_task)
     charging_grid_power_limit_enabled = Field[bool]()
     charging_grid_power_limit = Field[int]()
+    charging_grid_target_soc = Field[int]()
     max_bp_input = pb_field(pb.max_bp_input)
 
     @property
@@ -142,6 +143,14 @@ class Device(DeviceBase, ProtobufProps):
         dev_target_soc = self._charging_task.chg_task.dev_target_soc
 
         return dev_target_soc[0].chg_from_grid_power_limited
+
+    @property
+    def _charging_grid_target_soc(self):
+        if self._charging_task is None:
+            return None
+        dev_target_soc = self._charging_task.chg_task.dev_target_soc
+
+        return dev_target_soc[0].target_soc
 
     @classmethod
     def check(cls, sn):
@@ -168,6 +177,9 @@ class Device(DeviceBase, ProtobufProps):
 
         if (power_limit := self._charging_grid_power_limit) is not None:
             self.charging_grid_power_limit = power_limit
+
+        if (target_soc := self._charging_grid_target_soc) is not None:
+            self.charging_grid_target_soc = target_soc
 
         for field_name in self.updated_fields:
             self.update_callback(field_name)
@@ -252,11 +264,7 @@ class Device(DeviceBase, ProtobufProps):
         return True
 
     async def set_charging_grid_power_limit(self, limit: int):
-        if (
-            self._charging_task is None
-            or self._all_timer_tasks is None
-            or len(self._charging_task.chg_task.dev_target_soc) != 1
-        ):
+        if not self._check_charging_task_for_control():
             return False
 
         config = bk_series_pb2.ConfigWrite()
@@ -270,4 +278,30 @@ class Device(DeviceBase, ProtobufProps):
                     dev_target_soc.chg_from_grid_power_limited = limit
 
         await self._send_config_packet(config)
+        return True
+
+    async def set_charging_grid_target_soc(self, soc: int):
+        if not self._check_charging_task_for_control():
+            return False
+
+        config = bk_series_pb2.ConfigWrite()
+
+        for task in self._all_timer_tasks.time_task:
+            new_task = config.cfg_all_timer_task.time_task.add()
+            new_task.CopyFrom(task)
+
+            if task.task_index == self._charging_task.task_index:
+                for dev_target_soc in new_task.chg_task.dev_target_soc:
+                    dev_target_soc.target_soc = soc
+
+        await self._send_config_packet(config)
+        return True
+
+    def _check_charging_task_for_control(self):
+        if (
+            self._charging_task is None
+            or self._all_timer_tasks is None
+            or len(self._charging_task.chg_task.dev_target_soc) != 1
+        ):
+            return False
         return True

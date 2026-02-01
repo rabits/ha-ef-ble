@@ -266,7 +266,8 @@ class Device(DeviceBase, ProtobufProps):
             new_task.CopyFrom(task)
 
             if task.task_index == self._charging_task.task_index:
-                new_task.chg_task.dev_target_soc[0].chg_from_grid_power_limited = limit
+                for dev_target_soc in new_task.chg_task.dev_target_soc:
+                    dev_target_soc.chg_from_grid_power_limited = limit
 
         await self._send_config_packet(config)
         return True

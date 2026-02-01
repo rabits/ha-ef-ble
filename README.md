@@ -205,7 +205,7 @@ you have to create it yourself, see this section from the official
 | Grid Frequency              |             | Base Load Power ¹      |                 |
 | Load from Battery           |             | Grid Input Power Limit |                 |
 | Load from Grid              |             | Charging Power Limit ² |                 |
-| Load from PVᴹᴾᵁ             |             |                        |                 |
+| Load from PVᴹᴾᵁ             |             | Charging Target SOC ²  |                 |
 | AC (1) Power ᴬᴹᴾᵁ           |             |                        |                 |
 | AC (2) Power ᴬᴾᵁ            |             |                        |                 |
 | PV (1) Poweri ᴹᴾᵁ           |             |                        |                 |
@@ -220,7 +220,7 @@ you have to create it yourself, see this section from the official
 ᵁ Only available on Ultra and Ultra X variants  
 ¹ Not available when there's no base load timeframe or more than 1 timeframe configured  
 ² Only available works if timer task with charging power limit is configured and only
-  works for the first task  
+  works for the first charging task  
 </details>
 
 <details><summary>

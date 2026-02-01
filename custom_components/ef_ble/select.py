@@ -41,10 +41,10 @@ def _default_select_state(value: object):
 
     # EcoFlow enums (IntFieldValue etc.)
     if hasattr(value, "state_name"):
-        return getattr(value, "state_name")
+        return value.state_name
 
     if hasattr(value, "name"):
-        return getattr(value, "name").lower()
+        return value.name.lower()
 
     if isinstance(value, (str, int)):
         return str(value)
@@ -55,7 +55,7 @@ def _default_select_state(value: object):
 SELECT_TYPES: list[EcoflowSelectEntityDescription] = [
     # River 2 Pro
     EcoflowSelectEntityDescription[river2_pro.Device](
-        key="car_input_current_limit_ma",
+        key="car_input_current_limit_max",
         name="Car Input",
         entity_category=EntityCategory.CONFIG,
         options=["4A", "6A", "8A"],
@@ -66,7 +66,7 @@ SELECT_TYPES: list[EcoflowSelectEntityDescription] = [
             )
         ),
         set_state=(
-            lambda device, opt: device.set_car_input_current_limit_ma(
+            lambda device, opt: device.set_dc_charging_amps_max(
                 {"4A": 4000, "6A": 6000, "8A": 8000}[opt]
             )
         ),
@@ -198,7 +198,6 @@ SELECT_TYPES: list[EcoflowSelectEntityDescription] = [
             )
         ),
     ),
-
     # River 3 Plus
     EcoflowSelectEntityDescription[river3_plus.Device](
         key="led_mode",

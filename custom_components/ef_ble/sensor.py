@@ -21,11 +21,9 @@ from homeassistant.const import (
     UnitOfFrequency,
     UnitOfPower,
     UnitOfTemperature,
-    UnitOfTime,
 )
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
-from homeassistant.helpers import entity_registry as er
 
 from . import DeviceConfigEntry
 from .eflib import DeviceBase
@@ -258,14 +256,6 @@ SENSOR_TYPES: dict[str, SensorEntityDescription] = {
         device_class=SensorDeviceClass.BATTERY,
         state_class=SensorStateClass.MEASUREMENT,
     ),
-    "battery_time_remaining": SensorEntityDescription(
-        key="battery_time_remaining",
-        device_class=SensorDeviceClass.DURATION,
-        state_class=SensorStateClass.MEASUREMENT,
-        native_unit_of_measurement=UnitOfTime.MINUTES,
-        suggested_display_precision=0,
-    ),
-
     "input_power": SensorEntityDescription(
         key="input_power",
         native_unit_of_measurement=UnitOfPower.WATT,
@@ -453,15 +443,6 @@ SENSOR_TYPES: dict[str, SensorEntityDescription] = {
         device_class=SensorDeviceClass.POWER,
         state_class=SensorStateClass.MEASUREMENT,
         suggested_display_precision=2,
-    ),
-    # River 2 Pro (XT60): split DC input into Solar vs Car based on cfgChgType
-    "car_input_power": SensorEntityDescription(
-        key="car_input_power",
-        native_unit_of_measurement=UnitOfPower.WATT,
-        device_class=SensorDeviceClass.POWER,
-        state_class=SensorStateClass.MEASUREMENT,
-        suggested_display_precision=2,
-        entity_registry_enabled_default=False,
     ),
     "dc_input_energy": SensorEntityDescription(
         key="dc_input_energy",
@@ -954,42 +935,6 @@ async def async_setup_entry(
 ) -> None:
     """Add sensors for passed config_entry in HA."""
     device = config_entry.runtime_data
-
-    # River 2 Pro: remove legacy/stale "Power" sensor entity if present.
-    #
-    # Earlier experimental builds created a generic "Power" sensor that is not
-    # backed by reliable R2P telemetry. Even after removing it from code, HA can
-    # keep the entity in the registry (showing a stuck/invalid value).
-    #
-    # We remove it defensively by matching the original name and a tight unique_id
-    # pattern so we don't touch legitimate sensors like input_power/output_power.
-    if getattr(device, "device", None) == "River 2 Pro":
-        try:
-            ent_reg = er.async_get(hass)
-            for entry in list(ent_reg.entities.values()):
-                if entry.config_entry_id != config_entry.entry_id:
-                    continue
-                if entry.domain != "sensor":
-                    continue
-
-                # Most reliable signal: the legacy entity's original name.
-                # Older experimental builds used either "Power" or "R2P Power".
-                if getattr(entry, "original_name", None) in ("Power", "R2P Power"):
-                    ent_reg.async_remove(entry.entity_id)
-                    continue
-
-                # Backup: unique_id created by this integration is always
-                # f"{device.name}_{sensor}". Remove ONLY the legacy power sensor
-                # for this specific River 2 Pro device.
-                uid = getattr(entry, "unique_id", "") or ""
-                target_uid = f"{device.name}_power"
-                if uid == target_uid or (
-                    uid.endswith("_power") and uid.startswith(f"{device.name}_")
-                ):
-                    ent_reg.async_remove(entry.entity_id)
-        except Exception:  # noqa: BLE001
-            # Never fail setup on registry cleanup.
-            pass
 
     new_sensors = [
         EcoflowSensor(device, sensor)

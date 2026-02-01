@@ -74,12 +74,3 @@ class RawDataProps(UpdatableProps, abc.ABC):
 
             field_map[field.data_attr.message_type].append(field)
         return field_map
-
-    def __str__(self) -> str:
-        class_name = f"{self.__class__.__module__}.{self.__class__.__name__}"
-        field_strs = []
-        for field in self._fields:
-            value = getattr(self, field.public_name)
-            field_strs.append(f"  {field.public_name}: {value!r}")
-        fields_formatted = "\n".join(field_strs)
-        return f"{class_name}:\n{fields_formatted}"

@@ -8,7 +8,7 @@ from .direct_inv_heartbeat_pack import (
 from .direct_mppt_heartbeat_pack import DirectMpptHeartbeatPack
 from .kit_info import AllKitDetailData
 from .mppt_heart import BaseMpptHeart, Mr330MpptHeart, Mr350MpptHeart
-from .pd_heart import BasePdHeart, Mr330PdHeart, Mr350PdHeartbeat
+from .pd_heart import BasePdHeart, Mr330PdHeart, Mr350PdHeartbeatDelta2Max
 
 __all__ = [
     "AllKitDetailData",
@@ -22,6 +22,6 @@ __all__ = [
     "Mr330MpptHeart",
     "Mr330PdHeart",
     "Mr350MpptHeart",
-    "Mr350PdHeartbeat",
+    "Mr350PdHeartbeatDelta2Max",
     "RawData",
 ]

@@ -16,6 +16,10 @@ from ..props.raw_data_field import dataclass_attr_mapper, raw_field
 from ..props.raw_data_props import RawDataProps
 
 
+class _BmsHeartbeatBatteryMain(DirectBmsMDeltaHeartbeatPack):
+    pass
+
+
 class _BmsHeartbeatBattery1(DirectBmsMDeltaHeartbeatPack):
     pass
 
@@ -23,7 +27,7 @@ class _BmsHeartbeatBattery1(DirectBmsMDeltaHeartbeatPack):
 pb_pd = dataclass_attr_mapper(BasePdHeart)
 pb_mppt = dataclass_attr_mapper(BaseMpptHeart)
 pb_ems = dataclass_attr_mapper(DirectEmsDeltaHeartbeatPack)
-pb_bms = dataclass_attr_mapper(DirectBmsMDeltaHeartbeatPack)
+pb_bms = dataclass_attr_mapper(_BmsHeartbeatBatteryMain)
 pb_bms_1 = dataclass_attr_mapper(_BmsHeartbeatBattery1)
 pb_inv = dataclass_attr_mapper(DirectInvDeltaHeartbeatPack)
 
@@ -118,7 +122,7 @@ class Delta2Base(DeviceBase, RawDataProps):
                 self.update_from_bytes(DirectEmsDeltaHeartbeatPack, packet.payload)
                 processed = True
             case 0x03, 0x20, 0x32:
-                self.update_from_bytes(DirectBmsMDeltaHeartbeatPack, packet.payload)
+                self.update_from_bytes(_BmsHeartbeatBatteryMain, packet.payload)
                 processed = True
             case 0x06, 0x20, 0x32:
                 self.update_from_bytes(_BmsHeartbeatBattery1, packet.payload)

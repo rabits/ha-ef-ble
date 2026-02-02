@@ -43,7 +43,7 @@ class BasePdHeart(RawData):
     mppt_used_time: Annotated[int, "l", "mpptUsedTime"]
 
 
-class Mr330PdHeart(BasePdHeart):
+class Mr330PdHeartBase(BasePdHeart):
     reverser: Annotated[int, "H", "reverser"]
     screen_state: Annotated[str, "14s", "screenState"]
     ext_rj45_port: Annotated[int, "B", "extRj45Port"]
@@ -58,6 +58,9 @@ class Mr330PdHeart(BasePdHeart):
     dc_pv_input_watts: Annotated[int, "H", "dcPvInputWatts"]
     dc_pv_output_watts: Annotated[int, "H", "dcPvOutputWatts"]
     cfg_ac_enabled: Annotated[int, "B", "cfgAcEnabled"]
+
+
+class Mr330PdHeart(Mr330PdHeartBase):
     pv_priority: Annotated[int, "B", "pvPriority"]
     ac_auto_on: Annotated[int, "B", "acAutoOn"]
     watthis_config: Annotated[int, "B", "watthisConfig"]
@@ -76,7 +79,17 @@ class Mr330PdHeart(BasePdHeart):
     redun_charge_flag: Annotated[int, "B", "redunChargeFlag"]
 
 
-class Mr350PdHeartbeat(BasePdHeart):
+class Mr330PdHeartRiver2(Mr330PdHeartBase):
+    ac_auto_out_config: Annotated[int, "B", "acAutoOutConfig"]
+    min_auto_soc: Annotated[int, "B", "minAutoSoc"]
+    ac_auto_out_pause: Annotated[int, "B", "acAutoOutPause"]
+    watthis_config: Annotated[int, "B", "watthisConfig"]
+    bp_power_soc: Annotated[int, "B", "bppowerSoc"]
+    hysteresis_soc: Annotated[int, "B", "hysteresisSoc"]
+    reply_switchcnt: Annotated[int, "I", "replySwitchcnt"]
+
+
+class Mr350PdHeartbeatBase(BasePdHeart):
     bms_kit_state: Annotated[bytes, "2s", "bmsKitState"]
     other_kit_state: Annotated[bytes, "1s", "otherKitState"]
     reversed: Annotated[bytes, "2s", "reversed"]
@@ -87,13 +100,31 @@ class Mr350PdHeartbeat(BasePdHeart):
     first_xt150_watts: Annotated[bytes, "2s", "firstXt150Watts"]
     second_xt150_watts: Annotated[bytes, "2s", "secondXT150Watts"]
     inv_in_watts: Annotated[bytes, "2s", "invInWatts"]
-    inv_in_type: Annotated[bytes, "1s", "invInType"]
+
+
+class Mr350PdHeartbeatDelta2Max(Mr350PdHeartbeatBase):
     inv_out_watts: Annotated[bytes, "2s", "invOutWatts"]
-    inv_out_type: Annotated[bytes, "1s", "invOutType"]
     pv1_charge_type: Annotated[bytes, "1s", "pv1ChargeType"]
     pv1_charge_watts: Annotated[bytes, "2s", "pv1ChargeWatts"]
     pv2_charge_type: Annotated[bytes, "1s", "pv2ChargeType"]
     pv2_charge_watts: Annotated[bytes, "2s", "pv2ChargeWatts"]
+    pv_charge_prio_set: Annotated[bytes, "1s", "pvChargePrioSet"]
+    ac_auto_on_cfg_set: Annotated[bytes, "1s", "acAutoOnCfgSet"]
+    ac_auto_out_config: Annotated[bytes, "1s", "acAutoOutConfig"]
+    main_ac_out_soc: Annotated[bytes, "1s", "mainAcOutSoc"]
+    ac_auto_out_pause: Annotated[bytes, "1s", "acAutoOutPause"]
+    watthisconfig: Annotated[bytes, "1s", "watthisconfig"]
+    bp_power_soc: Annotated[bytes, "1s", "bppowerSoc"]
+    hysteresis_add: Annotated[bytes, "1s", "hysteresisAdd"]
+    relayswitchcnt: Annotated[bytes, "4s", "relayswitchcnt"]
+
+
+class Mr350PdHeartbeatDeltaPro(Mr350PdHeartbeatBase):
+    inv_in_type: Annotated[bytes, "1s", "invInType"]
+    inv_out_watts: Annotated[bytes, "2s", "invOutWatts"]
+    inv_out_type: Annotated[bytes, "1s", "invOutType"]
+    pv1_charge_watts: Annotated[bytes, "2s", "pv1ChargeWatts"]
+    pv1_charge_type: Annotated[bytes, "1s", "pv1ChargeType"]
     anderson_power: Annotated[bytes, "2s", "andersonPower"]
     pv_charge_prio_set: Annotated[bytes, "1s", "pvChargePrioSet"]
     ac_auto_on_cfg_set: Annotated[bytes, "1s", "acAutoOnCfgSet"]
@@ -101,6 +132,6 @@ class Mr350PdHeartbeat(BasePdHeart):
     main_ac_out_soc: Annotated[bytes, "1s", "mainAcOutSoc"]
     ac_auto_out_pause: Annotated[bytes, "1s", "acAutoOutPause"]
     watthisconfig: Annotated[bytes, "1s", "watthisconfig"]
-    bppower_soc: Annotated[bytes, "1s", "bppowerSoc"]
+    bp_power_soc: Annotated[bytes, "1s", "bppowerSoc"]
     hysteresis_add: Annotated[bytes, "1s", "hysteresisAdd"]
     relayswitchcnt: Annotated[bytes, "4s", "relayswitchcnt"]

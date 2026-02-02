@@ -1,12 +1,12 @@
 from bleak.backends.device import BLEDevice
 from bleak.backends.scanner import AdvertisementData
 
-from ..model import Mr350MpptHeart, Mr350PdHeartbeat
+from ..model import Mr350MpptHeart, Mr350PdHeartbeatDelta2Max
 from ..packet import Packet
 from ..props import dataclass_attr_mapper, raw_field
 from ._delta2_base import Delta2Base, pb_inv
 
-pb_pd = dataclass_attr_mapper(Mr350PdHeartbeat)
+pb_pd = dataclass_attr_mapper(Mr350PdHeartbeatDelta2Max)
 pb_mppt = dataclass_attr_mapper(Mr350MpptHeart)
 
 
@@ -19,6 +19,7 @@ class Device(Delta2Base):
     ac_input_power = raw_field(pb_inv.input_watts)
     ac_charging_speed = raw_field(pb_inv.cfg_slow_chg_watts)
     dc_output_power = raw_field(pb_pd.car_watts)
+    energy_backup_battery_level = raw_field(pb_pd.bp_power_soc)
 
     usbc2_output_power = raw_field(pb_pd.typec2_watts)
     usba2_output_power = raw_field(pb_pd.usb2_watt)
@@ -31,7 +32,7 @@ class Device(Delta2Base):
 
     @property
     def pd_heart_type(self):
-        return Mr350PdHeartbeat
+        return Mr350PdHeartbeatDelta2Max
 
     @property
     def mppt_heart_type(self):

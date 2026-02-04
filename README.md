@@ -93,35 +93,36 @@ See more info in [this issue](https://github.com/rabits/ha-ef-ble/issues/78).
 </details>
 
 <details><summary>
-<b>Delta 3 (Classic, Plus, Max, Max Plus, Ultra) (EF-D3####)</b>
+<b>Delta 3 (Classic, Plus, Max, Max Plus, Ultra, Air)</b>
 </summary>
 
-| *Sensors*                       | *Switches*                     | *Sliders*                  |
-|---------------------------------|--------------------------------|----------------------------|
-| Main Battery Level              | AC Ports                       | Backup Reserve Level       |
-| Battery Level                   | DC Ports                       | Max Charge Limit           |
-| AC Input Power                  | Backup Reserve                 | Min Discharge Limit        |
-| AC Output Power                 | USB Ports ¹                    | AC Charging Speed          |
-| DC 12V Port Output Power        | Disable Grid Bypass (disabled) | DC Charging Max Amps       |
-| DC Port Input Power             |                                | DC (2) Charging Max Amps ⁺ |
-| DC Port Input State             |                                |                            |
-| DC Port (2) Input Power⁺        |                                |                            |
-| DC Port (2) Input State⁺        |                                |                            |
-| Solar Power                     |                                |                            |
-| Solar Power (2) ⁺               |                                |                            |
-| Input Power Total               |                                |                            |
-| Output Power Total              |                                |                            |
-| USB A Output Power              |                                |                            |
-| USB A (2) Output Power          |                                |                            |
-| USB C Output Power              |                                |                            |
-| USB C (2) Output Power          |                                |                            |
-| AC Plugged In                   |                                |                            |
-| Battery Input Power (disabled)  |                                |                            |
-| Battery Output Power (disabled) |                                |                            |
-| Cell Temperature (disabled)     |                                |                            |
+| *Sensors*                       | *Switches*                      | *Sliders*                  |
+|---------------------------------|---------------------------------|----------------------------|
+| Main Battery Level              | AC Ports                        | Backup Reserve Level       |
+| Battery Level                   | DC Ports ²                      | Max Charge Limit           |
+| AC Input Power                  | Backup Reserve                  | Min Discharge Limit        |
+| AC Output Power                 | USB Ports ¹                     | AC Charging Speed          |
+| DC 12V Port Output Power ²      | Disable Grid Bypass ²(disabled) | DC Charging Max Amps       |
+| DC Port Input Power             |                                 | DC (2) Charging Max Amps ⁺ |
+| DC Port Input State             |                                 |                            |
+| DC Port (2) Input Power ⁺       |                                 |                            |
+| DC Port (2) Input State ⁺       |                                 |                            |
+| Solar Power                     |                                 |                            |
+| Solar Power (2) ⁺               |                                 |                            |
+| Input Power Total               |                                 |                            |
+| Output Power Total              |                                 |                            |
+| USB A Output Power              |                                 |                            |
+| USB A (2) Output Power          |                                 |                            |
+| USB C Output Power              |                                 |                            |
+| USB C (2) Output Power          |                                 |                            |
+| AC Plugged In                   |                                 |                            |
+| Battery Input Power (disabled)  |                                 |                            |
+| Battery Output Power (disabled) |                                 |                            |
+| Cell Temperature (disabled)     |                                 |                            |
 
 ⁺ Only available on Plus variant  
 ¹ Not available on Classic
+² Not available on Air
 
 **NOTE**: Delta 3 models do not expose energy sensors - to use it for Energy dashboard,
 you have to create it yourself, see this section from the official

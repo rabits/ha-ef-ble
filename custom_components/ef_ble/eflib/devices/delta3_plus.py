@@ -4,7 +4,7 @@ from custom_components.ef_ble.eflib.pb import pd335_sys_pb2
 
 from ..props import Field, pb_field
 from . import delta3
-from .delta3_classic import DCPortState, _DcAmpSettingField, _DcChargingMaxField, pb
+from ._delta3_base import DCPortState, _DcAmpSettingField, _DcChargingMaxField, pb
 
 
 class Device(delta3.Device):

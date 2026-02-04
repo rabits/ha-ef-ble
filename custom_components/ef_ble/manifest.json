@@ -104,6 +104,18 @@
             "manufacturer_id": 46517,
             "manufacturer_data_start": [19, 82, 51, 53],
             "connectable": true
+        },
+        {
+            "local_name": "EF-PR*",
+            "manufacturer_id": 46517,
+            "manufacturer_data_start": [19, 80, 82, 49],
+            "connectable": true
+        },
+        {
+            "local_name": "EF-PR*",
+            "manufacturer_id": 46517,
+            "manufacturer_data_start": [19, 80, 82, 50],
+            "connectable": true
         }
     ],
 

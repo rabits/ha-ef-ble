@@ -24,6 +24,9 @@ class Device(Delta2Base):
     usbc2_output_power = raw_field(pb_pd.typec2_watts)
     usba2_output_power = raw_field(pb_pd.usb2_watt)
 
+    qc_usb1_output_power = raw_field(pb_pd.qc_usb1_watt)
+    qc_usb2_output_power = raw_field(pb_pd.qc_usb2_watt)
+
     def __init__(
         self, ble_dev: BLEDevice, adv_data: AdvertisementData, sn: str
     ) -> None:
@@ -40,7 +43,7 @@ class Device(Delta2Base):
 
     @property
     def ac_commands_dst(self):
-        return 0x05
+        return 0x04
 
     async def packet_parse(self, data: bytes) -> Packet:
         return Packet.fromBytes(data, is_xor=False)

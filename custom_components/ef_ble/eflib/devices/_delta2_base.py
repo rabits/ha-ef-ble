@@ -147,7 +147,7 @@ class Delta2Base(DeviceBase, RawDataProps):
         return processed
 
     @property
-    def ac_commands_dst(self):
+    def ac_commands_dst(self) -> int:
         return 0x05
 
     async def set_ac_charging_speed(self, value: int):

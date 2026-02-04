@@ -486,6 +486,18 @@ SENSOR_TYPES: dict[str, SensorEntityDescription] = {
         device_class=SensorDeviceClass.POWER,
         state_class=SensorStateClass.MEASUREMENT,
     ),
+    "qc_usb1_output_power": SensorEntityDescription(
+        key="qc_usb1_output_power",
+        native_unit_of_measurement=UnitOfPower.WATT,
+        device_class=SensorDeviceClass.POWER,
+        state_class=SensorStateClass.MEASUREMENT,
+    ),
+    "qc_usb2_output_power": SensorEntityDescription(
+        key="qc_usb2_output_power",
+        native_unit_of_measurement=UnitOfPower.WATT,
+        device_class=SensorDeviceClass.POWER,
+        state_class=SensorStateClass.MEASUREMENT,
+    ),
     "battery_input_power": SensorEntityDescription(
         key="battery_input_power",
         native_unit_of_measurement=UnitOfPower.WATT,

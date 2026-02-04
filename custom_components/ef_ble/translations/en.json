@@ -333,6 +333,9 @@
       "dc_input_energy": {
         "name": "DC Input Energy"
       },
+      "dc_output_power": {
+        "name": "DC Output Power"
+      },
       "dc12v_output_power": {
         "name": "DC 12V Output Power"
       },
@@ -368,6 +371,12 @@
       },
       "usba2_output_energy": {
         "name": "USB A (2) Output Energy"
+      },
+      "qc_usb1_output_power": {
+        "name": "USB A QC (1) Power"
+      },
+      "qc_usb2_output_power": {
+        "name": "USB A QC (2) Power"
       },
       "battery_input_power": {
         "name": "Battery Input Power"

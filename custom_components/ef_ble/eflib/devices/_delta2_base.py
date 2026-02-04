@@ -53,7 +53,11 @@ class Delta2Base(DeviceBase, RawDataProps):
     output_power = raw_field(pb_pd.watts_out_sum)
 
     usbc_output_power = raw_field(pb_pd.typec1_watts)
+    usbc2_output_power = raw_field(pb_pd.typec2_watts)
     usba_output_power = raw_field(pb_pd.usb1_watt)
+    usba2_output_power = raw_field(pb_pd.usb2_watt)
+    qc_usb1_output_power = raw_field(pb_pd.qc_usb1_watt)
+    qc_usb2_output_power = raw_field(pb_pd.qc_usb2_watt)
 
     ac_ports = raw_field(pb_inv.cfg_ac_enabled, lambda x: x == 1)
     usb_ports = raw_field(pb_pd.dc_out_state, lambda x: x == 1)

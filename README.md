@@ -98,10 +98,10 @@ See more info in [this issue](https://github.com/rabits/ha-ef-ble/issues/78).
 
 | *Sensors*                       | *Switches*                      | *Sliders*                  |
 |---------------------------------|---------------------------------|----------------------------|
-| Main Battery Level              | AC Ports                        | Backup Reserve Level       |
+| Main Battery Level              | AC Ports                        | Backup Reserve Level ²     |
 | Battery Level                   | DC Ports ²                      | Max Charge Limit           |
-| AC Input Power                  | Backup Reserve                  | Min Discharge Limit        |
-| AC Output Power                 | USB Ports ¹                     | AC Charging Speed          |
+| AC Input Power                  | Backup Reserve ²                | Min Discharge Limit        |
+| AC Output Power                 | USB Ports ¹²                    | AC Charging Speed          |
 | DC 12V Port Output Power ²      | Disable Grid Bypass ²(disabled) | DC Charging Max Amps       |
 | DC Port Input Power             |                                 | DC (2) Charging Max Amps ⁺ |
 | DC Port Input State             |                                 |                            |
@@ -206,7 +206,7 @@ you have to create it yourself, see this section from the official
 | Grid Frequency              |             | Base Load Power ¹      |                 |
 | Load from Battery           |             | Grid Input Power Limit |                 |
 | Load from Grid              |             | Charging Power Limit ² |                 |
-| Load from PVᴹᴾᵁ             |             | Charging Target SOC ²  |                 |
+| Load from PV ᴹᴾᵁ            |             | Charging Target SOC ²  |                 |
 | AC (1) Power ᴬᴹᴾᵁ           |             |                        |                 |
 | AC (2) Power ᴬᴾᵁ            |             |                        |                 |
 | PV (1) Poweri ᴹᴾᵁ           |             |                        |                 |
@@ -279,14 +279,18 @@ you have to create it yourself, see this section from the official
 | Input Power                               |             | AC Charging Speed   |
 | Output Power                              |             |                     |
 | AC Input Power                            |             |                     |
-| AC Input Voltage                          |             |                     |
-| AC Input Current                          |             |                     |
+| AC Input Voltage (disabled)               |             |                     |
+| AC Input Current (disabled)               |             |                     |
 | AC Output Power                           |             |                     |
 | DC Output Power                           |             |                     |
-| DC 12V Output Voltage                     |             |                     |
-| DC 12V Output Current                     |             |                     |
-| USB A Output Power                        |             |                     |
-| USB C Output Power                        |             |                     |
+| DC 12V Output Voltage (disabled)          |             |                     |
+| DC 12V Output Current (disabled)          |             |                     |
+| USB A (1) Output Power                    |             |                     |
+| USB A (2) Output Power                    |             |                     |
+| USB A QC (1) Output Power                 |             |                     |
+| USB A QC (2) Output Power                 |             |                     |
+| USB C (1) Output Power                    |             |                     |
+| USB C (2) Output Power                    |             |                     |
 | Cell Temperature (disabled)               |             |                     |
 | Addon Battery Cell Temperature (disabled) |             |                     |
 

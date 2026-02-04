@@ -404,6 +404,7 @@ SENSOR_TYPES: dict[str, SensorEntityDescription] = {
         device_class=SensorDeviceClass.VOLTAGE,
         state_class=SensorStateClass.MEASUREMENT,
         suggested_display_precision=1,
+        entity_registry_enabled_default=False,
     ),
     "ac_input_current": SensorEntityDescription(
         key="ac_input_current",
@@ -411,6 +412,7 @@ SENSOR_TYPES: dict[str, SensorEntityDescription] = {
         device_class=SensorDeviceClass.CURRENT,
         state_class=SensorStateClass.MEASUREMENT,
         suggested_display_precision=2,
+        entity_registry_enabled_default=False,
     ),
     "ac_output_power": SensorEntityDescription(
         key="ac_output_power",
@@ -873,6 +875,7 @@ SENSOR_TYPES: dict[str, SensorEntityDescription] = {
         device_class=SensorDeviceClass.VOLTAGE,
         state_class=SensorStateClass.MEASUREMENT,
         suggested_display_precision=2,
+        entity_registry_enabled_default=False,
     ),
     "dc12v_output_current": SensorEntityDescription(
         key="dc12v_output_current",
@@ -880,6 +883,7 @@ SENSOR_TYPES: dict[str, SensorEntityDescription] = {
         device_class=SensorDeviceClass.CURRENT,
         state_class=SensorStateClass.MEASUREMENT,
         suggested_display_precision=2,
+        entity_registry_enabled_default=False,
     ),
     # Wave 2
     "outlet_temperature": SensorEntityDescription(

@@ -45,6 +45,7 @@ class EcoflowEntity(Entity):
         entity_attr: str,
         prop_name: str | None,
         get_state: Callable[[Any], SkipWrite | Any] = lambda x: x,
+        default_state: Any = None,
     ):
         if prop_name is None:
             return
@@ -59,6 +60,8 @@ class EcoflowEntity(Entity):
 
         if (state := getattr(self._device, prop_name, None)) is not None:
             setattr(self, entity_attr, get_state(state))
+        elif default_state is not None:
+            setattr(self, entity_attr, default_state)
 
         self._update_callbacks.append((prop_name, state_updated))
 

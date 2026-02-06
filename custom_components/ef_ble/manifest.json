@@ -122,6 +122,18 @@
             "manufacturer_id": 46517,
             "manufacturer_data_start": [19, 82, 54, 50],
             "connectable": true
+        },
+        {
+            "local_name": "EF-R2*",
+            "manufacturer_id": 46517,
+            "manufacturer_data_start": [19, 82, 54, 49],
+            "connectable": true
+        },
+        {
+            "local_name": "EF-R2*",
+            "manufacturer_id": 46517,
+            "manufacturer_data_start": [19, 82, 54, 48],
+            "connectable": true
         }
     ],
 

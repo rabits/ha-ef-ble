@@ -159,7 +159,7 @@ class Delta2Base(DeviceBase, RawDataProps):
 
     async def set_ac_charging_speed(self, value: int):
         if self.max_ac_charging_power is None:
-            return
+            return False
 
         value = max(1, min(value, self.max_ac_charging_power))
         # Sending 0 sets to (more than) max-load - better safe
@@ -175,8 +175,16 @@ class Delta2Base(DeviceBase, RawDataProps):
             version=0x02,
         )
         await self._conn.sendPacket(packet)
+        return True
 
-    async def set_energy_backup_battery_level(self, value: int):
+    async def enable_energy_backup(self, enabled: bool):
+        backup_level = getattr(self, "energy_backup_battery_level", 0)
+        if backup_level == 0 and enabled:
+            backup_level = 50
+
+        await self.set_energy_backup_battery_level(backup_level, enabled=enabled)
+
+    async def set_energy_backup_battery_level(self, value: int, enabled: bool = True):
         if (
             self.battery_charge_limit_min is None
             or self.battery_charge_limit_max is None
@@ -187,7 +195,7 @@ class Delta2Base(DeviceBase, RawDataProps):
             self.battery_charge_limit_min,
             min(value, self.battery_charge_limit_max),
         )
-        payload = bytes([0x01]) + value.to_bytes() + bytes([0x00, 0x00])
+        payload = bytes([0x01 if enabled else 0, value, 0x00, 0x00])
         packet = Packet(0x21, 0x02, 0x20, 0x5E, payload, version=0x02)
         await self._conn.sendPacket(packet)
 

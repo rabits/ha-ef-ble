@@ -24,7 +24,7 @@ from .eflib.devices import (
     delta3_classic,
     delta3_plus,
     delta_pro_3,
-    river2_pro,
+    river2,
     river3,
     smart_generator,
     smart_generator_4k,
@@ -44,20 +44,6 @@ class EcoflowNumberEntityDescription[Device: DeviceBase](NumberEntityDescription
 
 
 NUMBER_TYPES: list[EcoflowNumberEntityDescription] = [
-    # River 2 Pro
-    EcoflowNumberEntityDescription[river2_pro.Device](
-        key="ac_charge_speed_watts",
-        name="AC Charge Speed",
-        device_class=NumberDeviceClass.POWER,
-        native_unit_of_measurement=UnitOfPower.WATT,
-        mode=NumberMode.SLIDER,
-        native_step=50,
-        native_min_value=100,
-        native_max_value=940,
-        async_set_native_value=(
-            lambda device, value: device.set_ac_charge_speed_watts(int(value))
-        ),
-    ),
     EcoflowNumberEntityDescription[river3.Device](
         key="energy_backup_battery_level",
         name="Backup Reserve",
@@ -99,20 +85,22 @@ NUMBER_TYPES: list[EcoflowNumberEntityDescription] = [
         ),
     ),
     EcoflowNumberEntityDescription[
-        river3.Device | delta3_classic.Device | delta_pro_3.Device
+        river3.Device | delta3_classic.Device | delta_pro_3.Device | river2.Device
     ](
         key="ac_charging_speed",
         name="AC Charging Speed",
         device_class=NumberDeviceClass.POWER,
         native_unit_of_measurement=UnitOfPower.WATT,
         native_step=1,
-        native_min_value=0,
+        min_value_prop="min_ac_charging_power",
         max_value_prop="max_ac_charging_power",
         async_set_native_value=(
             lambda device, value: device.set_ac_charging_speed(int(value))
         ),
     ),
-    EcoflowNumberEntityDescription[river3.Device | delta3_classic.Device](
+    EcoflowNumberEntityDescription[
+        river3.Device | delta3_classic.Device | river2.Device
+    ](
         key="dc_charging_max_amps",
         name="DC Charging Max Amps",
         device_class=NumberDeviceClass.CURRENT,
@@ -295,17 +283,6 @@ NUMBER_TYPES: list[EcoflowNumberEntityDescription] = [
         ),
         availability_prop="charging_grid_power_limit_enabled",
     ),
-    EcoflowNumberEntityDescription[river2_pro.Device](
-        key="car_charging_amps_max",
-        device_class=NumberDeviceClass.CURRENT,
-        native_unit_of_measurement=UnitOfElectricCurrent.AMPERE,
-        native_step=1,
-        native_min_value=0,
-        max_value_prop="car_input_current_limit_max",
-        async_set_native_value=(
-            lambda device, value: device.set_dc_charging_amps_max(int(value))
-        ),
-    ),
 ]
 
 
@@ -316,42 +293,9 @@ async def async_setup_entry(
 ) -> None:
     device = config_entry.runtime_data
 
-    def _override_description(
-        desc: EcoflowNumberEntityDescription,
-    ) -> EcoflowNumberEntityDescription:
-        # River 2 Pro app UI clamps Energy Management bounds
-        if isinstance(device, river2_pro.Device):
-            if desc.key == "battery_charge_limit_min":
-                return EcoflowNumberEntityDescription[river2_pro.Device](
-                    key=desc.key,
-                    name="Energy Management Lower",
-                    icon=desc.icon,
-                    device_class=desc.device_class,
-                    native_unit_of_measurement=desc.native_unit_of_measurement,
-                    mode=NumberMode.SLIDER,
-                    native_step=1.0,
-                    native_min_value=0,
-                    native_max_value=30,
-                    async_set_native_value=desc.async_set_native_value,
-                )
-            if desc.key == "battery_charge_limit_max":
-                return EcoflowNumberEntityDescription[river2_pro.Device](
-                    key=desc.key,
-                    name="Energy Management Upper",
-                    icon=desc.icon,
-                    device_class=desc.device_class,
-                    native_unit_of_measurement=desc.native_unit_of_measurement,
-                    mode=NumberMode.SLIDER,
-                    native_step=1.0,
-                    native_min_value=50,
-                    native_max_value=100,
-                    async_set_native_value=desc.async_set_native_value,
-                )
-        return desc
-
     async_add_entities(
         [
-            EcoflowNumber(device, _override_description(entity_description))
+            EcoflowNumber(device, entity_description)
             for entity_description in NUMBER_TYPES
             if hasattr(device, entity_description.key)
         ]
@@ -390,6 +334,7 @@ class EcoflowNumber(EcoflowEntity, NumberEntity):
             "_attr_native_min_value",
             self._min_value_prop,
             lambda state: state if state is not None else self.SkipWrite,
+            0,
         )
         self._register_update_callback(
             "_attr_native_max_value",

@@ -121,7 +121,7 @@ See more info in [this issue](https://github.com/rabits/ha-ef-ble/issues/78).
 | Cell Temperature (disabled)     |                                 |                            |
 
 ⁺ Only available on Plus variant  
-¹ Not available on Classic
+¹ Not available on Classic  
 ² Not available on Air
 
 **NOTE**: Delta 3 models do not expose energy sensors - to use it for Energy dashboard,
@@ -293,6 +293,26 @@ you have to create it yourself, see this section from the official
 | USB C (2) Output Power                    |             |                     |
 | Cell Temperature (disabled)               |             |                     |
 | Addon Battery Cell Temperature (disabled) |             |                     |
+
+</details>
+
+<details><summary>
+<b>River 2 (Pro, Max)</b>
+</summary>
+
+| *Sensors*                   | *Switches*     | *Sliders*            | *Selects* |
+|-----------------------------|----------------|----------------------|-----------|
+| Battery Level               | AC Ports       | Max Charge Limit     | DC Mode   |
+| Input Power                 | DC 12V Port    | Min Discharge Limit  |           |
+| Output Power                | USB Ports      | AC Charging Speed    |           |
+| AC Input Power              | Backup Reserve | DC Charging Max Amps |           |
+| AC Output Power             |                | Backup Reserve Level |           |
+| DC 12V Output Power         |                |                      |           |
+| DC Output Power             |                |                      |           |
+| USB A Output Power          |                |                      |           |
+| USB C Output Power          |                |                      |           |
+| Solar Input Power           |                |                      |           |
+| Cell Temperature (disabled) |                |                      |           |
 
 </details>
 

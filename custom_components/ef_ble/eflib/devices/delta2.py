@@ -1,11 +1,11 @@
 from ..model import (
     Mr330MpptHeart,
-    Mr330PdHeart,
+    Mr330PdHeartDelta2,
 )
 from ..props.raw_data_field import dataclass_attr_mapper, raw_field
 from ._delta2_base import Delta2Base
 
-pb_pd = dataclass_attr_mapper(Mr330PdHeart)
+pb_pd = dataclass_attr_mapper(Mr330PdHeartDelta2)
 pb_mppt = dataclass_attr_mapper(Mr330MpptHeart)
 
 
@@ -16,13 +16,14 @@ class Device(Delta2Base):
     NAME_PREFIX = "EF-R33"
 
     ac_input_power = raw_field(pb_pd.ac_input_watts)
+    energy_backup_enabled = raw_field(pb_pd.watthis_config, lambda x: x == 1)
     energy_backup_battery_level = raw_field(pb_pd.bp_power_soc)
     dc_output_power = raw_field(pb_pd.dc_pv_output_watts)
     ac_charging_speed = raw_field(pb_mppt.cfg_chg_watts)
 
     @property
     def pd_heart_type(self):
-        return Mr330PdHeart
+        return Mr330PdHeartDelta2
 
     @property
     def mppt_heart_type(self):

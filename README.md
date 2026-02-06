@@ -197,23 +197,23 @@ you have to create it yourself, see this section from the official
 <b>STREAM (AC, AC Pro, Max, Pro, Ultra, Ultra X)</b>
 </summary>
 
-| *Sensors*                   | *Switches*  | *Sliders*              | *Selects*       |
-|-----------------------------|-------------|------------------------|-----------------|
-| Battery Level               | Feed Grid   | Feed Grid Power Limit  | Energy Strategy |
-| Main Battery Level          | AC (1) ᴬᴹᴾᵁ | Backup Reserve Level   |                 |
-| Grid Power                  | AC (2) ᴬᴾᵁ  | Charge Limit           |                 |
-| Grid Voltage                |             | Discharge Limit        |                 |
-| Grid Frequency              |             | Base Load Power ¹      |                 |
-| Load from Battery           |             | Grid Input Power Limit |                 |
-| Load from Grid              |             | Charging Power Limit ² |                 |
-| Load from PV ᴹᴾᵁ            |             | Charging Target SOC ²  |                 |
-| AC (1) Power ᴬᴹᴾᵁ           |             |                        |                 |
-| AC (2) Power ᴬᴾᵁ            |             |                        |                 |
-| PV (1) Poweri ᴹᴾᵁ           |             |                        |                 |
-| PV (2) Power ᴹᴾᵁ            |             |                        |                 |
-| PV (3) Power ᴾᵁ             |             |                        |                 |
-| PV (4) Power ᵁ              |             |                        |                 |
-| Cell Temperature (disabled) |             |                        |                 |
+| *Sensors*                   | *Switches*  | *Sliders*               | *Selects*       |
+|-----------------------------|-------------|-------------------------|-----------------|
+| Battery Level               | Feed Grid   | Feed Grid Power Limit   | Energy Strategy |
+| Main Battery Level          | AC (1) ᴬᴹᴾᵁ | Backup Reserve Level    |                 |
+| Grid Power                  | AC (2) ᴬᴾᵁ  | Charge Limit            |                 |
+| Grid Voltage                |             | Discharge Limit         |                 |
+| Grid Frequency              |             | Base Load Power ¹       |                 |
+| Load from Battery           |             | Grid Input Power Limit  |                 |
+| Load from Grid              |             | Charging Power Limit ²ꜝ |                 |
+| Load from PV ᴹᴾᵁ            |             | Charging Target SOC ²ꜝ  |                 |
+| AC (1) Power ᴬᴹᴾᵁ           |             |                         |                 |
+| AC (2) Power ᴬᴾᵁ            |             |                         |                 |
+| PV (1) Poweri ᴹᴾᵁ           |             |                         |                 |
+| PV (2) Power ᴹᴾᵁ            |             |                         |                 |
+| PV (3) Power ᴾᵁ             |             |                         |                 |
+| PV (4) Power ᵁ              |             |                         |                 |
+| Cell Temperature (disabled) |             |                         |                 |
 
 ᴬ Only available on AC Pro variant  
 ᴹ Only available on Max variant  
@@ -222,6 +222,9 @@ you have to create it yourself, see this section from the official
 ¹ Not available when there's no base load timeframe or more than 1 timeframe configured  
 ² Only available works if timer task with charging power limit is configured and only
   works for the first charging task  
+ꜝ When changing limits or target SOC using automations, make sure you wait at least 1
+  second between each set, otherwise the last one would override all of the previous
+  ones. This is current limitation of this integration, it will get addressed later.
 </details>
 
 <details><summary>

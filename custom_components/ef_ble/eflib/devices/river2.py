@@ -98,9 +98,6 @@ class Device(DeviceBase, RawDataProps):
     def packet_version(self):
         return 2
 
-    async def packet_parse(self, data: bytes) -> Packet:
-        return Packet.fromBytes(data, is_xor=True)
-
     async def data_parse(self, packet: Packet) -> bool:
         self.reset_updated()
         processed = False

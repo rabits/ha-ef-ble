@@ -180,9 +180,11 @@ class EcoflowSelect(EcoflowEntity, SelectEntity):
         self._register_update_callback(
             entity_attr="_attr_current_option",
             prop_name=self._prop_name,
-            get_state=lambda value: value.name.lower()
-            if value is not None
-            else self.SkipWrite,
+            get_state=(
+                lambda value: value.name.lower()
+                if value is not None
+                else self.SkipWrite
+            ),
         )
         self._register_update_callback(
             entity_attr="_attr_available",

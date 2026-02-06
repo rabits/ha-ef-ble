@@ -13,6 +13,9 @@ class Device(Delta3Base):
     SN_PREFIX = (b"P321",)
     NAME_PREFIX = "EF-P3"
 
+    energy_backup = pb_field(pb.energy_backup_en)
+    energy_backup_battery_level = pb_field(pb.energy_backup_start_soc)
+
     dc12v_output_power = pb_field(pb.pow_get_12v, _out_power)
     disable_grid_bypass = pb_field(pb.bypass_out_disable)
 
@@ -59,4 +62,13 @@ class Device(Delta3Base):
     async def enable_energy_strategy_tou(self, enabled: bool):
         config = pd335_sys_pb2.ConfigWrite()
         config.cfg_energy_strategy_operate_mode.operate_tou_mode_open = enabled
+        await self._send_config_packet(config)
+
+    async def enable_energy_backup(self, enabled: bool):
+        config = pd335_sys_pb2.ConfigWrite()
+        config.cfg_energy_backup.energy_backup_en = enabled
+        if enabled and self.energy_backup_battery_level is not None:
+            config.cfg_energy_backup.energy_backup_start_soc = (
+                self.energy_backup_battery_level
+            )
         await self._send_config_packet(config)

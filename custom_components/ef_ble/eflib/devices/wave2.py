@@ -97,9 +97,6 @@ class Device(DeviceBase, RawDataProps):
     def check(cls, sn):
         return sn.startswith(cls.SN_PREFIX)
 
-    async def packet_parse(self, data: bytes) -> Packet:
-        return Packet.fromBytes(data, is_xor=True)
-
     async def data_parse(self, packet: Packet) -> bool:
         processed = False
         self.reset_updated()

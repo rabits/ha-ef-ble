@@ -50,9 +50,6 @@ class Device(DeviceBase, ProtobufProps):
     l3_current = pb_field(pb.grid_connection_amp_L3, _round2)
     l3_voltage = pb_field(pb.grid_connection_vol_L3, _round2)
 
-    async def packet_parse(self, data: bytes):
-        return Packet.fromBytes(data, is_xor=True)
-
     async def data_parse(self, packet: Packet):
         processed = False
         self.reset_updated()

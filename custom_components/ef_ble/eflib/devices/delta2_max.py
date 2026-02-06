@@ -2,7 +2,6 @@ from bleak.backends.device import BLEDevice
 from bleak.backends.scanner import AdvertisementData
 
 from ..model import Mr350MpptHeart, Mr350PdHeartbeatDelta2Max
-from ..packet import Packet
 from ..props import dataclass_attr_mapper, raw_field
 from ._delta2_base import Delta2Base, pb_inv
 
@@ -39,6 +38,3 @@ class Device(Delta2Base):
     @property
     def ac_commands_dst(self):
         return 0x04
-
-    async def packet_parse(self, data: bytes) -> Packet:
-        return Packet.fromBytes(data, is_xor=False)

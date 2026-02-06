@@ -219,9 +219,6 @@ class Delta2Base(DeviceBase, RawDataProps):
         packet = Packet(0x21, self.ac_commands_dst, 0x20, 0x42, payload, version=0x02)
         await self._conn.sendPacket(packet)
 
-    async def packet_parse(self, data: bytes) -> Packet:
-        return Packet.fromBytes(data, is_xor=True)
-
     async def set_battery_charge_limit_max(self, limit: int):
         packet = Packet(0x21, 0x03, 0x20, 0x31, limit.to_bytes(), version=0x02)
         await self._conn.sendPacket(packet)

@@ -65,12 +65,9 @@ class Device(DeviceBase, ProtobufProps):
         super().__init__(ble_dev, adv_data, sn)
         self._time_commands = TimeCommands(self)
 
-    async def packet_parse(self, data: bytes) -> Packet:
-        """Need to override because packet payload is xor-encoded by the first byte of seq"""
-        return Packet.fromBytes(data, True)
-
     async def data_parse(self, packet: Packet) -> bool:
-        """Processing the incoming notifications from the device"""
+        """Process the incoming notifications from the device"""
+
         processed = False
         self.reset_updated()
 

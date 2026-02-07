@@ -168,6 +168,16 @@ class DeviceBase(abc.ABC):
         self._connection_log = ConnectionLog(self.address.replace(":", "_"))
         return self._connection_log
 
+    def _create_connection(self, ble_dev, dev_sn, user_id, data_parse, packet_parse, packet_version):
+        return Connection(
+            ble_dev=ble_dev,
+            dev_sn=dev_sn,
+            user_id=user_id,
+            data_parse=data_parse,
+            packet_parse=packet_parse,
+            packet_version=packet_version,
+        )
+
     async def connect(
         self,
         user_id: str | None = None,
@@ -176,7 +186,7 @@ class DeviceBase(abc.ABC):
     ):
         if self._conn is None:
             self._conn = (
-                Connection(
+                self._create_connection(
                     ble_dev=self._ble_dev,
                     dev_sn=self._sn,
                     user_id=user_id,

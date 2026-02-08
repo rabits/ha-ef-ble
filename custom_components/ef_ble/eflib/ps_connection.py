@@ -1,11 +1,12 @@
 """PowerStream BLE connection using MD5-derived keys instead of ECDH."""
 
+import asyncio
 import hashlib
 import struct
 
 from Crypto.Cipher import AES
 
-from .connection import Connection
+from .connection import AuthFailedError, Connection, ConnectionState
 from .crc import crc8
 from .logging_util import LogOptions
 from .packet import Packet
@@ -19,7 +20,7 @@ class PowerStreamConnection(Connection):
     - Session key = MD5(serial), IV = MD5(reversed serial)
     - No EncPacket wrapper — Packet header (5 bytes) stays plaintext
     - Zero-padding instead of PKCS7 for AES-CBC encryption
-    - Skips ECDH key exchange — goes straight to autoAuthentication
+    - Skips ECDH key exchange — sends getAuthStatus then autoAuthentication
     - Both V3 (auth/config) and V13 (telemetry) frames are AES-CBC encrypted
     - V13 payload is additionally XOR'd with seq[0] (handled by Packet.fromBytes)
     """
@@ -28,14 +29,49 @@ class PowerStreamConnection(Connection):
         serial = self._dev_sn
         self._session_key = hashlib.md5(serial.encode()).digest()
         self._iv = hashlib.md5(serial[::-1].encode()).digest()
-        self._logger.log_filtered(
-            LogOptions.CONNECTION_DEBUG,
-            "initBleSessionKey: Derived keys from serial",
+
+        await self._client.start_notify(
+            Connection.NOTIFY_CHARACTERISTIC, self.listenForDataHandler
         )
-        # Skip getAuthStatus — device pushes V19 data unsolicited which breaks
-        # the single-shot handler. Go straight to autoAuthentication which uses
-        # the persistent listenForDataHandler.
+
+        # Send getAuthStatus to wake the device before authenticating.
+        auth_status = Packet(0x21, 0x35, 0x35, 0x89, b"", 0x01, 0x01, 0x03)
+        await self.sendPacket(auth_status)
+        await asyncio.sleep(2)
+
         await self.autoAuthentication()
+
+    async def listenForDataHandler(self, characteristic, recv_data):
+        try:
+            packets = await self.parseEncPackets(bytes(recv_data))
+        except Exception as e:  # noqa: BLE001
+            await self.add_error(e)
+            return
+        for packet in packets:
+            processed = False
+            if packet.src == 0x35 and packet.cmdSet == 0x35 and packet.cmdId == 0x86:
+                if packet.payload != b"\x00":
+                    error_msg = "Auth failed with response: %r"
+                    self._logger.error(error_msg, packet)
+                    exc = AuthFailedError(error_msg % packet)
+                    self._set_state(ConnectionState.ERROR_AUTH_FAILED, exc)
+                    if self._client is not None and self._client.is_connected:
+                        await self._client.disconnect()
+                    raise exc
+                self._connection_attempt = 0
+                self._reconnect_attempt = 0
+                processed = True
+                self._logger.info("Auth completed, everything is fine")
+                self._set_state(ConnectionState.AUTHENTICATED)
+                self._connected.set()
+            else:
+                try:
+                    processed = await self._data_parse(packet)
+                except Exception as e:  # noqa: BLE001
+                    await self.add_error(e)
+                    continue
+            if not processed:
+                self._logger.debug("Unhandled packet: %r", packet)
 
     async def encryptSession(self, payload):
         padded_len = (len(payload) + 15) // 16 * 16
@@ -55,7 +91,16 @@ class PowerStreamConnection(Connection):
         header = raw[:5]
         inner = raw[5:]
         encrypted = await self.encryptSession(inner)
-        await self.sendRequest(header + encrypted, response_handler)
+        # Write directly with Write Without Response (response=False).
+        # Notifications are subscribed once in initBleSessionKey.
+        # response=False avoids the 20s hang when the device doesn't
+        # support Write With Response on this characteristic.
+        if self._client is not None and self._client.is_connected:
+            await self._client.write_gatt_char(
+                Connection.WRITE_CHARACTERISTIC,
+                bytearray(header + encrypted),
+                response=False,
+            )
 
     async def parseEncPackets(self, data: str) -> list[Packet]:
         """

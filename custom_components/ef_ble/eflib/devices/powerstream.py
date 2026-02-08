@@ -1,3 +1,5 @@
+import logging
+
 from google.protobuf.message import DecodeError
 
 from ..devicebase import DeviceBase
@@ -5,6 +7,8 @@ from ..packet import Packet
 from ..pb import wn511_sys_pb2
 from ..props import ProtobufProps, pb_field, proto_attr_mapper
 from ..ps_connection import PowerStreamConnection
+
+_LOGGER = logging.getLogger(__name__)
 
 pb = proto_attr_mapper(wn511_sys_pb2.inverter_heartbeat)
 
@@ -18,7 +22,7 @@ class Device(DeviceBase, ProtobufProps):
 
     SN_PREFIX = (b"HW51",)
     NAME_PREFIX = "EF-HW"
-    _packet_version = 0x02
+    _packet_version = 0x03
 
     # Solar Panel 1
     pv_power_1 = pb_field(pb.pv1_input_watts, _div10)
@@ -57,12 +61,12 @@ class Device(DeviceBase, ProtobufProps):
 
         if packet.cmdSet == 0x14 and packet.cmdId == 0x01:
             try:
-                self.update_from_bytes(
-                    wn511_sys_pb2.inverter_heartbeat, packet.payload
-                )
+                msg = wn511_sys_pb2.inverter_heartbeat()
+                msg.ParseFromString(packet.payload)
+                self.update_from_message(msg)
                 processed = True
-            except DecodeError:
-                pass
+            except DecodeError as e:
+                _LOGGER.warning("Heartbeat DecodeError: %s", e)
 
         for field_name in self.updated_fields:
             self.update_callback(field_name)

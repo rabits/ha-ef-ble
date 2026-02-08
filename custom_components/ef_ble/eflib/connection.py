@@ -307,13 +307,17 @@ class Connection:
 
             self._set_state(ConnectionState.ESTABLISHING_CONNECTION)
             self._logger.info("Connecting to device")
+            # max_attempts=0 means unlimited at Connection level, but
+            # establish_connection needs a real retry count for BLE-level
+            # attempts (e.g. when adapter slots are contested).
+            ble_attempts = max_attempts if max_attempts != 0 else MAX_CONNECT_ATTEMPTS
             self._client = await establish_connection(
                 BleakClient,
                 self.ble_dev(),
                 self._ble_dev.name,
                 disconnected_callback=self.disconnected,
                 ble_device_callback=self.ble_dev,
-                max_attempts=max_attempts,
+                max_attempts=ble_attempts,
                 timeout=timeout,
             )
         except TimeoutError as e:

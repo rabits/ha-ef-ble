@@ -19,7 +19,8 @@ class PowerStreamConnection(Connection):
     - Session key = MD5(serial), IV = MD5(reversed serial)
     - No EncPacket wrapper — Packet header (5 bytes) stays plaintext
     - Zero-padding instead of PKCS7 for AES-CBC encryption
-    - Skips ECDH key exchange states entirely
+    - Skips ECDH key exchange — goes straight to autoAuthentication
+    - Handles V19 plaintext data pushes alongside V2 encrypted packets
     """
 
     async def initBleSessionKey(self):
@@ -30,7 +31,10 @@ class PowerStreamConnection(Connection):
             LogOptions.CONNECTION_DEBUG,
             "initBleSessionKey: Derived keys from serial",
         )
-        await self.getAuthStatus()
+        # Skip getAuthStatus — device pushes V19 data unsolicited which breaks
+        # the single-shot handler. Go straight to autoAuthentication which uses
+        # the persistent listenForDataHandler.
+        await self.autoAuthentication()
 
     async def encryptSession(self, payload):
         padded_len = (len(payload) + 15) // 16 * 16
@@ -56,9 +60,9 @@ class PowerStreamConnection(Connection):
         """
         Deserialise BLE data into Packets for PowerStream wire format.
 
-        PowerStream sends Packet bytes directly (no EncPacket wrapper):
-        - 5-byte plaintext header: AA, version, payload_length(LE16), CRC8
-        - Encrypted body: AES-CBC with zero-padding to 16-byte boundary
+        Handles two packet types:
+        - V2 encrypted: plaintext 5-byte header + AES-CBC encrypted body
+        - V19 plaintext: entire packet is unencrypted (XOR handled by Packet.fromBytes)
         """
         if self._enc_packet_buffer:
             data = self._enc_packet_buffer + data
@@ -89,25 +93,35 @@ class PowerStreamConnection(Connection):
             payload_length = struct.unpack("<H", data[2:4])[0]
             version = data[1]
 
-            # V3+: 15 bytes of inner overhead; V2: 13 bytes
-            inner_overhead = 15 if version >= 3 else 13
-            inner_len = inner_overhead + payload_length
-            encrypted_len = (inner_len + 15) // 16 * 16
-            frame_len = 5 + encrypted_len
+            if version == 0x13:
+                # V19 packets are plaintext (not AES-encrypted).
+                # Layout: header(5) + inner(13) + payload — no CRC16.
+                total_len = 18 + payload_length
+                if len(data) < total_len:
+                    self._enc_packet_buffer = data
+                    break
 
-            if len(data) < frame_len:
-                self._enc_packet_buffer = data
-                break
+                full_packet = data[:total_len]
+                data = data[total_len:]
+            else:
+                # V2/V3 encrypted packets: header stays plaintext, body is AES-CBC
+                inner_overhead = 15 if version >= 3 else 13
+                inner_len = inner_overhead + payload_length
+                encrypted_len = (inner_len + 15) // 16 * 16
+                frame_len = 5 + encrypted_len
 
-            header = data[:5]
-            encrypted_body = data[5:frame_len]
-            data = data[frame_len:]
+                if len(data) < frame_len:
+                    self._enc_packet_buffer = data
+                    break
+
+                header = data[:5]
+                encrypted_body = data[5:frame_len]
+                data = data[frame_len:]
+
+                decrypted = await self.decryptSession(encrypted_body)
+                full_packet = header + decrypted[:inner_len]
 
             try:
-                decrypted = await self.decryptSession(encrypted_body)
-                inner = decrypted[:inner_len]
-                full_packet = header + inner
-
                 self._on_packet_data_received(full_packet)
                 packet = await self._packet_parse(full_packet)
                 self._on_packet_parsed(packet)

@@ -8,6 +8,7 @@ class Device(DeviceBase):
 
     SN_PREFIX = (b"HW51",)
     NAME_PREFIX = "EF-HW"
+    _packet_version = 0x02
 
     @classmethod
     def check(cls, sn):

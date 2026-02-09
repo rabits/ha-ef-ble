@@ -25,6 +25,8 @@ class PowerStreamConnection(Connection):
     - V13 payload is additionally XOR'd with seq[0] (handled by Packet.fromBytes)
     """
 
+    _HEARTBEAT_REQUEST_INTERVAL = 30
+
     async def initBleSessionKey(self):
         serial = self._dev_sn
         self._session_key = hashlib.md5(serial.encode()).digest()
@@ -35,11 +37,25 @@ class PowerStreamConnection(Connection):
         )
 
         # Send getAuthStatus to wake the device before authenticating.
-        auth_status = Packet(0x21, 0x35, 0x35, 0x89, b"", 0x01, 0x01, 0x03)
-        await self.sendPacket(auth_status)
+        await self._send_auth_status()
         await asyncio.sleep(2)
 
         await self.autoAuthentication()
+
+    async def _send_auth_status(self):
+        pkt = Packet(0x21, 0x35, 0x35, 0x89, b"", 0x01, 0x01, 0x03)
+        await self.sendPacket(pkt)
+
+    async def _heartbeat_request_loop(self):
+        """Periodically send getAuthStatus to trigger cmdId=0x01 heartbeats."""
+        while self._client is not None and self._client.is_connected:
+            await asyncio.sleep(self._HEARTBEAT_REQUEST_INTERVAL)
+            try:
+                await self._send_auth_status()
+                self._logger.info("Heartbeat request sent")
+            except Exception as e:  # noqa: BLE001
+                self._logger.warning("Heartbeat request failed: %s", e)
+                continue
 
     async def listenForDataHandler(self, characteristic, recv_data):
         try:
@@ -64,6 +80,9 @@ class PowerStreamConnection(Connection):
                 self._logger.info("Auth completed, everything is fine")
                 self._set_state(ConnectionState.AUTHENTICATED)
                 self._connected.set()
+                task = asyncio.create_task(self._heartbeat_request_loop())
+                self._tasks.add(task)
+                task.add_done_callback(self._tasks.discard)
             else:
                 try:
                     processed = await self._data_parse(packet)

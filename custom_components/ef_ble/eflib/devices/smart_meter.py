@@ -34,21 +34,25 @@ class Device(DeviceBase, ProtobufProps):
 
     grid_power = pb_field(pb.pow_get_sys_grid)
     grid_state = pb_field(pb.grid_connection_sta, GridState.from_value)
+    grid_energy_today = pb_field(pb.grid_connection_data_record.today_active)
 
     l1_active = pb_field(pb.grid_connection_flag_L1)
     l1_power = pb_field(pb.grid_connection_power_L1, _round2)
     l1_current = pb_field(pb.grid_connection_amp_L1, _round2)
     l1_voltage = pb_field(pb.grid_connection_vol_L1, _round2)
+    l1_grid_energy_today = pb_field(pb.grid_connection_data_record.today_active_L1)
 
     l2_active = pb_field(pb.grid_connection_flag_L2)
     l2_power = pb_field(pb.grid_connection_power_L2, _round2)
     l2_current = pb_field(pb.grid_connection_amp_L2, _round2)
     l2_voltage = pb_field(pb.grid_connection_vol_L2, _round2)
+    l2_grid_energy_today = pb_field(pb.grid_connection_data_record.today_active_L2)
 
     l3_active = pb_field(pb.grid_connection_flag_L3)
     l3_power = pb_field(pb.grid_connection_power_L3, _round2)
     l3_current = pb_field(pb.grid_connection_amp_L3, _round2)
     l3_voltage = pb_field(pb.grid_connection_vol_L3, _round2)
+    l3_grid_energy_today = pb_field(pb.grid_connection_data_record.today_active_L3)
 
     async def data_parse(self, packet: Packet):
         processed = False

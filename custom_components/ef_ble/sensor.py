@@ -764,6 +764,14 @@ SENSOR_TYPES: dict[str, SensorEntityDescription] = {
         for i in range(5)
     },
     # Smart Meter
+    "grid_energy_today": SensorEntityDescription(
+        key="grid_energy_today",
+        native_unit_of_measurement=UnitOfEnergy.WATT_HOUR,
+        device_class=SensorDeviceClass.ENERGY,
+        state_class=SensorStateClass.TOTAL_INCREASING,
+        suggested_display_precision=3,
+        suggested_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
+    ),
     **{
         f"l{i}_power": SensorEntityDescription(
             key=f"l{i}_power",
@@ -793,6 +801,19 @@ SENSOR_TYPES: dict[str, SensorEntityDescription] = {
             device_class=SensorDeviceClass.VOLTAGE,
             state_class=SensorStateClass.MEASUREMENT,
             translation_key="port_voltage",
+            translation_placeholders={"name": f"L{i}"},
+        )
+        for i in range(4)
+    },
+    **{
+        f"l{i}_energy_today": SensorEntityDescription(
+            key=f"l{i}_energy_today",
+            native_unit_of_measurement=UnitOfEnergy.WATT_HOUR,
+            device_class=SensorDeviceClass.ENERGY,
+            state_class=SensorStateClass.TOTAL_INCREASING,
+            suggested_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
+            suggested_display_precision=3,
+            translation_key="port_energy_today",
             translation_placeholders={"name": f"L{i}"},
         )
         for i in range(4)

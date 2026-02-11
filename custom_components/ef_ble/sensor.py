@@ -764,8 +764,8 @@ SENSOR_TYPES: dict[str, SensorEntityDescription] = {
         for i in range(5)
     },
     # Smart Meter
-    "grid_energy_today": SensorEntityDescription(
-        key="grid_energy_today",
+    "grid_energy": SensorEntityDescription(
+        key="grid_energy",
         native_unit_of_measurement=UnitOfEnergy.WATT_HOUR,
         device_class=SensorDeviceClass.ENERGY,
         state_class=SensorStateClass.TOTAL_INCREASING,
@@ -780,6 +780,7 @@ SENSOR_TYPES: dict[str, SensorEntityDescription] = {
             state_class=SensorStateClass.MEASUREMENT,
             translation_key="port_power",
             translation_placeholders={"name": f"L{i}"},
+            entity_registry_enabled_default=False,
         )
         for i in range(4)
     },
@@ -791,6 +792,7 @@ SENSOR_TYPES: dict[str, SensorEntityDescription] = {
             state_class=SensorStateClass.MEASUREMENT,
             translation_key="port_current",
             translation_placeholders={"name": f"L{i}"},
+            entity_registry_enabled_default=False,
         )
         for i in range(4)
     },
@@ -802,19 +804,21 @@ SENSOR_TYPES: dict[str, SensorEntityDescription] = {
             state_class=SensorStateClass.MEASUREMENT,
             translation_key="port_voltage",
             translation_placeholders={"name": f"L{i}"},
+            entity_registry_enabled_default=False,
         )
         for i in range(4)
     },
     **{
-        f"l{i}_energy_today": SensorEntityDescription(
-            key=f"l{i}_energy_today",
+        f"l{i}_energy": SensorEntityDescription(
+            key=f"l{i}_energy",
             native_unit_of_measurement=UnitOfEnergy.WATT_HOUR,
             device_class=SensorDeviceClass.ENERGY,
             state_class=SensorStateClass.TOTAL_INCREASING,
             suggested_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
             suggested_display_precision=3,
-            translation_key="port_energy_today",
+            translation_key="port_energy",
             translation_placeholders={"name": f"L{i}"},
+            entity_registry_enabled_default=False,
         )
         for i in range(4)
     },

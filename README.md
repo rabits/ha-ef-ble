@@ -275,18 +275,22 @@ you have to create it yourself, see this section from the official
 <b>Smart Meter</b>
 </summary>
 
-| *Sensors*  |
-|------------|
-| Grid Power |
-| L1 Power   |
-| L1 Current |
-| L1 Voltage |
-| L2 Power   |
-| L2 Current |
-| L2 Voltage |
-| L3 Power   |
-| L3 Current |
-| L3 Voltage |
+| *Sensors*             |
+|-----------------------|
+| Grid Power            |
+| Grid Energy           |
+| L1 Power (disabled)   |
+| L1 Current (disabled) |
+| L1 Voltage (disabled) |
+| L1 Energy (disabled)  |
+| L2 Power (disabled)   |
+| L2 Current (disabled) |
+| L2 Voltage (disabled) |
+| L2 Energy (disabled)  |
+| L3 Power (disabled)   |
+| L3 Current (disabled) |
+| L3 Voltage (disabled) |
+| L3 Energy (disabled)  |
 </details>
 
 <details><summary>

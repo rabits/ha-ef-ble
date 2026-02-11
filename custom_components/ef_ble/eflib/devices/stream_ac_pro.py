@@ -1,5 +1,4 @@
-from custom_components.ef_ble.eflib.devices import stream_ac
-
+from ..devices import stream_ac
 from ..props import ProtobufProps, pb_field
 
 pb = stream_ac.pb

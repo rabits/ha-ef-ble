@@ -309,8 +309,14 @@
       "port_energy_today": {
         "name": "{name} Energy Today"
       },
+      "port_energy": {
+        "name": "{name} Energy"
+      },
       "grid_energy_today": {
         "name": "Grid Energy Today"
+      },
+      "grid_energy": {
+        "name": "Grid Energy"
       },
       "circuit_power": {
         "name": "Circuit Power {index}"

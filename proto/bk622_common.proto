@@ -1,5 +1,7 @@
 syntax = "proto3";
 
+package bk622_common;
+
 enum PANEL_GRID_STA {
   PANEL_GRID_STA_NO_VAILD = 0;
   PANEL_GRID_IN = 1;
@@ -17,7 +19,7 @@ message EventPush {
 
   optional uint32 event_ver = 1;
   optional uint32 event_seq = 2;
-  repeated .EventPush.LogItem event_item = 3;
+  repeated EventPush.LogItem event_item = 3;
 }
 
 message EventAck {
@@ -107,7 +109,7 @@ message DisplayPropertyUpload {
   optional int32 utc_timezone = 133;
   optional string utc_timezone_id = 134;
   optional bool utc_set_mode = 135;
-  optional .DevErrcodeList dev_errcode_list = 627;
+  optional DevErrcodeList dev_errcode_list = 627;
   optional float pow_get_sys_grid = 515;
   optional float temp_ambient = 484;
   optional float grid_connection_vol_L1 = 956;
@@ -122,8 +124,8 @@ message DisplayPropertyUpload {
   optional float grid_connection_power_L3 = 772;
   optional float grid_connection_reactive_power = 617;
   optional float grid_connection_power_factor = 618;
-  optional .PANEL_GRID_STA grid_connection_sta = 619;
-  optional .GridConnectionDataRecord grid_connection_data_record = 773;
+  optional PANEL_GRID_STA grid_connection_sta = 619;
+  optional GridConnectionDataRecord grid_connection_data_record = 773;
   optional bool grid_connection_flag_L1 = 762;
   optional bool grid_connection_flag_L2 = 763;
   optional bool grid_connection_flag_L3 = 764;
@@ -148,5 +150,5 @@ message DevRequest {
 message DevRequestAck {
   optional uint32 request_id = 1;
   optional uint32 require_ok = 2;
-  optional .PropertyUploadPeriod property_upload_period = 3;
+  optional PropertyUploadPeriod property_upload_period = 3;
 }

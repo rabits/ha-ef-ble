@@ -1,16 +1,47 @@
-# EcoFlow BLE
+<div align="center">
 
-[![hacs_badge](https://img.shields.io/badge/HACS-Default-41BDF5.svg)](https://github.com/hacs/integration)
-[![Validation hassfest](https://github.com/rabits/ha-ef-ble/actions/workflows/validate-hassfest.yaml/badge.svg)](https://github.com/rabits/ha-ef-ble/actions/workflows/validate-hassfest.yaml)
-[![Validation HACS](https://github.com/rabits/ha-ef-ble/actions/workflows/validate-hacs.yaml/badge.svg)](https://github.com/rabits/ha-ef-ble/actions/workflows/validate-hacs.yaml)
+# 🔋 EcoFlow BLE
 
-Unofficial EcoFlow BLE devices Home Assistant integration will allow you to communicate with a
-number of EcoFlow devices through bluetooth and monitor their status / control parameters.
+**Unofficial Bluetooth LE Integration for Home Assistant**
 
-Recognized devices:
-<details><summary>
-<b>Smart Home Panel 2 (EF-HD3####, FW Version: 4.0.0.122, WiFi Version: 2.0.1.20)</b>
-</summary>
+[![HACS](https://img.shields.io/badge/HACS-Default-41BDF5.svg?style=for-the-badge)](https://github.com/hacs/integration)
+[![hassfest](https://img.shields.io/github/actions/workflow/status/rabits/ha-ef-ble/validate-hassfest.yaml?style=for-the-badge&label=hassfest)](https://github.com/rabits/ha-ef-ble/actions/workflows/validate-hassfest.yaml)
+[![HACS Validation](https://img.shields.io/github/actions/workflow/status/rabits/ha-ef-ble/validate-hacs.yaml?style=for-the-badge&label=HACS)](https://github.com/rabits/ha-ef-ble/actions/workflows/validate-hacs.yaml)
+
+---
+
+**Monitor and control your EcoFlow devices locally via Bluetooth**
+
+No internet connection required • Real-time status updates • Full local control
+
+[Supported Devices](#supported-devices) • [Installation](#installation) •
+[Development](#development)
+
+</div>
+
+---
+
+## Overview
+
+This integration enables local communication with EcoFlow power stations and accessories
+through **Bluetooth LE**, allowing you to:
+
+- **Monitor** battery levels, power flow, and device status
+- **Control** outputs, charging parameters, and device settings
+- **Integrate** seamlessly with Home Assistant automations
+- **Operate** independently without cloud connectivity
+
+---
+
+## Supported Devices
+
+Click on any device below to see available sensors, switches, and controls:
+
+<br>
+<details>
+<summary><b>Smart Home Panel 2</b></summary>
+
+<br>
 
 | *Sensors*                                  |
 |--------------------------------------------|
@@ -32,9 +63,10 @@ Recognized devices:
 | Channel PV LV Input Power (Each Channel)   |
 
 </details>
-<details><summary>
-<b>Delta Pro Ultra (EF-YJ####, FW Version: 5.0.0.25, WiFi Version: 2.0.2.4)</b>
-</summary>
+<details>
+<summary><b>Delta Pro Ultra</b></summary>
+
+<br>
 
 | *Sensors*                            |
 |--------------------------------------|
@@ -52,9 +84,10 @@ Recognized devices:
 | AC L14-30P Output Power              |
 | AC I/O Output Power                  |
 </details>
-<details><summary>
-<b>River 3 (Plus, UPS, Plus Wireless) (EF-R3####)</b>
-</summary>
+<details>
+<summary><b>River 3</b> <i>(Plus, UPS, Plus Wireless)</i></summary>
+
+<br>
 
 | *Sensors*                       | *Switches*     | *Sliders*            | *Selects*        |
 |---------------------------------|----------------|----------------------|------------------|
@@ -80,21 +113,23 @@ Recognized devices:
 | Battery Output Power (disabled) |                |                      |                  |
 | Cell Temperature (disabled)     |                |                      |                  |
 
-⁺ Only available on Plus variant
+<sup>⁺ Only available on Plus variant</sup>
 
-**NOTE**: AC Input Energy sensor is not working as intended - this is a bug in firmware. If you
-need this sensor, create integral helper from AC Input Power instead. Also see
-[this issue](https://github.com/rabits/ha-ef-ble/issues/73).
+> **📝 Note:** **AC Input Energy sensor** is not working as intended - this is a firmware
+> bug. If you need this sensor, create an integral helper from AC Input Power instead. See
+> [issue #73](https://github.com/rabits/ha-ef-ble/issues/73) for details.
 
-**WARNING**: This integration allows to set Backup Reserve Limit to Min Discharge Limit that may cause
-your AC ports to turn off it it hits this limit. The official application allows you to do the same,
-so it is also possible to set it from this integration but be aware that this is most likely a bug.
-See more info in [this issue](https://github.com/rabits/ha-ef-ble/issues/78).
+> **⚠️ Warning:** This integration allows setting Backup Reserve Limit to Min Discharge
+> Limit, which may cause AC ports to turn off when hitting this limit. The official
+> application allows the same behavior, but this is most likely a bug. See
+> [issue #78](https://github.com/rabits/ha-ef-ble/issues/78) for more info.
+
 </details>
 
-<details><summary>
-<b>Delta 3 (Classic, Plus, Max, Max Plus, Ultra, Air)</b>
-</summary>
+<details>
+<summary><b>Delta 3</b> <i>(Classic, Plus, Max, Max Plus, Ultra, Air)</i></summary>
+
+<br>
 
 | *Sensors*                       | *Switches*                      | *Sliders*                  |
 |---------------------------------|---------------------------------|----------------------------|
@@ -120,18 +155,21 @@ See more info in [this issue](https://github.com/rabits/ha-ef-ble/issues/78).
 | Battery Output Power (disabled) |                                 |                            |
 | Cell Temperature (disabled)     |                                 |                            |
 
-⁺ Only available on Plus variant  
-¹ Not available on Classic  
-² Not available on Air
+<sup>⁺ Only available on Plus variant</sup><br>
+<sup>¹ Not available on Classic</sup><br>
+<sup>² Not available on Air</sup>
 
-**NOTE**: Delta 3 models do not expose energy sensors - to use it for Energy dashboard,
-you have to create it yourself, see this section from the official
-[Home Assistant FAQ](https://www.home-assistant.io/docs/energy/faq/#creating-an-energy-sensor-out-of-a-power-sensor)
+> **📝 Note:** Delta 3 models do not expose energy sensors. To use with the Energy
+> dashboard, you must create them yourself. See the
+> [Home Assistant FAQ](https://www.home-assistant.io/docs/energy/faq/#creating-an-energy-sensor-out-of-a-power-sensor)
+> for instructions.
+
 </details>
 
-<details><summary>
-<b>Delta Pro 3 (EF-DP3####)</b>
-</summary>
+<details>
+<summary><b>Delta Pro 3</b></summary>
+
+<br>
 
 | *Sensors*                   | *Switches*     | *Sliders*            |
 |-----------------------------|----------------|----------------------|
@@ -156,14 +194,17 @@ you have to create it yourself, see this section from the official
 | AC Plugged In               |                |                      |
 | Cell Temperature (disabled) |                |                      |
 
-**NOTE**: Delta 3 Pro does not expose energy sensors - to use it for Energy dashboard,
-you have to create it yourself, see this section from the official
-[Home Assistant FAQ](https://www.home-assistant.io/docs/energy/faq/#creating-an-energy-sensor-out-of-a-power-sensor)
+> **📝 Note:** Delta Pro 3 does not expose energy sensors. To use with the Energy
+> dashboard, you must create them yourself. See the
+> [Home Assistant FAQ](https://www.home-assistant.io/docs/energy/faq/#creating-an-energy-sensor-out-of-a-power-sensor)
+> for instructions.
+
 </details>
 
-<details><summary>
-<b>Smart Generator (3000, 4000)</b>
-</summary>
+<details>
+<summary><b>Smart Generator</b> <i>(3000, 4000)</i></summary>
+
+<br>
 
 | *Sensors*              | *Switches*           | *Sliders*        | *Selects*        |
 |------------------------|----------------------|------------------|------------------|
@@ -178,12 +219,14 @@ you have to create it yourself, see this section from the official
 | XT150 Battery Level ⁴  |                      |                  |                  |
 | XT150 Charge Type ⁴    |                      |                  |                  |
 
-⁴ Only available on 4000 variant
+<sup>⁴ Only available on 4000 variant</sup>
+
 </details>
 
-<details><summary>
-<b>Alternator Charger</b>
-</summary>
+<details>
+<summary><b>Alternator Charger</b></summary>
+
+<br>
 
 | *Sensors*           | *Switches*                 | *Sliders*                | *Selects*    |
 |---------------------|----------------------------|--------------------------|--------------|
@@ -191,11 +234,13 @@ you have to create it yourself, see this section from the official
 | Battery Temperature | Emergency Reverse Charging | Reverse Charging Current |              |
 | DC Power            |                            | Charging Current         |              |
 | Battery Voltage     |                            | Power Limit              |              |
+
 </details>
 
-<details><summary>
-<b>STREAM (AC, AC Pro, Max, Pro, Ultra, Ultra X)</b>
-</summary>
+<details>
+<summary><b>STREAM</b> <i>(AC, AC Pro, Max, Pro, Ultra, Ultra X)</i></summary>
+
+<br>
 
 | *Sensors*                   | *Switches*  | *Sliders*               | *Selects*       |
 |-----------------------------|-------------|-------------------------|-----------------|
@@ -215,21 +260,24 @@ you have to create it yourself, see this section from the official
 | PV (4) Power ᵁ              |             |                         |                 |
 | Cell Temperature (disabled) |             |                         |                 |
 
-ᴬ Only available on AC Pro variant  
-ᴹ Only available on Max variant  
-ᴾ Only available on Pro variant  
-ᵁ Only available on Ultra and Ultra X variants  
-¹ Not available when there's no base load timeframe or more than 1 timeframe configured  
-² Only available works if timer task with charging power limit is configured and only
-  works for the first charging task  
-ꜝ When changing limits or target SOC using automations, make sure you wait at least 1
-  second between each set, otherwise the last one would override all of the previous
-  ones. This is current limitation of this integration, it will get addressed later.
+<sup>ᴬ Only available on AC Pro variant</sup><br>
+<sup>ᴹ Only available on Max variant</sup><br>
+<sup>ᴾ Only available on Pro variant</sup><br>
+<sup>ᵁ Only available on Ultra and Ultra X variants</sup><br>
+<sup>¹ Not available when there's no base load timeframe or more than 1 timeframe configured</sup><br>
+<sup>² Only works if timer task with charging power limit is configured and only works for the
+first charging task</sup>
+
+> **❗ Important:** When changing limits or target SOC using automations, wait at least 1
+> second between each set, otherwise the last one will override all previous ones. This is
+> a current limitation that will be addressed in a future update.
+
 </details>
 
-<details><summary>
-<b>STREAM Microinverter</b>
-</summary>
+<details>
+<summary><b>STREAM Microinverter</b></summary>
+
+<br>
 
 | *Sensors*      | *Sliders*            |
 |----------------|----------------------|
@@ -246,9 +294,10 @@ you have to create it yourself, see this section from the official
 
 </details>
 
-<details><summary>
-<b>Wave 3</b>
-</summary>
+<details>
+<summary><b>Wave 3</b></summary>
+
+<br>
 
 | *Sensors*                        | *Sliders*       | *Switches* |
 |----------------------------------|-----------------|------------|
@@ -269,11 +318,13 @@ you have to create it yourself, see this section from the official
 | Evaporator Temperature           |                 |            |
 | Compressor Discharge Temperature |                 |            |
 | Sleep State                      |                 |            |
+
 </details>
 
-<details><summary>
-<b>Smart Meter</b>
-</summary>
+<details>
+<summary><b>Smart Meter</b></summary>
+
+<br>
 
 | *Sensors*             |
 |-----------------------|
@@ -291,11 +342,13 @@ you have to create it yourself, see this section from the official
 | L3 Current (disabled) |
 | L3 Voltage (disabled) |
 | L3 Energy (disabled)  |
+
 </details>
 
-<details><summary>
-<b>Delta 2 (Max, Delta 3 1500)</b>
-</summary>
+<details>
+<summary><b>Delta 2</b> <i>(Max, Delta 3 1500)</i></summary>
+
+<br>
 
 | *Sensors*                                 | *Switches*  | *Sliders*           |
 |-------------------------------------------|-------------|---------------------|
@@ -322,9 +375,10 @@ you have to create it yourself, see this section from the official
 
 </details>
 
-<details><summary>
-<b>River 2 (Pro, Max)</b>
-</summary>
+<details>
+<summary><b>River 2</b> <i>(Pro, Max)</i></summary>
+
+<br>
 
 | *Sensors*                   | *Switches*     | *Sliders*            | *Selects* |
 |-----------------------------|----------------|----------------------|-----------|
@@ -342,9 +396,10 @@ you have to create it yourself, see this section from the official
 
 </details>
 
-<details><summary>
-<b>Wave 2</b>
-</summary>
+<details>
+<summary><b>Wave 2</b></summary>
+
+<br>
 
 | *Sensors*          | *Switches*      | *Sliders*   | *Selects*  |
 |--------------------|-----------------|-------------|------------|
@@ -357,49 +412,167 @@ you have to create it yourself, see this section from the official
 
 </details>
 
-</p>
+<br>
 
-**NOTICE**: this integration utilizes Bluetooth LE of the EF device, which is supporting just one
-connection at a time - so if you want to manage the device through BLE from your phone, you will
-need to disable this device in HA for that and later re-enable it to continue to collect data. It's
-an internal EF device limitation, so not much to do here...
+> [!NOTE]
+> This integration focuses on implementing the **most useful sensors and controls** rather than
+> achieving 100% completeness. While all sensors and controls available in the EcoFlow app can
+> technically be implemented, we prioritize commonly used features. If you're missing a sensor
+> or control that's important for your use case, please
+> [create an issue](https://github.com/rabits/ha-ef-ble/issues/new) to request it.
 
-## WARNING: Support & Warranty
+> [!IMPORTANT]
+> **Bluetooth LE Limitation**: EcoFlow devices support only **one BLE connection at a
+> time**. If you want to manage your device via the EcoFlow mobile app, you must
+> temporarily disable this integration in Home Assistant, then re-enable it afterward to
+> resume data collection. This is an EcoFlow device limitation.
 
-Sorry, limited support and no warranty - you on your own and I take no responsibility for any of
-your actions. We all grown-ups here and know that we deal with quite dangerous voltages and storage
-devices that could injure or cause death. So make sure you know what you doing for each and every
-step - otherwise you can't use the provided information in this repository or integration.
+---
 
-In case you see some issues with your device after using this integration - ecoflow support could
-be unable to help you. Author of the integration is not connected to EcoFlow anyhow and they can't
-support anything you will find here.
+## Support & Warranty
 
-## Usage
+> [!CAUTION]
+> **Limited Support • No Warranty • Use at Your Own Risk**
+>
+> - This is an **unofficial integration** with no warranty of any kind
+> - The author takes **no responsibility** for your actions or device behavior
+> - EcoFlow products involve **dangerous voltages** and energy storage that can cause
+>   **injury or death**
+> - **EcoFlow support may not help** if you experience issues after using this integration
+> - The author is **not affiliated with EcoFlow** in any way
+>
+> **Proceed only if you fully understand the risks and know what you are doing.**
 
-Install the integration as custom_component and it will automatically find the supported devices.
-It will also require your user id that was created during initialization of your device with app.
+> [!WARNING]
+> **Firmware Updates May Break This Integration**
+>
+> This integration relies on reverse-engineered Bluetooth protocols. **Future EcoFlow firmware
+> updates may change these protocols and break compatibility.** If everything is working
+> correctly, do not update your device firmware unless you're willing to wait for this
+> integration to be updated to support the new firmware version.
 
-Please refer to the wiki page to find more info: <https://github.com/rabits/ha-ef-ble/wiki>
+---
 
-## Development & Reverse
+## Installation
 
-Information about how that was reversed you can find here: <https://github.com/rabits/ef-ble-reverse>
+### Prerequisites
 
-If you want to help with this integration - your changes will be most welcomed, but I recommend to
-create a ticket first to discuss the needed features or upcoming changes to make sure they fit the
-purpose of the integration.
+- Home Assistant with Bluetooth support
+- Your **User ID** from the EcoFlow app (can be retrieved via the config flow login form
+  during setup)
+- [HACS](https://hacs.xyz/) installed (recommended method)
+
+### Method 1: HACS Installation (Recommended)
+
+This integration is available in the default HACS repository.
+
+1. Open **HACS** in your Home Assistant instance
+2. Go to **Integrations**
+3. Click the **⋮** menu (three dots) in the top right
+4. Select **Custom repositories**
+5. Add this repository URL: `https://github.com/rabits/ha-ef-ble`
+6. Select category: **Integration**
+7. Click **Add**
+8. Search for **"EcoFlow BLE"** in HACS
+9. Click **Download**
+10. Restart Home Assistant
+
+### Method 2: Manual Installation
+
+1. Download the latest release from
+   [GitHub Releases](https://github.com/rabits/ha-ef-ble/releases)
+2. Extract the `custom_components/ef_ble` folder
+3. Copy it to your Home Assistant `config/custom_components/` directory
+4. Restart Home Assistant
+
+### Configuration
+
+After installation, the integration will automatically discover supported EcoFlow devices
+via Bluetooth LE.
+
+> [!TIP]
+> For detailed configuration help, FAQ, and troubleshooting common issues (like BLE
+> disconnections), see the [**Wiki**](https://github.com/rabits/ha-ef-ble/wiki)
+
+---
+
+## Development
+
+### Reverse Engineering
+
+Curious about how this integration was created? Check out the reverse engineering process:
+**[ef-ble-reverse](https://github.com/rabits/ef-ble-reverse)**
+
+### Contributing
+
+Contributions are welcome! If you'd like to help improve this integration:
+
+1. **Open an issue first** to discuss your proposed changes
+2. Make sure your changes align with the integration's purpose
+3. Submit a pull request with clear descriptions
+
+This helps ensure your contributions can be successfully integrated.
+
+### Requesting Support for New Devices
+
+Have an EcoFlow device that isn't listed in [Supported Devices](#supported-devices)?
+
+**You can help add support!** Starting from version
+[v0.6.0](https://github.com/rabits/ha-ef-ble/releases/tag/v0.6.0), this integration can
+connect to unsupported devices to collect diagnostic data.
+
+**👉 See the
+[Requesting Support for New Devices](https://github.com/rabits/ha-ef-ble/wiki/Requesting-Support-for-New-Devices)
+wiki page** for step-by-step instructions.
+
+The process is straightforward:
+
+1. Add your unsupported device through this integration
+2. Let it collect diagnostic data while using different ports/features
+3. Download and share the diagnostics file (note: may contain personal info - see wiki
+   for privacy options)
+
+> [!IMPORTANT]
+> **Some devices may not be able to provide diagnostics**. This integration works with
+> **most 3rd generation and some 2nd generation devices**. If your device cannot connect
+> for diagnostics collection, please open an issue with your device model and firmware
+> version - adding support is possible but may require additional reverse engineering work.
+
+---
 
 ## Legal
 
-This repository is not for sale.
+> **This repository is not for sale.**
 
-The work was done in order to localize devices and make them available / controllable in disaster
-situations (unavailability of internet or cut-off the ecoflow servers). The official application
-allows to connect via bluetooth, but to do that you have to login to the server. No server is here
-and you screwed.
+### Purpose & Motivation
 
-The requests to ecoflow usually ends up in support department and generally ignored, so there is no
-way to get support from them. That gave me right to take it in my own hands and use my knowledge &
-time to make my own way. There is no intention to harm any people anyhow - just to make sure you
-will be safe in emergency situation, which is critical for such a product.
+This integration was created to enable **local device control** in disaster scenarios:
+
+- **Internet outages** or **EcoFlow server unavailability**
+- The official EcoFlow app requires server login, even for Bluetooth connections
+- **No server access = no control**, which is unacceptable for critical power equipment
+
+### Background
+
+- Support requests to EcoFlow are typically ignored or handled inadequately
+- This motivated independent development using reverse engineering
+- **Intent:** Enable safe, reliable local control in emergencies - not to cause harm
+
+### Declaration
+
+This work is provided for **safety and resilience** in critical situations. There is
+**no intention to harm** any individual or entity.
+
+---
+
+<div align="center">
+
+**Stay charged. Stay connected. Stay in control.**
+
+*Because when the cloud goes down, your smart home shouldn't follow.*
+
+<br>
+
+<sub>Built by the community, for the community</sub>
+
+</div>

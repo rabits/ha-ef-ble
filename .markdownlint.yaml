@@ -7,9 +7,21 @@ MD013:
   tables: false
   line_length: 100
 
+# MD028/no-blanks-blockquote - Blank line inside blockquote
+MD028: false
+
 # MD033/no-inline-html - raw HTML is not allowed in a pure md document
 MD033:
-  allowed_elements: [img, details, summary, b]
+  allowed_elements: [img, details, summary, b, br, i, div, code, sup, sub]
 
-# MD045/no-alt-text
+# MD036/no-emphasis-as-heading - Emphasis used instead of a heading
+MD036: false
+
+# MD041/first-line-heading - First line in a file should be a top-level heading
+MD041: false
+
+# MD045/no-alt-text - Images should have alternate text (alt text)
 MD045: false
+
+# MD051/link-fragments - Link fragments should be valid
+MD051: false

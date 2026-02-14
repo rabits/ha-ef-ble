@@ -1,6 +1,6 @@
 """Library for EcoFlow BLE protocol"""
 
-from typing import TypeGuard
+from typing import TYPE_CHECKING, TypeGuard
 
 from bleak.backends.device import BLEDevice
 from bleak.backends.scanner import AdvertisementData
@@ -8,6 +8,9 @@ from bleak.backends.scanner import AdvertisementData
 from . import devices
 from .devicebase import DeviceBase
 from .devices import stream_microinverter, unsupported
+
+if TYPE_CHECKING:
+    from .props import ProtobufProps, RawDataProps
 
 
 def sn_from_advertisement(adv_data: AdvertisementData):
@@ -48,3 +51,15 @@ __all__ = [
     "DeviceBase",
     "NewDevice",
 ]
+
+
+def get_protobuf_device(device: DeviceBase | None) -> "ProtobufProps | None":
+    from .props import ProtobufProps  # noqa: PLC0415
+
+    return device if isinstance(device, ProtobufProps) else None
+
+
+def get_fixed_length_coding_device(device: DeviceBase | None) -> "RawDataProps | None":
+    from .props import RawDataProps  # noqa: PLC0415
+
+    return device if isinstance(device, RawDataProps) else None

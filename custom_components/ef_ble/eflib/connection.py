@@ -36,7 +36,7 @@ from .exceptions import (
     PacketParseError,
     PacketReceiveError,
 )
-from .listeners import ListenerGroup
+from .listeners import ListenerGroup, ListenerRegistry
 from .logging_util import ConnectionLogger, LogOptions
 from .packet import Packet
 from .props.utils import classproperty
@@ -159,6 +159,13 @@ type PacketReceivedListener = Callable[[bytes], None]
 type PacketParsedListener = Callable[[Packet], None]
 
 
+class _ConnectionListeners(ListenerRegistry):
+    on_packet_received: ListenerGroup[PacketReceivedListener]
+    on_disconnect: ListenerGroup[DisconnectListener]
+    on_connection_state_change: ListenerGroup[ConnectionStateListener]
+    on_packet_parsed: ListenerGroup[PacketParsedListener]
+
+
 class Connection:
     """
     Connection object manages client creation, authentification and sends the packets
@@ -167,6 +174,8 @@ class Connection:
 
     NOTIFY_CHARACTERISTIC = "00000003-0000-1000-8000-00805f9b34fb"
     WRITE_CHARACTERISTIC = "00000002-0000-1000-8000-00805f9b34fb"
+
+    _listeners = _ConnectionListeners.create()
 
     def __init__(
         self,
@@ -207,11 +216,6 @@ class Connection:
         self._reconnect_attempt: int = 0
         self._reconnect = True
 
-        self._on_disconnect = ListenerGroup[DisconnectListener]()
-        self._on_state_change = ListenerGroup[ConnectionStateListener]()
-        self._on_packet_data_received = ListenerGroup[PacketReceivedListener]()
-        self._on_packet_parsed = ListenerGroup[PacketParsedListener]()
-
         self._connection_state: ConnectionState = None  # pyright: ignore[reportAttributeAccessIssue]
         self._set_state(ConnectionState.CREATED)
 
@@ -241,22 +245,22 @@ class Connection:
         -------
         Function to remove this listener
         """
-        return self._add_listener(self._on_disconnect, listener)
+        return self._listeners.on_disconnect.add(listener)
 
     def on_state_change(self, listener: ConnectionStateListener):
-        return self._add_listener(self._on_state_change, listener)
+        return self._listeners.on_connection_state_change.add(listener)
 
     def on_packet_data_received(self, listener: PacketReceivedListener):
-        return self._add_listener(self._on_packet_data_received, listener)
+        return self._listeners.on_packet_received.add(listener)
 
     def on_packet_parsed(self, listener: PacketParsedListener):
-        return self._add_listener(self._on_packet_parsed, listener)
+        return self._listeners.on_packet_parsed.add(listener)
 
     def _notify_disconnect(self, exception: Exception | type[Exception] | None = None):
         if exception is None:
             exception = self._last_exception
 
-        self._on_disconnect(exception)
+        self._listeners.on_disconnect(exception)
 
     def ble_dev(self) -> BLEDevice:
         return self._ble_dev
@@ -508,7 +512,7 @@ class Connection:
         self._connection_state = value
         self._state_changed.set()
         self._state_changed.clear()
-        self._on_state_change(value)
+        self._listeners.on_connection_state_change(value)
 
     def _set_state(
         self, state: ConnectionState, exc: Exception | type[Exception] | None = None
@@ -656,9 +660,9 @@ class Connection:
                 )
 
                 # Parse packet
-                self._on_packet_data_received(payload)
+                self._listeners.on_packet_received(payload)
                 packet = await self._packet_parse(payload)
-                self._on_packet_parsed(packet)
+                self._listeners.on_packet_parsed(packet)
                 self._logger.log_filtered(
                     LogOptions.PACKETS,
                     "Parsed packet: %s",

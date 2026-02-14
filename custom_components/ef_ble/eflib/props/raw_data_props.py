@@ -6,12 +6,21 @@ from typing import Literal, overload
 
 from .. import devicebase
 from ..connection import LogOptions
+from ..listeners import ListenerGroup, ListenerRegistry
 from ..model.base import RawData
 from .raw_data_field import RawDataField
 from .updatable_props import UpdatableProps
 
+type MessageProcessedListener = Callable[[RawData], None]
+
+
+class _Listeners(ListenerRegistry):
+    on_message_processed: ListenerGroup[MessageProcessedListener]
+
 
 class RawDataProps(UpdatableProps, abc.ABC):
+    _raw_listeners = _Listeners.create()
+
     def update_from_data(self, data: RawData, reset: bool = False):
         if reset:
             self.reset_updated()
@@ -34,6 +43,9 @@ class RawDataProps(UpdatableProps, abc.ABC):
         self, data: type[T], payload: bytes, as_list: Literal[True], reset: bool = False
     ) -> list[T]: ...
 
+    def on_message_processed(self, listener: MessageProcessedListener):
+        return self._raw_listeners.on_message_processed.add(listener)
+
     def update_from_bytes[T: RawData](
         self, data: type[T], payload: bytes, as_list: bool = False, reset: bool = False
     ) -> T | list[T]:
@@ -46,6 +58,7 @@ class RawDataProps(UpdatableProps, abc.ABC):
         for msg in msgs:
             self.update_from_data(msg, reset=reset)
             self._log_message(msg)
+            self._raw_listeners.on_message_processed(msg)
 
         return msgs if as_list else msgs[0]
 

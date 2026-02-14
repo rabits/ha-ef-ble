@@ -2,7 +2,7 @@ import abc
 import asyncio
 import time
 from collections import defaultdict
-from collections.abc import Callable, MutableSequence
+from collections.abc import Callable
 from typing import Any
 
 from bleak.backends.device import BLEDevice
@@ -16,7 +16,7 @@ from .connection import (
     PacketParsedListener,
     PacketReceivedListener,
 )
-from .listeners import ListenerGroup
+from .listeners import ListenerGroup, ListenerRegistry
 from .logging_util import (
     ConnectionLog,
     DeviceDiagnosticsCollector,
@@ -26,10 +26,21 @@ from .logging_util import (
 from .packet import Packet
 
 
+class _Listeners(ListenerRegistry):
+    on_packet_received: ListenerGroup[PacketReceivedListener]
+    on_disconnect: ListenerGroup[DisconnectListener]
+    on_connection_state_change: ListenerGroup[ConnectionStateListener]
+    on_packet_parsed: ListenerGroup[PacketParsedListener]
+
+
 class DeviceBase(abc.ABC):
     """Device Base"""
 
     MANUFACTURER_KEY = 0xB5B5
+
+    NAME_PREFIX: str
+
+    _listeners = _Listeners.create()
 
     @classmethod
     @abc.abstractmethod
@@ -70,11 +81,6 @@ class DeviceBase(abc.ABC):
 
         self._reconnect_disabled = False
         self._diagnostics = DeviceDiagnosticsCollector(self)
-
-        self._on_packet_received = ListenerGroup[PacketReceivedListener]()
-        self._on_disconnect = ListenerGroup[DisconnectListener]()
-        self._on_connection_state_change = ListenerGroup[ConnectionStateListener]()
-        self._on_packet_parsed = ListenerGroup[PacketParsedListener]()
 
     @property
     def device(self):
@@ -185,10 +191,10 @@ class DeviceBase(abc.ABC):
 
             self._logger.info("Connecting to %s", self.device)
 
-            self._conn.on_disconnect(self._on_disconnect)
-            self._conn.on_packet_data_received(self._on_packet_received)
-            self._conn.on_packet_parsed(self._on_packet_parsed)
-            self._conn.on_state_change(self._on_connection_state_change)
+            self._conn.on_disconnect(self._listeners.on_disconnect)
+            self._conn.on_packet_data_received(self._listeners.on_packet_received)
+            self._conn.on_packet_parsed(self._listeners.on_packet_parsed)
+            self._conn.on_state_change(self._listeners.on_connection_state_change)
 
         elif self._conn._user_id != user_id:
             self._conn._user_id = user_id
@@ -248,28 +254,18 @@ class DeviceBase(abc.ABC):
         -------
         Function to remove this listener
         """
-        return self._add_listener(self._on_disconnect, listener)
-
-    def _add_listener(self, collection: MutableSequence[Callable], listener: Callable):
-        collection.append(listener)
-
-        def _unlisten():
-            collection.remove(listener)
-
-        return _unlisten
+        return self._listeners.on_disconnect.add(listener)
 
     def on_packet_received(self, packet_received_listener: PacketReceivedListener):
-        return self._add_listener(self._on_packet_received, packet_received_listener)
+        return self._listeners.on_packet_received.add(packet_received_listener)
 
     def on_packet_parsed(self, packet_parsed_listener: PacketParsedListener):
-        return self._add_listener(self._on_packet_parsed, packet_parsed_listener)
+        return self._listeners.on_packet_parsed.add(packet_parsed_listener)
 
     def on_connection_state_change(
         self, connection_state_listener: ConnectionStateListener
     ):
-        return self._add_listener(
-            self._on_connection_state_change, connection_state_listener
-        )
+        return self._listeners.on_connection_state_change.add(connection_state_listener)
 
     def register_callback(
         self, callback: Callable[[], None], propname: str | None = None

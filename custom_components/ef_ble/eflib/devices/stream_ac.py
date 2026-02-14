@@ -147,6 +147,9 @@ class Device(DeviceBase, ProtobufProps):
 
         return None
 
+    async def packet_parse(self, data: bytes):
+        return Packet.fromBytes(data, xor_payload=True)
+
     @classmethod
     def check(cls, sn):
         return sn[:4] in cls.SN_PREFIX

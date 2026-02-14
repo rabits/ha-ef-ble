@@ -1,7 +1,6 @@
 from functools import partialmethod
 
-from custom_components.ef_ble.eflib.pb import pd335_sys_pb2
-
+from ..pb import pd335_sys_pb2
 from ..props import Field, pb_field
 from . import delta3
 from ._delta3_base import DCPortState, _DcAmpSettingField, _DcChargingMaxField, pb

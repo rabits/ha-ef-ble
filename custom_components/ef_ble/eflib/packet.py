@@ -87,7 +87,7 @@ class Packet:
         return self._product_id
 
     @staticmethod
-    def fromBytes(data: bytes, use_xor: bool = False):
+    def fromBytes(data: bytes, xor_payload: bool = False):
         """Deserializes bytes stream into internal data"""
         if not data.startswith(Packet.PREFIX):
             error_msg = "Unable to parse packet - prefix is incorrect: %s"
@@ -137,14 +137,13 @@ class Packet:
         if payload_length > 0:
             payload = data[payload_start : payload_start + payload_length]
 
-            if version == 0x13 or use_xor:
-                # If first byte of seq is set - we need to xor payload with it to get
-                # the real data
-                if seq[0] != b"\x00":
-                    payload = bytes([c ^ seq[0] for c in payload])
+            # If first byte of seq is set - we need to xor payload with it to get the
+            # real data
+            if xor_payload and seq[0] != b"\x00":
+                payload = bytes([c ^ seq[0] for c in payload])
 
-                if payload[-2:] == b"\xbb\xbb":
-                    payload = payload[:-2]
+            if version == 0x13 and payload[-2:] == b"\xbb\xbb":
+                payload = payload[:-2]
 
         return Packet(
             src=src,

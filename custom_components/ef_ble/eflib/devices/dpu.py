@@ -65,6 +65,9 @@ class Device(DeviceBase, ProtobufProps):
         super().__init__(ble_dev, adv_data, sn)
         self._time_commands = TimeCommands(self)
 
+    async def packet_parse(self, data: bytes):
+        return Packet.fromBytes(data, xor_payload=True)
+
     async def data_parse(self, packet: Packet) -> bool:
         """Process the incoming notifications from the device"""
 

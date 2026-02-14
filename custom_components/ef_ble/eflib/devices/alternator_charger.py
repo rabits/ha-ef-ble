@@ -99,6 +99,9 @@ class Device(DeviceBase, ProtobufProps):
 
         return f"Alternator Charger {model}".strip()
 
+    async def packet_parse(self, data: bytes):
+        return Packet.fromBytes(data, xor_payload=True)
+
     async def data_parse(self, packet: Packet):
         processed = False
 

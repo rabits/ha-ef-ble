@@ -56,7 +56,7 @@ class Device(DeviceBase, ProtobufProps):
 
     battery_level = pb_field(pb.cms_batt_soc)
 
-    ac_input_power = pb_field(pb.pow_get_ac_in)
+    ac_input_power = pb_field(pb.pow_get_ac_in, lambda x: round(x, 2))
     ac_input_energy = _StatField(pr705_pb2.STATISTICS_OBJECT_AC_IN_ENERGY)
 
     ac_output_power = pb_field(pb.pow_get_ac_out, _out_power)
@@ -125,6 +125,9 @@ class Device(DeviceBase, ProtobufProps):
             case "R655":
                 model = "UPS (245Wh)"
         return f"River 3 {model}".strip()
+
+    async def packet_parse(self, data: bytes):
+        return Packet.fromBytes(data, xor_payload=True)
 
     async def data_parse(self, packet: Packet):
         processed = False

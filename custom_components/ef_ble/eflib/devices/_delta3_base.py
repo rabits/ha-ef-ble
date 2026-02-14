@@ -118,6 +118,9 @@ class Delta3Base(DeviceBase, ProtobufProps):
         self._time_commands = TimeCommands(self)
         self.max_ac_charging_power = 1500
 
+    async def packet_parse(self, data: bytes):
+        return Packet.fromBytes(data, xor_payload=True)
+
     @classmethod
     def check(cls, sn):
         return sn[:4] in cls.SN_PREFIX

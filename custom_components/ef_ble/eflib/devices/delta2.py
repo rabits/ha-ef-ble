@@ -23,7 +23,7 @@ class Device(Delta2Base):
     ac_charging_speed = raw_field(pb_mppt.cfg_chg_watts)
 
     async def packet_parse(self, data: bytes):
-        return Packet.fromBytes(data, use_xor=True)
+        return Packet.fromBytes(data, xor_payload=True)
 
     @property
     def pd_heart_type(self):

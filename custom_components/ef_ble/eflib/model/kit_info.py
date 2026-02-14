@@ -13,7 +13,7 @@ class KitBaseInfo(RawData):
     app_version: Annotated[int, "I", "appVersion"]
     loader_version: Annotated[int, "I", "loaderVersion"]
     cur_real_power: Annotated[int, "I", "curRealPower"]
-    f32_soc: Annotated[int, "I", "f32Soc"]
+    f32_soc: Annotated[int, "f", "f32Soc"]
     soc: Annotated[int, "B", "soc"]
 
 

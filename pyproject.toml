@@ -7,20 +7,30 @@ dependencies = [
     "crc",
     "PyCryptodome",
     "protobuf",
+    "bleak",
+    "bleak_retry_connector",
 ]
 requires-python = ">=3.13"
 
 [dependency-groups]
 dev = [
-    "homeassistant>=2025.4.0",
-    "pyserial",
-    "aiousbwatcher",
+    {include-group = "test"},
+    {include-group = "lint"},
+]
+lint = [
     "pre-commit",
     "ruff",
+]
+test = [
     "pytest",
     "pytest-mock",
     "pytest-asyncio",
     "coverage",
+]
+hass = [
+    "homeassistant>=2024.7.0",
+    "pyserial",
+    "aiousbwatcher",
 ]
 
 [tool.setuptools]

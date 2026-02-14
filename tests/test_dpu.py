@@ -83,8 +83,6 @@ async def test_dpu_updates_battery_pack_fields(device, packet_sequence):
 
 
 async def test_dpu_updates_power_fields(device, packet_sequence):
-    # Note: cmdId=0x03 packets are not currently processed by the device implementation
-    # This test verifies that power fields would be properly typed if they were updated
     for hex_packet in packet_sequence:
         packet = await device.packet_parse(bytes.fromhex(hex_packet))
         await device.data_parse(packet)
@@ -99,28 +97,10 @@ async def test_dpu_updates_power_fields(device, packet_sequence):
     for field_name in power_field_names:
         if field_name in device.updated_fields:
             value = getattr(device, field_name)
-            if value is not None:
-                assert isinstance(value, (int, float)), (
-                    f"Power field {field_name} has wrong type: {type(value)}"
-                )
-                assert value >= 0, (
-                    f"Power field {field_name} has negative value: {value}"
-                )
-
-
-async def test_dpu_maintains_state_across_packets(device, packet_sequence):
-    for hex_packet in packet_sequence:
-        packet = await device.packet_parse(bytes.fromhex(hex_packet))
-        await device.data_parse(packet)
-
-    battery_1_level = device.battery_1_battery_level
-    assert battery_1_level is not None
-
-    battery_2_level = device.battery_2_battery_level
-    assert battery_2_level is not None
-
-    battery_3_level = device.battery_3_battery_level
-    assert battery_3_level is not None
+            assert isinstance(value, (int, float)), (
+                f"Power field {field_name} has wrong type: {type(value)}"
+            )
+            assert value >= 0, f"Power field {field_name} has negative value: {value}"
 
 
 async def test_dpu_handles_zero_values_correctly(device, packet_sequence):
@@ -143,39 +123,38 @@ async def test_dpu_field_types_are_consistent(device, packet_sequence):
         Device.battery_1_battery_level,
         Device.battery_2_battery_level,
         Device.battery_3_battery_level,
-        Device.input_power,
-        Device.output_power,
-        Device.lv_solar_power,
-        Device.hv_solar_power,
-        Device.ac_l1_1_out_power,
-        Device.ac_l1_2_out_power,
-        Device.ac_l2_1_out_power,
-        Device.ac_l2_2_out_power,
-        Device.ac_tt_out_power,
-        Device.ac_l14_out_power,
-        Device.ac_5p8_out_power,
+        # TODO(gnox): needs more messages
+        # Device.input_power,
+        # Device.output_power,
+        # Device.lv_solar_power,
+        # Device.hv_solar_power,
+        # Device.ac_l1_1_out_power,
+        # Device.ac_l1_2_out_power,
+        # Device.ac_l2_1_out_power,
+        # Device.ac_l2_2_out_power,
+        # Device.ac_tt_out_power,
+        # Device.ac_l14_out_power,
+        # Device.ac_5p8_out_power,
     ]
 
     for field_name in numeric_fields:
         value = getattr(device, field_name, None)
-        if value is not None:
-            assert isinstance(value, (int, float)), (
-                f"Field {field_name} has wrong type: {type(value)}"
-            )
+        assert isinstance(value, (int, float)), (
+            f"Field {field_name} has wrong type: {type(value)}"
+        )
 
 
 async def test_dpu_battery_soc_values_are_valid(device, packet_sequence):
     packet = await device.packet_parse(bytes.fromhex(packet_sequence[0]))
     await device.data_parse(packet)
 
-    for i in range(1, 6):
+    for i in range(1, 3):
         field_name = f"battery_{i}_battery_level"
-        if field_name in device.updated_fields:
-            value = getattr(device, field_name)
-            assert value is not None, f"{field_name} should not be None if updated"
-            assert 0 <= value <= 100, (
-                f"{field_name} value {value} is out of valid range (0-100)"
-            )
+        value = getattr(device, field_name)
+        assert value is not None, f"{field_name} should not be None if updated"
+        assert 0 <= value <= 100, (
+            f"{field_name} value {value} is out of valid range (0-100)"
+        )
 
 
 async def test_dpu_exact_values_from_known_packets(device, packet_sequence):

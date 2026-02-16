@@ -147,8 +147,11 @@ class EcoflowBinarySensor(EcoflowEntity, BinarySensorEntity):
         super().__init__(device)
 
         self._attr_unique_id = f"{self._device.name}_{sensor}"
-        self.entity_description = BINARY_SENSOR_TYPES[sensor]
-        self._prop_name = self.entity_description.key
+        if sensor in BINARY_SENSOR_TYPES:
+            self.entity_description = BINARY_SENSOR_TYPES[sensor]
+            self._prop_name = self.entity_description.key
+            if self.entity_description.translation_key is None:
+                self._attr_translation_key = self.entity_description.key
 
     async def async_added_to_hass(self):
         """Run when this Entity has been added to HA."""

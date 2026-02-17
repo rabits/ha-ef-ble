@@ -687,6 +687,9 @@
       },
       "outlet_temperature": {
         "name": "Outlet Temperature"
+      },
+      "pv_power_sum": {
+        "name": "PV Power Total"
       }
     },
     "select": {

@@ -792,6 +792,14 @@ SENSOR_TYPES: dict[str, SensorEntityDescription] = {
         )
         for i in range(5)
     },
+    "pv_power_sum": SensorEntityDescription(
+        key="pv_power_sum",
+        native_unit_of_measurement=UnitOfPower.WATT,
+        device_class=SensorDeviceClass.POWER,
+        state_class=SensorStateClass.MEASUREMENT,
+        suggested_display_precision=1,
+        translation_key="pv_power_sum",
+    ),
     # Smart Meter
     "grid_energy": SensorEntityDescription(
         key="grid_energy",

@@ -134,11 +134,13 @@ Click on any device below to see available sensors, switches, and controls:
 | *Sensors*                       | *Switches*                      | *Sliders*                  |
 |---------------------------------|---------------------------------|----------------------------|
 | Main Battery Level              | AC Ports                        | Backup Reserve Level ²     |
-| Battery Level                   | DC Ports ²                      | Max Charge Limit           |
-| AC Input Power                  | Backup Reserve ²                | Min Discharge Limit        |
-| AC Output Power                 | USB Ports ¹²                    | AC Charging Speed          |
-| DC 12V Port Output Power ²      | Disable Grid Bypass ²(disabled) | DC Charging Max Amps       |
-| DC Port Input Power             |                                 | DC (2) Charging Max Amps ⁺ |
+| Battery Level                   | AC Ports (2) ³                  | Max Charge Limit           |
+| AC Input Power                  | DC Ports ²                      | Min Discharge Limit        |
+| AC Output Power                 | Backup Reserve ²                | AC Charging Speed          |
+| AC (1) Power ³                  | USB Ports ¹²                    | DC Charging Max Amps       |
+| AC (2) Power ³                  | Disable Grid Bypass ²(disabled) | DC (2) Charging Max Amps ⁺ |
+| DC 12V Port Output Power ²      |                                 |                            |
+| DC Port Input Power             |                                 |                            |
 | DC Port Input State             |                                 |                            |
 | DC Port (2) Input Power ⁺       |                                 |                            |
 | DC Port (2) Input State ⁺       |                                 |                            |
@@ -150,6 +152,7 @@ Click on any device below to see available sensors, switches, and controls:
 | USB A (2) Output Power          |                                 |                            |
 | USB C Output Power              |                                 |                            |
 | USB C (2) Output Power          |                                 |                            |
+| USB C (3) Output Power ³        |                                 |                            |
 | AC Plugged In                   |                                 |                            |
 | Battery Input Power (disabled)  |                                 |                            |
 | Battery Output Power (disabled) |                                 |                            |
@@ -157,7 +160,8 @@ Click on any device below to see available sensors, switches, and controls:
 
 <sup>⁺ Only available on Plus variant</sup><br>
 <sup>¹ Not available on Classic</sup><br>
-<sup>² Not available on Air</sup>
+<sup>² Not available on Air</sup><br>
+<sup>³ Only available on Max Plus</sup>
 
 > **📝 Note:** Delta 3 models do not expose energy sensors. To use with the Energy
 > dashboard, you must create them yourself. See the

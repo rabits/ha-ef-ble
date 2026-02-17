@@ -508,6 +508,12 @@ SENSOR_TYPES: dict[str, SensorEntityDescription] = {
         device_class=SensorDeviceClass.POWER,
         state_class=SensorStateClass.MEASUREMENT,
     ),
+    "usbc3_output_power": SensorEntityDescription(
+        key="usbc2_output_power",
+        native_unit_of_measurement=UnitOfPower.WATT,
+        device_class=SensorDeviceClass.POWER,
+        state_class=SensorStateClass.MEASUREMENT,
+    ),
     "usba2_output_power": SensorEntityDescription(
         key="usba2_output_power",
         native_unit_of_measurement=UnitOfPower.WATT,

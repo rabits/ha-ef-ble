@@ -917,6 +917,22 @@ SENSOR_TYPES: dict[str, SensorEntityDescription] = {
         suggested_display_precision=2,
         entity_registry_enabled_default=False,
     ),
+    "solar_input_power": SensorEntityDescription(
+        key="solar_input_power",
+        name="Solar Input Power",
+        native_unit_of_measurement=UnitOfPower.WATT,
+        device_class=SensorDeviceClass.POWER,
+        state_class=SensorStateClass.MEASUREMENT,
+        entity_registry_enabled_default=True,
+    ),
+    "dc_car_out_power": SensorEntityDescription(
+        key="dc_car_out_power",
+        name="12V DC Output",
+        native_unit_of_measurement=UnitOfPower.WATT,
+        device_class=SensorDeviceClass.POWER,
+        state_class=SensorStateClass.MEASUREMENT,
+        entity_registry_enabled_default=True,
+    ),
     # Wave 2
     "outlet_temperature": SensorEntityDescription(
         key="outlet_temperature",

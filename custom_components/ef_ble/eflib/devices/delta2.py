@@ -21,7 +21,9 @@ class Device(Delta2Base):
     energy_backup_battery_level = raw_field(pb_pd.bp_power_soc)
     dc_output_power = raw_field(pb_pd.dc_pv_output_watts)
     ac_charging_speed = raw_field(pb_mppt.cfg_chg_watts)
-
+    solar_input_power = raw_field(pb_pd.dc_pv_input_watts)
+    dc_car_out_power = raw_field(pb_pd.car_watts)
+    
     async def packet_parse(self, data: bytes):
         return Packet.fromBytes(data, xor_payload=True)
 

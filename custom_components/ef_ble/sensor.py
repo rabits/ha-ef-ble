@@ -932,36 +932,6 @@ SENSOR_TYPES: Final[dict[str, SensorEntityDescription]] = {
         suggested_display_precision=2,
         entity_registry_enabled_default=False,
     ),
-    # PowerStream
-    "battery_power": SensorEntityDescription(
-        key="battery_power",
-        native_unit_of_measurement=UnitOfPower.WATT,
-        device_class=SensorDeviceClass.POWER,
-        state_class=SensorStateClass.MEASUREMENT,
-        suggested_display_precision=1,
-    ),
-    "inverter_temperature": SensorEntityDescription(
-        key="inverter_temperature",
-        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
-        device_class=SensorDeviceClass.TEMPERATURE,
-        state_class=SensorStateClass.MEASUREMENT,
-    ),
-    "pv_temperature_1": SensorEntityDescription(
-        key="pv_temperature_1",
-        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
-        device_class=SensorDeviceClass.TEMPERATURE,
-        state_class=SensorStateClass.MEASUREMENT,
-        translation_key="port_temperature",
-        translation_placeholders={"name": "PV (1)"},
-    ),
-    "pv_temperature_2": SensorEntityDescription(
-        key="pv_temperature_2",
-        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
-        device_class=SensorDeviceClass.TEMPERATURE,
-        state_class=SensorStateClass.MEASUREMENT,
-        translation_key="port_temperature",
-        translation_placeholders={"name": "PV (2)"},
-    ),
     # Wave 2
     "outlet_temperature": SensorEntityDescription(
         key="outlet_temperature",

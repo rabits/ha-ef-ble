@@ -2,7 +2,7 @@ import pytest
 from google.protobuf import text_format
 from pytest_mock import MockerFixture
 
-from custom_components.ef_ble.eflib.devices import powerstream
+from custom_components.ef_ble.eflib.devices import _powerstream
 from custom_components.ef_ble.eflib.packet import Packet
 from custom_components.ef_ble.eflib.pb import wn511_sys_pb2
 from custom_components.ef_ble.eflib.props import Field
@@ -35,15 +35,13 @@ inv_freq: 500
 
 @pytest.fixture
 def heartbeat_message():
-    return text_format.Merge(
-        _heartbeat_msg_str, wn511_sys_pb2.inverter_heartbeat()
-    )
+    return text_format.Merge(_heartbeat_msg_str, wn511_sys_pb2.inverter_heartbeat())
 
 
 @pytest.fixture
 def device(mocker: MockerFixture):
     mocker.patch("custom_components.ef_ble.eflib.devicebase.DeviceLogger")
-    dev = powerstream.Device(mocker.AsyncMock(), mocker.Mock(), "[sn]")
+    dev = _powerstream.Device(mocker.AsyncMock(), mocker.Mock(), "[sn]")
     dev._conn = mocker.AsyncMock()
     return dev
 
@@ -61,22 +59,22 @@ async def test_data_parse_updates_all_fields(device, heartbeat_message):
     assert result is True
 
     expected_updated_fields: list[Field] = [
-        powerstream.Device.pv_power_1,
-        powerstream.Device.pv_voltage_1,
-        powerstream.Device.pv_current_1,
-        powerstream.Device.pv_temperature_1,
-        powerstream.Device.pv_power_2,
-        powerstream.Device.pv_voltage_2,
-        powerstream.Device.pv_current_2,
-        powerstream.Device.pv_temperature_2,
-        powerstream.Device.battery_level,
-        powerstream.Device.battery_power,
-        powerstream.Device.battery_temperature,
-        powerstream.Device.grid_power,
-        powerstream.Device.grid_voltage,
-        powerstream.Device.grid_current,
-        powerstream.Device.grid_frequency,
-        powerstream.Device.inverter_temperature,
+        _powerstream.Device.pv_power_1,
+        _powerstream.Device.pv_voltage_1,
+        _powerstream.Device.pv_current_1,
+        _powerstream.Device.pv_temperature_1,
+        _powerstream.Device.pv_power_2,
+        _powerstream.Device.pv_voltage_2,
+        _powerstream.Device.pv_current_2,
+        _powerstream.Device.pv_temperature_2,
+        _powerstream.Device.battery_level,
+        _powerstream.Device.battery_power,
+        _powerstream.Device.battery_temperature,
+        _powerstream.Device.grid_power,
+        _powerstream.Device.grid_voltage,
+        _powerstream.Device.grid_current,
+        _powerstream.Device.grid_frequency,
+        _powerstream.Device.inverter_temperature,
     ]
 
     for field in expected_updated_fields:

@@ -9,6 +9,7 @@ from collections import deque
 from collections.abc import Awaitable, Callable, Collection, Coroutine, MutableSequence
 from enum import StrEnum, auto
 from functools import cached_property
+from typing import Literal
 
 import ecdsa
 from bleak import BleakClient
@@ -43,8 +44,6 @@ from .props.utils import classproperty
 
 MAX_RECONNECT_ATTEMPTS = 2
 MAX_CONNECTION_ATTEMPTS = 10
-
-type DisconnectListener = Callable[[Exception | type[Exception] | None], None]
 
 
 def _state_in(states: "Collection[ConnectionState | str]"):
@@ -154,9 +153,12 @@ class ConnectionState(StrEnum):
         return None
 
 
+type DisconnectListener = Callable[[Exception | type[Exception] | None], None]
 type ConnectionStateListener = Callable[[ConnectionState], None]
 type PacketReceivedListener = Callable[[bytes], None]
 type PacketParsedListener = Callable[[Packet], None]
+type DataReceivedListener = Callable[[bytes, Literal["connection", "data"]], None]
+type DataSendListener = Callable[[bytes], None]
 
 
 class _ConnectionListeners(ListenerRegistry):
@@ -164,6 +166,8 @@ class _ConnectionListeners(ListenerRegistry):
     on_disconnect: ListenerGroup[DisconnectListener]
     on_connection_state_change: ListenerGroup[ConnectionStateListener]
     on_packet_parsed: ListenerGroup[PacketParsedListener]
+    on_data_received: ListenerGroup[DataReceivedListener]
+    on_data_send: ListenerGroup[DataSendListener]
 
 
 class Connection:
@@ -218,6 +222,7 @@ class Connection:
 
         self._connection_state: ConnectionState = None  # pyright: ignore[reportAttributeAccessIssue]
         self._set_state(ConnectionState.CREATED)
+        self._data_type: Literal["connection", "data"] = "connection"
 
     @property
     def is_connected(self) -> bool:
@@ -255,6 +260,12 @@ class Connection:
 
     def on_packet_parsed(self, listener: PacketParsedListener):
         return self._listeners.on_packet_parsed.add(listener)
+
+    def on_data_received(self, listener: DataReceivedListener):
+        return self._listeners.on_data_received.add(listener)
+
+    def on_data_send(self, listener: DataSendListener):
+        return self._listeners.on_data_send.add(listener)
 
     def _notify_disconnect(self, exception: Exception | type[Exception] | None = None):
         if exception is None:
@@ -458,7 +469,9 @@ class Connection:
                 ),
             )
 
-    async def wait_until_authenticated_or_error(self, raise_on_error: bool = False):
+    async def wait_until_authenticated_or_error(
+        self, raise_on_error: bool = False, return_exc: bool = False
+    ):
         while not self._state.is_terminal:
             await self._state_changed.wait()
 
@@ -477,8 +490,12 @@ class Connection:
             raise self._state_exception
 
         if self._state is ConnectionState.DISCONNECTED:
+            if return_exc:
+                return self._last_state, self._state_exception
             return self._last_state
 
+        if return_exc:
+            return self._state, self._state_exception
         return self._state
 
     async def observe_connection(self):
@@ -576,8 +593,10 @@ class Connection:
         # Hashing data to get the session key
         return hashlib.md5(data).digest()
 
-    async def parseSimple(self, data: str):
+    async def parseSimple(self, data: bytes):
         """Deserializes bytes stream into the simple bytes"""
+        self._listeners.on_data_received(data, self._data_type)
+
         self._logger.log_filtered(
             LogOptions.ENCRYPTED_PAYLOADS,
             "parseSimple: Data: %r",
@@ -601,8 +620,10 @@ class Connection:
 
         return payload_data
 
-    async def parseEncPackets(self, data: str) -> list[Packet]:
+    async def parseEncPackets(self, data: bytes) -> list[Packet]:
         """Deserializes bytes stream into a list of Packets"""
+        self._listeners.on_data_received(data, self._data_type)
+
         # In case there are leftovers from previous processing - adding them to current
         # data
         if self._enc_packet_buffer:
@@ -688,6 +709,8 @@ class Connection:
 
     async def sendRequest(self, send_data: bytes, response_handler=None):
         self._logger.log_filtered(LogOptions.CONNECTION_DEBUG, "Sending: %r", send_data)
+        self._listeners.on_data_send(send_data)
+
         # In case exception happens we need to try again
         err = None
         for retry in range(4):
@@ -910,6 +933,38 @@ class Connection:
         # Sending request and starting the common listener
         await self.sendPacket(packet, self.listenForDataHandler)
 
+    async def _check_auth(self, packet: Packet):
+        report = ()
+
+        match packet.payload:
+            case b"\x00":
+                return
+            case b"\x01":
+                error_msg = "General error, try again"
+            case b"\x02":
+                error_msg = "OTA Upgrade Error"
+            case b"\x03":
+                error_msg = "User ID has incorrect length"
+            case b"\x04":
+                error_msg = "IOT Status Error - Device needs IOT reset"
+            case b"\x05":
+                error_msg = "User key read error"
+            case b"\x06":
+                error_msg = "Wrong User ID, try to log in with different region"
+            case b"\x07":
+                error_msg = "Maximum devices reached"
+
+            case _:
+                error_msg = "Auth failed with response: %r"
+                report = (packet,)
+
+        self._logger.error(error_msg, *report)
+        exc = AuthFailedError(error_msg % report)
+        self._set_state(ConnectionState.ERROR_AUTH_FAILED, exc)
+        if self._client is not None and self._client.is_connected:
+            await self._client.disconnect()
+        raise exc
+
     async def listenForDataHandler(
         self, characteristic: BleakGATTCharacteristic, recv_data: bytearray
     ):
@@ -924,26 +979,14 @@ class Connection:
 
             # Handling autoAuthentication response
             if packet.src == 0x35 and packet.cmdSet == 0x35 and packet.cmdId == 0x86:
-                if packet.payload != b"\x00":
-                    # TODO: Most probably we need to follow some other way for auth, but
-                    # happens rarely
-                    error_msg = "Auth failed with response: %r"
-                    self._logger.error(error_msg, packet)
-                    exc = AuthFailedError(error_msg % packet)
-                    self._set_state(ConnectionState.ERROR_AUTH_FAILED, exc)
-                    self._last_errors.append(f"Auth failed with response: {packet!r}")
-
-                    if self._client is not None and self._client.is_connected:
-                        await self._client.disconnect()
-
-                    raise exc
-
+                await self._check_auth(packet)
                 self._connection_attempt = 0
                 self._reconnect_attempt = 0
                 processed = True
                 self._logger.info("Auth completed, everything is fine")
                 self._set_state(ConnectionState.AUTHENTICATED)
                 self._connected.set()
+                self._data_type = "data"
             else:
                 try:
                     # Processing the packet with specific device

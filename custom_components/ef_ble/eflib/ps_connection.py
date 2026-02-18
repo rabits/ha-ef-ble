@@ -6,7 +6,7 @@ import struct
 
 from Crypto.Cipher import AES
 
-from .connection import AuthFailedError, Connection, ConnectionState
+from .connection import Connection, ConnectionState
 from .crc import crc8
 from .logging_util import LogOptions
 from .packet import Packet
@@ -66,20 +66,16 @@ class PowerStreamConnection(Connection):
         for packet in packets:
             processed = False
             if packet.src == 0x35 and packet.cmdSet == 0x35 and packet.cmdId == 0x86:
-                if packet.payload != b"\x00":
-                    error_msg = "Auth failed with response: %r"
-                    self._logger.error(error_msg, packet)
-                    exc = AuthFailedError(error_msg % packet)
-                    self._set_state(ConnectionState.ERROR_AUTH_FAILED, exc)
-                    if self._client is not None and self._client.is_connected:
-                        await self._client.disconnect()
-                    raise exc
+                await self._check_auth(packet)
+
                 self._connection_attempt = 0
                 self._reconnect_attempt = 0
                 processed = True
                 self._logger.info("Auth completed, everything is fine")
                 self._set_state(ConnectionState.AUTHENTICATED)
                 self._connected.set()
+                self._data_type = "data"
+
                 task = asyncio.create_task(self._heartbeat_request_loop())
                 self._tasks.add(task)
                 task.add_done_callback(self._tasks.discard)
@@ -121,7 +117,7 @@ class PowerStreamConnection(Connection):
                 response=False,
             )
 
-    async def parseEncPackets(self, data: str) -> list[Packet]:
+    async def parseEncPackets(self, data: bytes) -> list[Packet]:
         """
         Deserialise BLE data into Packets for PowerStream wire format.
 
@@ -131,6 +127,8 @@ class PowerStreamConnection(Connection):
         V13 payload is additionally XOR'd with seq[0] by the device firmware;
         Packet.fromBytes handles that transparently.
         """
+        self._listeners.on_data_received(data, self._data_type)
+
         if self._enc_packet_buffer:
             data = self._enc_packet_buffer + data
             self._enc_packet_buffer = b""
@@ -179,9 +177,9 @@ class PowerStreamConnection(Connection):
                 decrypted = await self.decryptSession(encrypted_body)
                 full_packet = header + decrypted[:inner_len]
 
-                self._on_packet_data_received(full_packet)
+                self._listeners.on_packet_received(full_packet)
                 packet = await self._packet_parse(full_packet)
-                self._on_packet_parsed(packet)
+                self._listeners.on_packet_parsed(packet)
                 self._logger.log_filtered(
                     LogOptions.PACKETS,
                     "Parsed packet: %s",

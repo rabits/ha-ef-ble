@@ -12,7 +12,7 @@
       "unknown": "An unexpected error occured, check the logs for details",
       "email_empty": "Email cannot be empty",
       "password_empty": "Password cannot be empty",
-      "device_auth_failed": "Device authentication failed - user ID may be incorrect",
+      "device_auth_failed": "Device authentication failed - {reason_failed}",
       "bt_timeout": "Could not connect to the device - connection timed out",
       "bt_not_found": "Device was not found - try refreshing the bluetooth integration if this error occurs repeatedly",
       "bt_general_error": "Could not connect to the device - see the logs for more details",

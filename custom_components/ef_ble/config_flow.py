@@ -8,7 +8,7 @@ import enum
 import logging
 from collections.abc import Mapping
 from functools import cached_property
-from typing import Any, ClassVar
+from typing import Any, ClassVar, cast
 
 import voluptuous as vol
 from homeassistant.components.bluetooth import (
@@ -150,12 +150,12 @@ class EFBLEConfigFlow(ConfigFlow, domain=DOMAIN):
         )
         return self.async_show_form(
             step_id="bluetooth_confirm",
-            description_placeholders=placeholders,
+            description_placeholders=placeholders | errors.get("__placeholders", {}),
             errors=errors,
             data_schema=(
                 schema_builder()
                 .user_id(self._user_id)
-                .login(self._email, self._collapsed)
+                .login(self._collapsed)
                 .required(CONF_ADDRESS, vol.In([full_name]))
                 .update_period()
                 .timeout()
@@ -249,7 +249,7 @@ class EFBLEConfigFlow(ConfigFlow, domain=DOMAIN):
             if not errors:
                 return self._create_entry(user_input, device)
 
-        placeholders = {"name": device.device}
+        placeholders = {"name": device.device} | errors.pop("__placeholders", {})
         self.context["title_placeholders"] = placeholders
 
         return self.async_show_form(
@@ -259,7 +259,7 @@ class EFBLEConfigFlow(ConfigFlow, domain=DOMAIN):
             data_schema=(
                 schema_builder()
                 .user_id(self._user_id)
-                .login(self._email, self._collapsed)
+                .login(self._collapsed)
                 .update_period()
                 .timeout()
                 .conf_log(self._log_options)
@@ -285,7 +285,7 @@ class EFBLEConfigFlow(ConfigFlow, domain=DOMAIN):
         placeholders = {
             "name": device.device,
             "wiki_link": LINK_WIKI_SUPPORTING_NEW_DEVICES,
-        }
+        } | errors.pop("__placeholders", {})
         self.context["title_placeholders"] = placeholders
 
         return self.async_show_form(
@@ -305,7 +305,7 @@ class EFBLEConfigFlow(ConfigFlow, domain=DOMAIN):
                     ),
                     default=PacketVersion.from_str(f"v{device.packet_version}"),
                 )
-                .login(self._email, self._collapsed)
+                .login(self._collapsed)
                 .timeout()
                 .conf_log(self._log_options)
                 .build()
@@ -384,6 +384,18 @@ class EFBLEConfigFlow(ConfigFlow, domain=DOMAIN):
 
         return self.async_create_entry(title=device.name, data=entry_data)
 
+    def _check_user_id(self, user_id: str):
+        try:
+            int(user_id.strip())
+        except ValueError:
+            return {"base": "User ID can only contain numbers"}
+
+        if len(user_id) < 17:
+            return {"base": "User ID is too short"}
+        if len(user_id) > 22:
+            return {"base": "User ID is too long"}
+        return None
+
     async def _validate_user_id(
         self, device: eflib.DeviceBase, user_input: dict[str, Any]
     ) -> dict[str, Any]:
@@ -392,7 +404,7 @@ class EFBLEConfigFlow(ConfigFlow, domain=DOMAIN):
         self._email = user_input.get("login", {}).get(CONF_EMAIL, "")
         password = user_input.get("login", {}).get(CONF_PASSWORD, "")
         region = user_input.get("login", {}).get(CONF_REGION, "")
-        user_id = user_input.get(CONF_USER_ID, "")
+        user_id = user_input.get(CONF_USER_ID, "").strip()
         timeout = user_input.get(CONF_CONNECTION_TIMEOUT, DEFAULT_CONNECTION_TIMEOUT)
         packet_version = PacketVersion.from_str(user_input.get(CONF_PACKET_VERSION))
 
@@ -410,14 +422,18 @@ class EFBLEConfigFlow(ConfigFlow, domain=DOMAIN):
 
         self._user_id = user_id
 
+        if error := self._check_user_id(user_id):
+            return error
+
         device.with_logging_options(
             ConfLogOptions.from_config(user_input)
         ).with_packet_version(packet_version.to_num())
 
         await device.connect(self._user_id)
+        exc = None
         try:
-            conn_state = await asyncio.wait_for(
-                device.wait_until_authenticated_or_error(), timeout
+            conn_state, exc = await asyncio.wait_for(
+                device.wait_until_authenticated_or_error(return_exc=True), timeout
             )
         except TimeoutError:
             conn_state = device.connection_state
@@ -425,9 +441,11 @@ class EFBLEConfigFlow(ConfigFlow, domain=DOMAIN):
         await device.disconnect()
 
         error = None
+        placeholders = {}
         match conn_state:
             case ConnectionState.ERROR_AUTH_FAILED:
                 error = "device_auth_failed"
+                placeholders = {"reason_failed": str(exc)}
             case ConnectionState.ERROR_TIMEOUT:
                 error = "bt_timeout"
             case ConnectionState.ERROR_NOT_FOUND:
@@ -449,7 +467,7 @@ class EFBLEConfigFlow(ConfigFlow, domain=DOMAIN):
         await device.wait_disconnected()
 
         if error is not None:
-            return {"base": error}
+            return {"base": error, "__placeholders": placeholders}
         return {}
 
     @cached_property
@@ -607,17 +625,18 @@ class _SchemaBuilder:
 
     def user_id(self, user_id: str, required: bool = False):
         marker = vol.Required if required else vol.Optional
+        user_id = cast("str", vol.UNDEFINED) if not user_id.strip() else user_id
 
         return self.update({marker(CONF_USER_ID, default=user_id): str})
 
-    def login(self, email: str, collapsed: bool = True):
+    def login(self, collapsed: bool = True):
         return self.update(
             {
                 vol.Required("login"): section(
                     schema=(
                         schema_builder()
-                        .optional(CONF_EMAIL, str, email)
-                        .optional(CONF_PASSWORD, str, "")
+                        .optional(CONF_EMAIL, str)
+                        .optional(CONF_PASSWORD, str)
                         .optional(CONF_REGION, vol.In(["Auto", "EU", "US"]), "Auto")
                         .build()
                     ),

@@ -92,3 +92,12 @@ class AuthErrors:
     @classmethod
     def from_payload(cls, payload: bytes) -> type[Exception] | None:
         return cls._PAYLOAD_TO_ERROR.get(payload, AuthErrors.UnknownError)
+
+
+class UnsupportedBluetoothProtocol(Exception):
+    def __init__(self, characteristic_type: str, available_characteristics: list[str]):
+        characteristics = "\n    ".join(available_characteristics)
+        super().__init__(
+            f"Device is using unsupported protocol for {characteristic_type}.\n"
+            f"Available characteristics:\n    {characteristics}"
+        )

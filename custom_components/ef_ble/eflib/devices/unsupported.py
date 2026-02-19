@@ -50,6 +50,16 @@ class UnsupportedDevice(DeviceBase):
 
         return version
 
+    @property
+    def auth_header_dst(self):
+        return (
+            0x32
+            if self._sn.startswith("DC")
+            or self._sn.startswith("R511")
+            or self._sn.startswith("Z0")
+            else 0x35
+        )
+
     def with_update_period(self, period: int):
         # NOTE(gnox): as unsupported devices do not have any sensors, we leave update
         # period to default, otherwise collection sensor would lag

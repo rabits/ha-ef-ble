@@ -124,6 +124,10 @@ class DeviceBase(abc.ABC):
         return self._packet_version
 
     @property
+    def auth_header_dst(self) -> int:
+        return 0x35
+
+    @property
     def connection_state(self):
         return None if self._conn is None else self._conn._connection_state
 
@@ -212,6 +216,7 @@ class DeviceBase(abc.ABC):
                     packet_parse=self.packet_parse,
                     packet_version=self.packet_version,
                     encrypt_type=self.scan_record.encrypt_type,
+                    auth_header_dst=self.auth_header_dst,
                 )
                 .with_logging_options(self._logger.options)
                 .with_disabled_reconnect(self._reconnect_disabled)

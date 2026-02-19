@@ -21,7 +21,7 @@ def sn_from_advertisement(adv_data: AdvertisementData):
         return None
 
     man_data = adv_data.manufacturer_data[DeviceBase.MANUFACTURER_KEY]
-    return man_data[1:17]
+    return man_data[1:17].strip(b"\x00")
 
 
 def is_unsupported(

@@ -1,0 +1,71 @@
+syntax = "proto3";
+
+package jt_s1_parallel;
+
+
+message DevInfo {
+  optional uint32 dev_addr = 1;
+  optional string dev_sn = 2;
+}
+
+message ParallelEnergyStream {
+  optional float sys_load_pwr = 1;
+  optional float sys_grid_pwr = 2;
+  optional float mppt_pwr = 3;
+  optional float bp_pwr = 4;
+  optional uint32 bp_soc = 5;
+  optional string dev_sn = 6;
+}
+
+message ParallelEnergyStreamReport {
+  repeated ParallelEnergyStream para_energy_stream = 1;
+}
+
+message ParallelEnergyStreamItem {
+  optional float load_pwr = 1;
+  optional float grid_pwr = 2;
+  optional float mppt_pwr = 3;
+  optional float bp_pwr = 4;
+  optional uint32 timestamp = 5;
+  optional uint32 bp_soc = 7;
+  optional string dev_sn = 8;
+}
+
+message ParallelEnergyStreamDetail {
+  repeated ParallelEnergyStreamItem para_energy_stream_detail = 1;
+  optional uint32 para_sys_seq = 2;
+}
+
+message ParallelEnergyStreamDetailAck {
+  optional uint32 sys_seq = 1;
+  optional uint32 sys_energy_num = 2;
+}
+
+message ParallelDevList {
+  repeated DevInfo para_dev = 1;
+}
+
+message LanDevInfo {
+  optional uint32 groupid = 1;
+  optional string sn = 2;
+  optional uint32 id_pri = 3;
+  optional bool dev_online = 4;
+}
+
+message ParallelLanDevList {
+  repeated LanDevInfo lan_para_dev = 1;
+}
+
+message ParallelDevListReport {
+  optional ParallelDevList para_dev_list = 1;
+  optional ParallelDevList para_dev_onflict_list = 2;
+  optional ParallelLanDevList para_lan_dev_list = 3;
+}
+
+message ParallelMasterDevSet {
+  optional uint32 para_master_daddr = 1;
+}
+
+message ParallelMasterDevSetAck {
+  optional uint32 result = 1;
+}

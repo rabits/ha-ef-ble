@@ -1,0 +1,270 @@
+syntax = "proto3";
+
+package jt_s1_ev;
+
+
+enum EVCmdSets {
+  EV_NONE_CMD_SETS = 0;
+  EV_CMD_SETS = 209;
+}
+
+enum EVCmdId {
+  EV_CMD_ID_NONE = 0;
+  EV_CMD_ID_TIMERTASK_REPORT = 2;
+  EV_CMD_ID_EVCHARGING_PARAM_REPORT = 8;
+  EV_CMD_ID_EVCHARGING_LIST_GET = 97;
+  EV_CMD_ID_EVCHARGING_BIND = 98;
+  EV_CMD_ID_EVCHARGING_PARAM_SET = 99;
+  EV_CMD_ID_EVCHARGING_APP_CTRL = 100;
+  EV_CMD_ID_TIMER_TASK_SET = 101;
+  EV_CMD_ID_TIMER_TASK_GET = 102;
+  EV_CMD_ID_VEHICLE_SET = 103;
+  EV_CMD_ID_EVCHARGING_ENERGY_STREAM_REPORT = 33;
+  EV_CMD_ID_ENERGY_STREAM_DETAIL = 34;
+  EV_CMD_ID_JT_TO_EV_HEARTBEAT = 35;
+  EV_CMD_ID_EV_TO_JT_HEARTBEAT = 36;
+  EV_CMD_ID_WATTH = 37;
+  EV_CMD_ID_ORDERS_DETAIL = 38;
+  EV_CMD_ID_EVCHARGING_CTRL = 48;
+  EV_CMD_ID_EVCHARGING_RUN_DATA = 49;
+  EV_CMD_ID_EVCHARGING_RUN_DATA_GET = 50;
+  EV_CMD_ID_REMOTE_EVCHARGING_LIST_SYNC = 51;
+}
+
+enum EVChgSts {
+  EV_CHG_STS_NONE = 0;
+  EV_CHG_STS_AVAILABLE = 1;
+  EV_CHG_STS_PREPARING = 2;
+  EV_CHG_STS_CHARGING = 3;
+  EV_CHG_STS_SUSPENDED_EVSE = 4;
+  EV_CHG_STS_SUSPENDED_EV = 5;
+  EV_CHG_STS_FINISHING = 6;
+  EV_CHG_STS_FAULTED = 9;
+}
+
+enum EvChgMode {
+  EV_CHG_MODE_QUIK = 0;
+  EV_CHG_MODE_NORMAL = 1;
+  EV_CHG_MODE_SOLAR_INV = 2;
+  EV_CHG_MODE_STORE_INV = 3;
+}
+
+message EVChargingListGet {
+}
+
+message EVChargingListAck {
+  repeated string ev_sn = 1;
+}
+
+message EVChargingBind {
+  optional string ev_sn = 1;
+  optional bool bind_flg = 2;
+  optional uint32 commute_type = 3;
+}
+
+message EVChargingBindAck {
+  optional string ev_sn = 1;
+  optional bool bind_flg = 2;
+  optional int32 result = 3;
+  optional uint32 commute_type = 4;
+}
+
+message EVChargingParamSet {
+  optional string ev_sn = 1;
+  optional float expect_charging_energy = 2;
+  optional uint32 stop_charging_soc = 3;
+  optional uint32 ev_plug_and_play = 4;
+  optional uint32 work_mode = 5;
+  optional uint32 use_grid_first = 6;
+  optional uint32 switch_bits = 7;
+}
+
+message EVChargingParamSetAck {
+  optional string ev_sn = 1;
+  optional int32 result = 2;
+}
+
+message EVChargingParamReport {
+  optional string ev_sn = 1;
+  optional float expect_charging_energy = 2;
+  optional uint32 stop_charging_soc = 3;
+  optional uint32 online_bits = 4;
+  optional uint32 ev_plug_and_play = 5;
+  optional EVChgSts charging_status = 6;
+  optional bytes error_code = 7;
+  optional float ev_pwr = 8;
+  optional float ev_charging_energy = 9;
+  optional uint32 work_mode = 10;
+  optional uint32 order_time = 11;
+  optional uint32 order_state = 12;
+  optional string default_vehicle_id = 13;
+  optional string charge_vehicle_id = 14;
+  optional fixed32 order_start_timestamp = 15;
+  optional fixed32 order_end_timestamp = 16;
+  optional uint32 use_grid_first = 17;
+  optional uint32 switch_bits = 18;
+}
+
+message EVChargingEnergyStreamShow {
+  optional string ev_sn = 1;
+  optional float ev_pwr = 2;
+}
+
+message EVChargingEnergyStreamReport {
+  repeated EVChargingEnergyStreamShow ev_stream_show = 1;
+}
+
+message EVChargingEnergyStreamItem {
+  optional string ev_sn = 1;
+  optional float ev_pwr = 2;
+  optional fixed32 timestamp = 3;
+}
+
+message EVEnergyStreamDetail {
+  repeated EVChargingEnergyStreamItem ev_energy_stream = 1;
+  optional uint32 sys_seq = 2;
+}
+
+message EVEnergyStreamDetailAck {
+  optional uint32 sys_seq = 1;
+  optional uint32 sys_energy_num = 2;
+}
+
+message EVChargingRunData {
+  optional string ev_sn = 1;
+  optional uint32 charging_volt_r = 2;
+  optional uint32 charging_curr_r = 3;
+  optional uint32 charging_volt_s = 4;
+  optional uint32 charging_curr_s = 5;
+  optional uint32 charging_volt_t = 6;
+  optional uint32 charging_curr_t = 7;
+  optional uint32 charging_pwr = 8;
+  optional uint32 charging_energy = 9;
+  optional EVChgSts charging_status = 10;
+  optional bytes error_code = 11;
+}
+
+message EVChargingRunDataGet {
+  optional string ev_sn = 1;
+}
+
+message EVChargingCtrl {
+  optional string ev_sn = 1;
+  optional uint32 charging_ctrl = 2;
+  optional float charging_current = 3;
+  optional EvChgMode charging_mode = 4;
+}
+
+message EVChargingCtrlAck {
+  optional string ev_sn = 1;
+  optional int32 result = 2;
+}
+
+message EVChargingJT2EVHeartBeat {
+  optional string ev_sn = 1;
+  optional float total_pv_energy = 2;
+  optional uint32 phase_req = 3;
+}
+
+message EVChargingEV2JTHeartBeat {
+  optional string ev_sn = 1;
+}
+
+message EVChargingAppCtrl {
+  optional string ev_sn = 1;
+  optional uint32 charging_ctrl = 2;
+}
+
+message EVChargingAppCtrlAck {
+  optional string ev_sn = 1;
+  optional int32 result = 2;
+}
+
+message EVChargingEnergyItem {
+  optional string ev_sn = 1;
+  optional fixed32 timestamp = 2;
+  optional uint32 watth_type = 3;
+  repeated uint32 watth = 4;
+}
+
+message EVChargingEnergyTotalReport {
+  optional uint32 watth_seq = 1;
+  optional EVChargingEnergyItem watth_item = 2;
+}
+
+message EVChargingEnergyTotalReportAck {
+  optional string ev_sn = 1;
+  optional int32 result = 2;
+  optional uint32 watth_seq = 3;
+  optional uint32 watth_type = 4;
+}
+
+message EVChargingRemoteListSync {
+}
+
+message EVChargingRemoteListSyncAck {
+  repeated string ev_sn = 1;
+}
+
+message EVChargingTimerTaskCfgSet {
+  optional string ev_sn = 1;
+  optional EVChargingTimerTaskCfg timer_task = 2;
+}
+
+message EVChargingTimerTaskCfg {
+  optional uint32 is_cfg = 1;
+  optional uint32 task_index = 2;
+  optional bool is_enable = 3;
+  optional bool is_effect = 4;
+  optional uint32 type = 5;
+  optional int32 param = 6;
+  optional uint32 time_mode = 7;
+  optional uint32 time_param = 8;
+  repeated uint32 time_table = 9;
+}
+
+message EVChargingTimerTaskCfgAck {
+  optional string ev_sn = 1;
+  optional uint32 type = 2;
+  optional uint32 task_index = 3;
+  optional int32 result = 4;
+}
+
+message EVChargingTimerTaskGet {
+  optional string ev_sn = 1;
+}
+
+message EVChargingTimerTaskReport {
+  optional string ev_sn = 1;
+  repeated EVChargingTimerTaskCfg time_task_cfg = 2;
+}
+
+message EVOrdersItem {
+  optional string ev_sn = 1;
+  optional string vehicle_id = 2;
+  optional fixed32 start_timestamp = 3;
+  optional fixed32 end_timestamp = 4;
+  repeated float watth = 5;
+  optional fixed32 order_id = 6;
+}
+
+message EVOrdersDetail {
+  repeated EVOrdersItem order = 1;
+  optional uint32 sys_seq = 2;
+}
+
+message EVOrdersDetailAck {
+  optional uint32 sys_seq = 1;
+  optional uint32 order_num = 2;
+}
+
+message EVChargingVehicleSet {
+  optional string ev_sn = 1;
+  optional string default_vehicle_id = 2;
+  optional string charge_vehicle_id = 3;
+}
+
+message EVChargingVehicleSetAck {
+  optional string ev_sn = 1;
+  optional int32 result = 2;
+}

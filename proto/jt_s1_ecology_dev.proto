@@ -1,0 +1,56 @@
+syntax = "proto3";
+
+package jt_s1_ecology_dev;
+
+
+enum EcoDevCmdSets {
+  ECODEV_NONE_CMD_SETS = 0;
+  ECODEV_CMD_SETS = 224;
+}
+
+enum EcoDevCmdId {
+  ECODEV_CMD_ID_NONE = 0;
+  ECODEV_CMD_ID_ECOLOGY_DEV_GET = 106;
+  ECODEV_CMD_ID_ECOLOGY_DEV_BIND = 107;
+  ECODEV_CMD_ID_ECOLOGY_DEV_BIND_LIST_GET = 108;
+  ECODEV_CMD_ID_ECOLOGY_DEV_BIND_LIST_REPORT = 1;
+}
+
+message EcologyDevGet {
+  optional uint32 addr = 1;
+}
+
+message EcologyDevGetAck {
+  optional uint32 addr = 1;
+  optional uint32 local_connected = 2;
+  repeated string dev_sn = 3;
+}
+
+message EcologyDevBind {
+  optional uint32 addr = 1;
+  optional string dev_sn = 2;
+  optional bool bind_flg = 3;
+  optional uint32 commute_type = 4;
+}
+
+message EcologyDevBindAck {
+  optional uint32 addr = 1;
+  optional string dev_sn = 2;
+  optional bool bind_flg = 3;
+  optional int32 result = 4;
+  optional uint32 commute_type = 5;
+}
+
+message EcologyDevBindListReport {
+  repeated EcologyDevBindItem dev_item = 1;
+}
+
+message EcologyDevBindItem {
+  optional uint32 addr = 1;
+  optional string dev_sn = 2;
+  optional uint32 commute_type = 3;
+  optional uint32 online_bits = 4;
+}
+
+message EcologyDevBindListReportGet {
+}

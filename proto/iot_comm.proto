@@ -1,0 +1,217 @@
+syntax = "proto3";
+
+package iot_comm;
+
+enum IotCmdSets {
+  IOT_NONE_CMD_SETS = 0;
+  IOT_COMM_CMD_SETS = 53;
+}
+
+enum IotCmdId {
+  IOT_CMD_ID_NONE = 0;
+  IOT_CMD_ID_MODULE_INFO = 113;
+  IOT_CMD_ID_PACK_LOG = 114;
+  IOT_CMD_ID_AUTH_TYPE = 137;
+  IOT_CMD_ID_START_BIND = 168;
+  IOT_CMD_ID_CONFIRM_BIND = 169;
+  IOT_CMD_ID_REFRESH_TOKEN = 170;
+  IOT_CMD_ID_AUTHENTICATION = 171;
+  IOT_CMD_ID_UNBIND = 132;
+}
+
+enum UserRoleType {
+  UserRoleInstaller = 0;
+  UserRoleNormal = 1;
+  UserRoleShared = 2;
+  UserRoleUnknown = 255;
+}
+
+enum IotErrCode {
+  Success = 0;
+  ReqParamErr = 3;
+  DeviceErr = 4;
+  DeviceBounded = 5;
+  PBDecodeErr = 6;
+  DecodeErr = 7;
+  RandomCodeErr = 8;
+  UserInfoErr = 9;
+  SaveUserErr = 10;
+  SaveTokenErr = 11;
+  UserNotExist = 12;
+  SNNotReady = 13;
+  SecretKeyNotReady = 14;
+  UserErr = 15;
+  TokenErr = 16;
+  PayloadVerErr = 17;
+  SNErr = 18;
+  DevWriteErr = 19;
+  TokenExpire = 20;
+  SysTimeErr = 21;
+  Others = 255;
+}
+
+enum Iot4GErrCode {
+  MODEM_ERR_NONE = 0;
+  MODEM_ERR_SIM_NOT_INSERTED = 1;
+  MODEM_ERR_PIN_REQUIRED = 2;
+  MODEM_ERR_PUK_REQUIRED = 3;
+  MODEM_ERR_SIM_ERROR = 4;
+  MODEM_ERR_NOT_OPERATOR = 6;
+  MODEM_ERR_USB_DISCONNECT = 7;
+  MODEM_ERR_UNKNOWN_DEVICE = 8;
+  MODEM_ERR_CTL_ERROR = 9;
+}
+
+enum Iot4GRat {
+  RAT_NONE = 0;
+  RAT_2G = 2;
+  RAT_3G = 3;
+  RAT_4G = 4;
+}
+
+enum Iot4GReg {
+  REG_STAT_SEARCHING = 0;
+  REG_STAT_REGISTERED = 1;
+  REG_STAT_NOTREGISTERED = 2;
+  REG_STAT_DENIED = 3;
+  REG_STAT_UNKNOWN = 4;
+  REG_STAT_ROAMING = 5;
+}
+
+enum Iot4GAuth {
+  APN_AUTH_NONE = 0;
+  APN_AUTH_PAP = 1;
+  APN_AUTH_CHAP = 2;
+  APN_AUTH_PAP_CHAP = 3;
+}
+
+enum Iot4GIPType {
+  IP_UNKNOWN = 0;
+  IPV4 = 1;
+  IPV6 = 2;
+  IPV4V6 = 3;
+}
+
+message ModuleInfo {
+  optional uint32 product_type = 1;
+  optional uint32 product_detail = 2;
+  optional string module_sn = 3;
+  optional string cpuid = 4;
+  optional uint32 running_sta = 5;
+  optional uint32 addr = 6;
+  optional uint32 d_addr = 7;
+  optional uint32 app_ver = 8;
+  optional uint32 loader_ver = 9;
+}
+
+message ModuleClusterInfo {
+  repeated ModuleInfo modules = 1;
+  optional uint32 total_page = 2;
+  optional uint32 page = 3;
+}
+
+message AuthTypeAck {
+  optional uint32 status = 1;
+  optional uint32 version = 2;
+  optional uint32 auth_type = 3;
+}
+
+message StartBindAck {
+  optional uint32 result = 1;
+  optional string random_code = 2;
+  optional string signature_digest = 3;
+}
+
+message ConfirmBind {
+  optional string random_code = 1;
+  optional string user_info_en = 2;
+}
+
+message ConfirmBindAck {
+  optional uint32 result = 1;
+  optional string user_token = 2;
+}
+
+message RefreshToken {
+  optional string random_code = 1;
+  optional string user_info_en = 2;
+}
+
+message RefreshTokenAck {
+  optional uint32 result = 1;
+  optional string user_token = 2;
+}
+
+message Authentication {
+  optional uint32 user_role = 1;
+  optional string user_token = 2;
+}
+
+message AuthenticationAck {
+  optional uint32 result = 1;
+}
+
+message Unbind {
+  optional string random_code = 1;
+  optional string user_info_en = 2;
+}
+
+message UnbindAck {
+  optional uint32 result = 1;
+}
+
+message PackLogCmd {
+  repeated uint32 idx = 1;
+}
+
+message PackLogCmdAck {
+  optional uint32 result = 1;
+}
+
+message Iot4GInfoGetAck {
+  optional sint32 enable = 1;
+  optional sint32 usb_con = 2;
+  optional sint32 pdp_active = 3;
+  optional string sim_iccid = 4;
+  optional string sim_imsi = 5;
+  optional string modem_imei = 6;
+  optional string modem_ver = 7;
+  optional string network_act = 8;
+  optional string network_sopr = 9;
+  optional string network_nopr = 10;
+  optional string network_band = 11;
+  optional Iot4GRat network_rat = 12;
+  optional Iot4GReg network_reg = 13;
+  optional sint32 signal_rssi = 14;
+  optional Iot4GErrCode err_code = 15;
+  optional sint32 singal_ico = 16;
+  optional uint32 ip = 17;
+}
+
+message Iot4GApnGetAck {
+  optional string apn = 1;
+  optional string user = 2;
+  optional string password = 3;
+  optional Iot4GAuth auth = 4;
+  optional Iot4GIPType ip_type = 5;
+}
+
+message Iot4GApnSet {
+  optional string apn = 1;
+  optional string user = 2;
+  optional string password = 3;
+  optional Iot4GAuth auth = 4;
+  optional Iot4GIPType ip_type = 5;
+}
+
+message Iot4GApnSetAck {
+  optional sint32 result = 1;
+}
+
+message Iot4GEnableSet {
+  optional sint32 enable = 1;
+}
+
+message Iot4GEnableSetAck {
+  optional sint32 result = 1;
+}

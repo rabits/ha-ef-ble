@@ -214,6 +214,8 @@ async def test_river3_exact_values_from_known_packets(device, packet_sequence):
         Device.dc12v_output_energy: 0,
         Device.input_energy: 5,
         Device.output_energy: 194837,
+        Device.remaining_time_charging: 3827,
+        Device.remaining_time_discharging: 3807,
     }
 
     for field_name, expected_value in expected.items():

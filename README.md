@@ -268,6 +268,7 @@ Click on any device below to see available sensors, switches, and controls:
 | PV (2) Power ᴹᴾᵁ                    |             |                         |                 |
 | PV (3) Power ᴾᵁ                     |             |                         |                 |
 | PV (4) Power ᵁ                      |             |                         |                 |
+| PV Power Total ᴹᴾᵁ                  |             |                         |                 |
 | Cell Temperature (disabled)         |             |                         |                 |
 | Charge Time Remaining (disabled)    |             |                         |                 |
 | Discharge Time Remaining (disabled) |             |                         |                 |

@@ -216,6 +216,8 @@ async def test_delta2_max_exact_values_from_known_packets(device, packet_sequenc
         Device.max_ac_charging_power: 1800,
         Device.energy_backup_enabled: False,
         Device.ac_charging_speed: 300,
+        Device.remaining_time_charging: 5999,
+        Device.remaining_time_discharging: 5601,
     }
 
     for field_name, expected_value in expected.items():

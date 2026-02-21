@@ -330,8 +330,8 @@ class DeviceDiagnosticsCollector:
             disconnect_times=list(self._disconnect_times),
             raw_data_connection=self._raw_data_connection,
             raw_data_messages=self._raw_data_messages,
-            iv=self._device._conn._iv,
-            session_key=self._device._conn._session_key,
+            iv=self._device._conn._encryption.iv,
+            session_key=self._device._conn._encryption.session_key,
             shared_key=getattr(self._device._conn, "_shared_key", b""),
         )
 
@@ -429,14 +429,13 @@ class DeviceDiagnosticsCollector:
             self._last_errors.append(self._with_time(packet.error_message))
             return
 
-    def _on_data_received(self, data: bytes, data_type: str):
-        match data_type:
-            case "connection":
-                self._raw_data_connection.append(self._with_time(data))
-            case "data":
-                if len(self._raw_data_messages) > self._buffer_size:
-                    return
-                self._raw_data_messages.append(self._with_time(data))
+    def _on_data_received(self, data: bytes, state: "ConnectionState"):
+        if not state.authenticated:
+            buffer = self._raw_data_connection
+        else:
+            buffer = self._raw_data_messages
+
+        buffer.append(self._with_time(data))
 
     def _clear_buffers(self):
         self._last_packets.clear()

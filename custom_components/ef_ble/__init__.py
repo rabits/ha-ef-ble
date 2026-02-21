@@ -27,11 +27,11 @@ from .const import (
     DOMAIN,
 )
 from .eflib.connection import (
-    AuthFailedError,
     BleakError,
     ConnectionTimeout,
     MaxConnectionAttemptsReached,
 )
+from .eflib.exceptions import AuthErrors
 from .eflib.logging_util import ConnectionLog
 
 PLATFORMS: list[Platform] = [
@@ -104,7 +104,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: DeviceConfigEntry) -> bo
             translation_key="could_not_connect",
             translation_placeholders={"time": str(timeout)},
         ) from e
-    except AuthFailedError as e:
+    except AuthErrors.BaseException as e:
         raise ConfigEntryNotReady(translation_key="authentication_failed") from e
     except MaxConnectionAttemptsReached as e:
         await device.disconnect()

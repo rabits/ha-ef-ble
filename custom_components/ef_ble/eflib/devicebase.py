@@ -2,8 +2,9 @@ import abc
 import asyncio
 import time
 from collections import defaultdict
-from collections.abc import Callable
+from collections.abc import Callable, Coroutine
 from dataclasses import dataclass, field
+from functools import cached_property
 from typing import Any, overload
 
 from bleak.backends.device import BLEDevice
@@ -89,9 +90,6 @@ class DeviceBase(abc.ABC):
         self._diagnostics = DeviceDiagnosticsCollector(self)
 
         self._manufacturer_data = adv_data.manufacturer_data[self.MANUFACTURER_KEY]
-        self._scan_data = _ScanRecordV2.from_manufacturer_data(
-            adv_data.manufacturer_data[self.MANUFACTURER_KEY]
-        )
 
     @property
     def device(self):
@@ -133,9 +131,21 @@ class DeviceBase(abc.ABC):
     def diagnostics(self):
         return self._diagnostics
 
-    @property
-    def scan_data(self):
-        return self._scan_data
+    @cached_property
+    def scan_record(self):
+        return _ScanRecordV2.from_manufacturer_data(self._manufacturer_data)
+
+    def add_timer_task(
+        self,
+        coro: Callable[[], Coroutine],
+        interval: int = 30,
+        event_loop: asyncio.AbstractEventLoop | None = None,
+    ):
+        def _register_timer_task(state: ConnectionState):
+            if state == ConnectionState.AUTHENTICATED:
+                self._conn.add_timer_task(coro, interval, event_loop)
+
+        self.on_connection_state_change(_register_timer_task)
 
     def with_update_period(self, period: int):
         self._update_period = period
@@ -193,6 +203,7 @@ class DeviceBase(abc.ABC):
             data_parse=data_parse,
             packet_parse=packet_parse,
             packet_version=packet_version,
+            encrypt_type=self.scan_record.encrypt_type,
         )
 
     async def connect(

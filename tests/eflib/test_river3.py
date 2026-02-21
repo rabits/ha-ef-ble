@@ -25,7 +25,7 @@ def packet_sequence():
 def device(mocker: MockerFixture):
     ble_dev = mocker.Mock()
     ble_dev.address = "AA:BB:CC:DD:EE:FF"
-    adv_data = mocker.Mock()
+    adv_data = mocker.MagicMock()
     device = Device(ble_dev, adv_data, "R655TEST1234")
     device._conn = mocker.AsyncMock()
     return device

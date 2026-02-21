@@ -13,10 +13,18 @@
       "email_empty": "Email cannot be empty",
       "password_empty": "Password cannot be empty",
       "device_auth_failed": "Device authentication failed - {reason_failed}",
+      "auth_failed_incorrect_user_id": "Authentication failed - User ID is either incorrect, for a different region or a different account",
+      "auth_failed_general_error": "Authentication failed - General error, try again later",
+      "auth_failed_ota_upgrade": "Authentication failed - OTA Upgrade Error",
+      "auth_failed_user_id_incorrect_length": "Authentication failed - Received key with incorrect length",
+      "auth_failed_iot_status_error": "Authentication failed - IOT status error, device needs IOT reset",
+      "auth_failed_user_key_read": "Authentication failed - User key read error",
+      "auth_failed_unknown": "Authentication failed - Unknown error, check logs for more info",
+      "auth_failed_key_info": "Authentication failed - Could not request key info",
       "bt_timeout": "Could not connect to the device - connection timed out",
       "bt_not_found": "Device was not found - try refreshing the bluetooth integration if this error occurs repeatedly",
       "bt_general_error": "Could not connect to the device - see the logs for more details",
-      "error_try_refresh": "Device disconnected before it could authenticate - try refreshing and reloading the bluetooth adapter",
+      "error_try_refresh": "Device disconnected before it could authenticate - check logs for more info",
       "error_try_refresh_unsupported": "Device disconnected before it could authenticate - try changing packet version. If that does not help and resubmitting after reloading does not work, this device probably uses different auth procedure and has to be reverse engineered."
     },
     "step": {
@@ -318,6 +326,9 @@
       },
       "port_energy": {
         "name": "{name} Energy"
+      },
+      "port_temperature": {
+        "name": "{name} Temperature"
       },
       "grid_energy_today": {
         "name": "Grid Energy Today"

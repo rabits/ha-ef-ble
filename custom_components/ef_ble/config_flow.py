@@ -57,6 +57,7 @@ from .const import (
 )
 from .eflib.connection import ConnectionState
 from .eflib.device_mappings import battery_name_from_device
+from .eflib.exceptions import AuthErrors
 from .eflib.logging_util import LogOptions
 
 _LOGGER = logging.getLogger(__name__)
@@ -444,8 +445,7 @@ class EFBLEConfigFlow(ConfigFlow, domain=DOMAIN):
         placeholders = {}
         match conn_state:
             case ConnectionState.ERROR_AUTH_FAILED:
-                error = "device_auth_failed"
-                placeholders = {"reason_failed": str(exc)}
+                error = self._get_auth_translation_from_exc(exc)
             case ConnectionState.ERROR_TIMEOUT:
                 error = "bt_timeout"
             case ConnectionState.ERROR_NOT_FOUND:
@@ -469,6 +469,29 @@ class EFBLEConfigFlow(ConfigFlow, domain=DOMAIN):
         if error is not None:
             return {"base": error, "__placeholders": placeholders}
         return {}
+
+    def _get_auth_translation_from_exc(self, exc: Exception):
+        error = None
+        match exc:
+            case AuthErrors.IncorrectUserId():
+                error = "auth_failed_incorrect_user_id"
+            case AuthErrors.GeneralError():
+                error = "auth_failed_general_error"
+            case AuthErrors.OTAUpgrade():
+                error = "auth_failed_ota_upgrade"
+            case AuthErrors.UserIdIncorrectLength():
+                error = "auth_failed_user_id_incorrect_length"
+            case AuthErrors.UserKeyReadError():
+                error = "auth_failed_user_key_read"
+            case AuthErrors.UnknownError():
+                error = "auth_failed_unknown"
+            case AuthErrors.IOTStatusError():
+                error = "auth_failed_iot_status_error"
+            case AuthErrors.KeyInfoReqFailed():
+                error = "auth_failed_key_info"
+            case _:
+                error = "auth_failed_general_error"
+        return error
 
     @cached_property
     def _store(self):

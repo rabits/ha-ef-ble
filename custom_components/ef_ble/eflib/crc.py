@@ -12,9 +12,9 @@ crc16_arc = Configuration(
 )
 
 
-def crc8(data: str):
+def crc8(data: bytes):
     return Calculator(Crc8.CCITT).checksum(data)
 
 
-def crc16(data: str):
+def crc16(data: bytes):
     return Calculator(crc16_arc).checksum(data)

@@ -76,6 +76,9 @@ class Device(DeviceBase, ProtobufProps):
     battery_charge_limit_min = pb_field(pb.cms_min_dsg_soc)
     battery_charge_limit_max = pb_field(pb.cms_max_chg_soc)
 
+    remaining_time_charging = pb_field(pb.cms_chg_rem_time)
+    remaining_time_discharging = pb_field(pb.cms_dsg_rem_time)
+
     cell_temperature = pb_field(pb.bms_max_cell_temp)
 
     dc_12v_port = pb_field(pb.flow_info_12v, _flow_is_on)

@@ -291,6 +291,12 @@
       "output_power": {
         "name": "Output Power"
       },
+      "remaining_time_charging": {
+        "name": "Charge Time Remaining"
+      },
+      "remaining_time_discharging": {
+        "name": "Discharge Time Remaining"
+      },
       "grid_power": {
         "name": "Grid Power"
       },
@@ -481,6 +487,9 @@
       },
       "liquefied_gas_consumption": {
         "name": "Liquefied Gas Consumption per Hour"
+      },
+      "liquefied_gas_remaining": {
+        "name": "Liquefied Gas Remaining"
       },
       "generator_total_output": {
         "name": "Generator Total Output"

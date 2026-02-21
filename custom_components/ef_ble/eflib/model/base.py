@@ -42,6 +42,7 @@ class RawData:
 
     _STRUCT_FMT: ClassVar[str]
     SIZE: int
+    __dataclass_fields__: ClassVar[dict]
 
     def __init_subclass__(cls) -> None:
         # set byte order to litte-endian (or for subclasses, get the full format str
@@ -111,10 +112,13 @@ class RawData:
         return struct.unpack(struct_fmt, data[:size])
 
     def pack(self):
-        return struct.pack(
-            self._STRUCT_FMT,
-            *[getattr(self, field.name) for field in fields(self)],
-        )
+        attrs = []
+        for field in fields(self):
+            if (value := getattr(self, field.name)) is None:
+                break
+            attrs.append(value)
+
+        return struct.pack(self._STRUCT_FMT[: len(attrs) + 1], *attrs)
 
     @classmethod
     def list_from_bytes(cls, data: bytes) -> list[Self]:

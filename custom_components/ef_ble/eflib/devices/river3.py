@@ -101,6 +101,9 @@ class Device(DeviceBase, ProtobufProps):
     dc_charging_max_amps = pb_field(pb.plug_in_info_pv_dc_amp_max)
     dc_charging_current_max = Field[int]()
 
+    remaining_time_charging = pb_field(pb.cms_chg_rem_time)
+    remaining_time_discharging = pb_field(pb.cms_dsg_rem_time)
+
     def __init__(
         self, ble_dev: BLEDevice, adv_data: AdvertisementData, sn: str
     ) -> None:

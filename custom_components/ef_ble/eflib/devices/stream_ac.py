@@ -102,6 +102,9 @@ class Device(DeviceBase, ProtobufProps):
     battery_level_main = pb_field(pb.bms_batt_soc)
     cell_temperature = pb_field(pb.bms_max_cell_temp)
 
+    remaining_time_charging = pb_field(pb.cms_chg_rem_time)
+    remaining_time_discharging = pb_field(pb.cms_dsg_rem_time)
+
     grid_power = pb_field(pb.grid_connection_power)
     grid_voltage = pb_field(pb.grid_connection_vol, _round)
     grid_frequency = pb_field(pb.grid_connection_freq, _round)

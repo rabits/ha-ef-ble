@@ -103,6 +103,9 @@ class Delta3Base(DeviceBase, ProtobufProps):
 
     solar_input_power = Field[float]()
 
+    remaining_time_charging = pb_field(pb.cms_chg_rem_time)
+    remaining_time_discharging = pb_field(pb.cms_dsg_rem_time)
+
     ac_charging_speed = pb_field(pb.plug_in_info_ac_in_chg_pow_max)
     max_ac_charging_power = Field[int]()
 

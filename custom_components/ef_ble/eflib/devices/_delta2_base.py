@@ -68,6 +68,9 @@ class Delta2Base(DeviceBase, RawDataProps):
     battery_charge_limit_min = raw_field(pb_ems.min_dsg_soc)
     battery_charge_limit_max = raw_field(pb_ems.max_charge_soc)
 
+    remaining_time_charging = raw_field(pb_ems.chg_remain_time)
+    remaining_time_discharging = raw_field(pb_ems.dsg_remain_time)
+
     cell_temperature = raw_field(pb_bms.max_cell_temp)
 
     dc_12v_port = raw_field(pb_pd.car_state, lambda x: x == 1)

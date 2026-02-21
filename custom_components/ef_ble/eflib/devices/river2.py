@@ -55,6 +55,9 @@ class Device(DeviceBase, RawDataProps):
     ac_input_power = raw_field(pb_inv.input_watts)
     ac_output_power = raw_field(pb_inv.output_watts)
 
+    remain_time_charging = raw_field(pb_ems.chg_remain_time)
+    remain_time_discharging = raw_field(pb_ems.dsg_remain_time)
+
     dc_mode = raw_field(pb_mppt.cfg_chg_type, DCMode.from_value)
 
     dc_port_input_power = raw_field(pb_mppt.in_watts)

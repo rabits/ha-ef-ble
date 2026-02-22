@@ -1,4 +1,4 @@
-name: "Python Tests"
+name: Python Tests eflib
 on:
   push:
     branches: [main]
@@ -21,4 +21,4 @@ jobs:
         with:
           python-version: 3.x
       - name: Tests
-        run: uv run pytest tests
+        run: uv run pytest tests/eflib

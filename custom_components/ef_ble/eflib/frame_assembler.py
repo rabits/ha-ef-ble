@@ -11,7 +11,7 @@ from .packet import Packet
 
 
 class FrameAssembler(ABC):
-    """Strategy for wire-level frame encoding and decoding."""
+    """Strategy for wire-level frame encoding and decoding"""
 
     def __init__(self, encryption: EncryptionStrategy, mtu: int = 517) -> None:
         self.mtu = mtu
@@ -21,11 +21,11 @@ class FrameAssembler(ABC):
     @property
     @abstractmethod
     def write_with_response(self) -> bool:
-        """Whether BLE writes should use write-with-response."""
+        """Whether BLE writes should use write-with-response"""
 
     @abstractmethod
     async def encode(self, packet: Packet) -> bytes:
-        """Encode a Packet into wire bytes (encrypted, framed)."""
+        """Encode a Packet into wire bytes (encrypted, framed)"""
 
     @abstractmethod
     async def reassemble(self, data: bytes) -> list[bytes]:
@@ -33,7 +33,7 @@ class FrameAssembler(ABC):
 
 
 class EncPacketAssembler(FrameAssembler):
-    """Frame assembler for encrypt_type 7: EncPacket wrapper (0x5A5A prefix, CRC16)."""
+    """Frame assembler for encrypt_type 7: EncPacket wrapper (0x5A5A prefix, CRC16)"""
 
     @property
     def write_with_response(self) -> bool:
@@ -105,7 +105,7 @@ class EncPacketAssembler(FrameAssembler):
 
 
 class RawHeaderAssembler(FrameAssembler):
-    """Frame codec for encrypt_type 1: 5-byte plaintext header (0xAA) + AES body."""
+    """Frame codec for encrypt_type 1: 5-byte plaintext header (0xAA) + AES body"""
 
     @property
     def write_with_response(self) -> bool:
@@ -170,7 +170,7 @@ class SimplePacketAssembler:
 
     @staticmethod
     def encode(payload: bytes) -> bytes:
-        """Wrap raw payload bytes in an unencrypted EncPacket command frame."""
+        """Wrap raw payload bytes in an unencrypted EncPacket command frame"""
         return EncPacket(
             EncPacket.FRAME_TYPE_COMMAND,
             EncPacket.PAYLOAD_TYPE_VX_PROTOCOL,

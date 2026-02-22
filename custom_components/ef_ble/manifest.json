@@ -148,7 +148,7 @@
             "connectable": true
         },
         {
-            "local_name": "HW51*",
+            "local_name": "EF-HW51*",
             "manufacturer_id": 46517,
             "manufacturer_data_start": [19, 72, 87, 53, 49],
             "connectable": true

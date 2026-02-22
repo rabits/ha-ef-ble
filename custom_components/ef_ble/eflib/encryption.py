@@ -13,7 +13,7 @@ from Crypto.Util.Padding import pad, unpad
 
 @dataclass
 class EncryptionStrategy(ABC):
-    """Strategy for session-level AES-CBC encryption/decryption."""
+    """Strategy for session-level AES-CBC encryption/decryption"""
 
     session_key: bytes
     iv: bytes

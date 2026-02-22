@@ -208,7 +208,7 @@ class Connection:
         packet_parse: Callable[[bytes], Awaitable[Packet]],
         packet_version: int = 0x03,
         encrypt_type: int = 7,
-        auth_header_dst: int = 0x53,
+        auth_header_dst: int = 0x35,
     ) -> None:
         self._ble_dev = ble_dev
         self._address = ble_dev.address
@@ -734,7 +734,9 @@ class Connection:
             self._write_characteristic, bytearray(send_data)
         )
 
-    async def sendPacket(self, packet: Packet, response_handler=None):
+    async def sendPacket(
+        self, packet: Packet, response_handler=None, wait_for_response: bool = True
+    ):
         self._logger.log_filtered(
             LogOptions.CONNECTION_DEBUG, "Sending packet: %r", packet
         )
@@ -747,11 +749,11 @@ class Connection:
 
         to_send = await frame_assembler.encode(packet)
 
-        if frame_assembler.write_with_response:
+        if frame_assembler.write_with_response and wait_for_response:
             await self.sendRequest(to_send, response_handler)
         elif self._client is not None and self._client.is_connected:
             await self._client.write_gatt_char(
-                Connection.WRITE_CHARACTERISTIC, bytearray(to_send)
+                self._write_characteristic, bytearray(to_send), response=False
             )
 
     async def replyPacket(self, packet: Packet):
@@ -786,7 +788,7 @@ class Connection:
         self._encryption = Type1Encryption(session_key, iv)
 
         await self._client.start_notify(
-            Connection.NOTIFY_CHARACTERISTIC, self.listenForDataHandler
+            self._notify_characteristic, self.listenForDataHandler
         )
 
         await self.send_auth_status_packet()
@@ -869,7 +871,6 @@ class Connection:
 
         self._set_state(ConnectionState.SESSION_KEY_RECEIVED)
         await self._client.stop_notify(self._notify_characteristic)
-        encrypted_data = await self.parseSimple(bytes(recv_data))
 
         if encrypted_data[0] != 0x02:
             raise AuthErrors.KeyInfoReqFailed(
@@ -969,7 +970,16 @@ class Connection:
 
     async def send_auth_status_packet(self):
         """Send the auth status packet used for initial auth wake-up."""
-        pkt = Packet(0x21, 0x35, 0x35, 0x89, b"", 0x01, 0x01, self._packet_version)
+        pkt = Packet(
+            0x21,
+            self._auth_header_dst,
+            0x35,
+            0x89,
+            b"",
+            0x01,
+            0x01,
+            self._packet_version,
+        )
         await self.sendPacket(pkt)
 
     async def listenForDataHandler(

@@ -1041,7 +1041,7 @@ class Connection:
     def add_timer_task(
         self,
         coro: Callable[[], Coroutine],
-        interval: int = 30,
+        interval: float = 30,
         event_loop: asyncio.AbstractEventLoop | None = None,
     ):
         async def _timer_task():

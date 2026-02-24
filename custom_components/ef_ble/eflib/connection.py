@@ -4,6 +4,7 @@ import functools
 import hashlib
 import logging
 import struct
+import time
 import traceback
 from collections import deque
 from collections.abc import Awaitable, Callable, Collection, Coroutine, MutableSequence
@@ -973,12 +974,15 @@ class Connection:
     ):
         async def _timer_task():
             while True:
+                start_time = time.monotonic()
                 if self._connection_state != ConnectionState.AUTHENTICATED:
                     await self._state_changed.wait()
                     continue
-
                 await coro()
-                await asyncio.sleep(interval)
+
+                elapsed = time.monotonic() - start_time
+                sleep_time = max(0, interval - (elapsed % interval))
+                await asyncio.sleep(sleep_time)
 
         return self._add_task(_timer_task(), event_loop)
 

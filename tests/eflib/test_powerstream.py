@@ -62,7 +62,7 @@ async def test_powerstream_processes_key_packets_successfully(device, packet_seq
 
 
 async def test_powerstream_updates_battery_level(device, packet_sequence):
-    packet = await device.packet_parse(bytes.fromhex(packet_sequence[0]))
+    packet = await device.packet_parse(bytes.fromhex(packet_sequence[1]))
     await device.data_parse(packet)
 
     assert Device.battery_level in device.updated_fields
@@ -99,10 +99,10 @@ async def test_powerstream_updates_grid_fields(device, packet_sequence):
     await device.data_parse(packet)
 
     grid_field_names = [
-        Device.grid_power,
-        Device.grid_voltage,
-        Device.grid_current,
-        Device.grid_frequency,
+        Device.inverter_power,
+        Device.inverter_voltage,
+        Device.inverter_current,
+        Device.inverter_frequency,
         Device.inverter_temperature,
     ]
 
@@ -129,10 +129,10 @@ async def test_powerstream_field_types_are_consistent(device, packet_sequence):
         Device.pv_voltage_2,
         Device.pv_current_2,
         Device.pv_temperature_2,
-        Device.grid_power,
-        Device.grid_voltage,
-        Device.grid_current,
-        Device.grid_frequency,
+        Device.inverter_power,
+        Device.inverter_voltage,
+        Device.inverter_current,
+        Device.inverter_frequency,
         Device.inverter_temperature,
     ]
 
@@ -157,11 +157,11 @@ async def test_powerstream_battery_soc_values_are_valid(device, packet_sequence)
 
 
 async def test_powerstream_exact_values_from_known_packets(device, packet_sequence):
-    packet = await device.packet_parse(bytes.fromhex(packet_sequence[0]))
-    await device.data_parse(packet)
+    for packet in packet_sequence:
+        await device.data_parse(await device.packet_parse(bytes.fromhex(packet)))
 
     expected = {
-        Device.battery_level: 31,
+        Device.battery_level: 31.02,
         Device.battery_power: 0.0,
         Device.battery_temperature: 21.0,
         Device.pv_power_1: 6.0,
@@ -172,10 +172,10 @@ async def test_powerstream_exact_values_from_known_packets(device, packet_sequen
         Device.pv_voltage_2: 33.6,
         Device.pv_current_2: 0.5,
         Device.pv_temperature_2: 30.0,
-        Device.grid_power: 24.0,
-        Device.grid_voltage: 231.9,
-        Device.grid_current: 35.3,
-        Device.grid_frequency: 49.9,
+        Device.inverter_power: 24.0,
+        Device.inverter_voltage: 231.9,
+        Device.inverter_current: 0.35,
+        Device.inverter_frequency: 49.9,
         Device.inverter_temperature: 0.0,
     }
 

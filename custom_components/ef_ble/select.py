@@ -12,6 +12,7 @@ from . import DeviceConfigEntry
 from .eflib import DeviceBase
 from .eflib.devices import (
     alternator_charger,
+    powerstream,
     river2,
     river3,
     river3_plus,
@@ -136,6 +137,16 @@ SELECT_TYPES: list[EcoflowSelectEntityDescription] = [
         options=wave2.DrainMode.options(include_unknown=False),
         set_state=(
             lambda device, value: device.set_drain_mode(wave2.DrainMode[value.upper()])
+        ),
+    ),
+    EcoflowSelectEntityDescription[powerstream.Device](
+        key=powerstream.Device.power_supply_priority,
+        name="Power Supply Priority",
+        options=powerstream.PowerSupplyPriority.options(include_unknown=False),
+        set_state=(
+            lambda device, value: device.set_supply_priority(
+                powerstream.PowerSupplyPriority[value.upper()]
+            )
         ),
     ),
 ]

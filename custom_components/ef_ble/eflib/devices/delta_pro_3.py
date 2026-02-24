@@ -36,6 +36,8 @@ class DCPortState(IntFieldValue):
     SOLAR = 2
     DC_CHARGING = 3
 
+    STATE_5_UNKNOWN = 5
+
 
 class Device(DeviceBase, ProtobufProps):
     """Delta Pro 3"""

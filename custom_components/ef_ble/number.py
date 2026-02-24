@@ -24,6 +24,7 @@ from .eflib.devices import (
     delta3_classic,
     delta3_plus,
     delta_pro_3,
+    powerstream,
     river2,
     river3,
     smart_generator,
@@ -221,6 +222,16 @@ NUMBER_TYPES: list[EcoflowNumberEntityDescription] = [
             lambda device, value: device.set_load_power(int(value))
         ),
         availability_prop="load_power_enabled",
+    ),
+    EcoflowNumberEntityDescription[powerstream.Device](
+        key="load_power",
+        name="Load Power",
+        device_class=NumberDeviceClass.POWER,
+        native_unit_of_measurement=UnitOfPower.WATT,
+        native_step=0.1,
+        native_min_value=0,
+        max_value_prop="load_power_max",
+        async_set_native_value=lambda device, value: device.set_load_power(value),
     ),
     EcoflowNumberEntityDescription[stream_ac.Device](
         key="grid_in_power_limit",

@@ -566,6 +566,18 @@
       "grid_current": {
         "name": "Grid Current"
       },
+      "inverter_voltage": {
+        "name": "Inverter Voltage"
+      },
+      "inverter_power": {
+        "name": "Inverter Power"
+      },
+      "inverter_current": {
+        "name": "Inverter Current"
+      },
+      "inverter_frequency": {
+        "name": "Inverter Frequency"
+      },
       "backup_is_ready": {
         "name": "Channel {channel} Backup Ready"
       },

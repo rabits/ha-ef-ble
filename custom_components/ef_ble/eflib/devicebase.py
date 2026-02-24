@@ -193,19 +193,6 @@ class DeviceBase(abc.ABC):
         self._connection_log = ConnectionLog(self.address.replace(":", "_"))
         return self._connection_log
 
-    def _create_connection(
-        self, ble_dev, dev_sn, user_id, data_parse, packet_parse, packet_version
-    ):
-        return Connection(
-            ble_dev=ble_dev,
-            dev_sn=dev_sn,
-            user_id=user_id,
-            data_parse=data_parse,
-            packet_parse=packet_parse,
-            packet_version=packet_version,
-            encrypt_type=self.scan_record.encrypt_type,
-        )
-
     async def connect(
         self,
         user_id: str | None = None,
@@ -214,13 +201,14 @@ class DeviceBase(abc.ABC):
     ):
         if self._conn is None:
             self._conn = (
-                self._create_connection(
+                Connection(
                     ble_dev=self._ble_dev,
                     dev_sn=self._sn,
                     user_id=user_id,
                     data_parse=self.data_parse,
                     packet_parse=self.packet_parse,
                     packet_version=self.packet_version,
+                    encrypt_type=self.scan_record.encrypt_type,
                 )
                 .with_logging_options(self._logger.options)
                 .with_disabled_reconnect(self._reconnect_disabled)
@@ -414,11 +402,11 @@ class _ScanRecordV2:
     active_flag: bool = field(init=False)
 
     def __post_init__(self):
-        self.encrypt = (self.capability_flags & 0x01) != 0
-        self.support_verified = (self.capability_flags & 0x02) != 0
-        self.verified = (self.capability_flags & 0x04) != 0
-        self.encrypt_type = (self.capability_flags & 0x38) >> 3
-        self.support_5g = ((self.capability_flags >> 6) & 0x01) == 1
+        self.encrypt = (self.capability_flags & 0b0000001) != 0
+        self.support_verified = (self.capability_flags & 0b0000010) != 0
+        self.verified = (self.capability_flags & 0b0000100) != 0
+        self.encrypt_type = (self.capability_flags & 0b0111000) >> 3
+        self.support_5g = ((self.capability_flags >> 6) & 0b1000000) != 0
 
         self.active_flag = ((self.status >> 7) & 0x01) == 1
 
@@ -427,7 +415,9 @@ class _ScanRecordV2:
         return cls(
             proto_version=manufacturer_data[0],
             serial_number=manufacturer_data[1:17].decode(),
-            status=manufacturer_data[17],
-            product_type=manufacturer_data[18],
-            capability_flags=manufacturer_data[22],
+            status=manufacturer_data[17] if len(manufacturer_data) > 17 else 0,
+            product_type=manufacturer_data[18] if len(manufacturer_data) > 18 else 0,
+            capability_flags=(
+                manufacturer_data[22] if len(manufacturer_data) > 19 else 0b0111000
+            ),
         )

@@ -11,6 +11,10 @@ from ._delta3_base import flow_is_on
 pb = delta3_plus.pb
 
 
+def _out_power(x) -> float:
+    return -round(x, 2) if x != 0 else 0
+
+
 class _ACPortPower(repeated_pb_field_type(pb.pow_get_ac_out_list.pow_get_ac_out_item)):
     index: int
 
@@ -28,7 +32,7 @@ class Device(delta3_plus.Device):
     ac_power_1 = _ACPortPower(0)
     ac_power_2 = _ACPortPower(3)
 
-    usbc3_output_power = pb_field(pb.pow_get_typec3)
+    usbc3_output_power = pb_field(pb.pow_get_typec3, _out_power)
 
     def __init__(
         self, ble_dev: BLEDevice, adv_data: AdvertisementData, sn: str

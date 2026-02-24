@@ -71,7 +71,7 @@ class Device(DeviceBase, ProtobufProps):
     dc_input_power = pb_field(pb.pow_get_pv)
     dc_input_energy = _StatField(pr705_pb2.STATISTICS_OBJECT_PV_IN_ENERGY)
 
-    dc12v_output_power = pb_field(pb.pow_get_12v)
+    dc12v_output_power = pb_field(pb.pow_get_12v, _out_power)
     dc12v_output_energy = _StatField(pr705_pb2.STATISTICS_OBJECT_DC12V_OUT_ENERGY)
 
     usbc_output_power = pb_field(pb.pow_get_typec1, _out_power)

@@ -1,6 +1,4 @@
-import time
-
-from google.protobuf.message import Message
+from google.protobuf.message import DecodeError, Message
 
 from ..devicebase import DeviceBase
 from ..packet import Packet
@@ -40,7 +38,7 @@ class Device(DeviceBase, ProtobufProps):
     pv_temperature_2 = pb_field(pb.pv2_temp, _div10)
 
     battery_level = pb_field(
-        pb_inv2.new_psdr_heartbeat.f32_lcd_show_soc, lambda x: round(x, 2)
+        pb_inv2.new_psdr_heartbeat.f32_show_soc, lambda x: round(x, 2)
     )
     battery_power = pb_field(pb.bat_input_watts, _div10)
     battery_temperature = pb_field(pb.bat_temp, _div10)
@@ -54,6 +52,8 @@ class Device(DeviceBase, ProtobufProps):
     battery_charge_limit_max = pb_field(pb.upper_limit)
     battery_charge_limit_min = pb_field(pb.lower_limit)
     power_supply_priority = pb_field(pb.supply_priority, PowerSupplyPriority.from_value)
+
+    llc_temperature = pb_field(pb.llc_temp, _div10)
 
     load_power_max = Field[int]()
     load_power = pb_field(pb.permanent_watts, _div10)
@@ -87,13 +87,12 @@ class Device(DeviceBase, ProtobufProps):
             case (0x35, 0x14, 0x01):
                 self.update_from_bytes(wn511_sys_pb2.inverter_heartbeat, packet.payload)
             case (0x35, 0x14, 0x04):
-                self.update_from_bytes(
-                    wn511_sys_pb2.inv_heartbeat_type2, packet.payload
-                )
-                now = time.monotonic()
-                if now - self._heartbeat2_last_reply_time >= self._REPLY_INTERVAL:
-                    self._heartbeat2_last_reply_time = now
-                    await self._conn.replyPacket(packet)
+                try:
+                    self.update_from_bytes(
+                        wn511_sys_pb2.inv_heartbeat_type2, packet.payload
+                    )
+                except DecodeError:
+                    return False
 
             case (0x35, 0x14, 0x88):
                 inv_power = self.update_from_bytes(

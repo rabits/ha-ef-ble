@@ -1054,6 +1054,12 @@ SENSOR_TYPES: Final[dict[str, SensorEntityDescription]] = {
         translation_key="port_temperature",
         translation_placeholders={"name": "PV (2)"},
     ),
+    "llc_temperature": SensorEntityDescription(
+        key="llc_temperature",
+        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
+        device_class=SensorDeviceClass.TEMPERATURE,
+        state_class=SensorStateClass.MEASUREMENT,
+    ),
 }
 
 

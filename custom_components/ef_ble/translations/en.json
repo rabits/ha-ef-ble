@@ -578,6 +578,9 @@
       "inverter_frequency": {
         "name": "Inverter Frequency"
       },
+      "llc_temperature": {
+        "name": "LLC Temperature"
+      },
       "backup_is_ready": {
         "name": "Channel {channel} Backup Ready"
       },

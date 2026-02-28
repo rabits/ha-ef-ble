@@ -270,7 +270,6 @@ class DeviceDiagnostics:
     raw_data_messages: list[tuple[float, bytes]]
     iv: bytes
     session_key: bytes
-    shared_key: bytes
 
     def encrypt(self, session: Session):
         return dataclasses.replace(
@@ -286,9 +285,6 @@ class DeviceDiagnostics:
             ],
             iv=session.encrypt(self.iv).hex(),
             session_key=session.encrypt(self.session_key).hex(),
-            shared_key=(
-                session.encrypt(self.shared_key).hex() if self.shared_key else ""
-            ),
         )
 
     def as_dict(self):
@@ -308,7 +304,7 @@ class DeviceDiagnosticsCollector:
         self._last_errors: deque[tuple[float, str]] = deque(maxlen=buffer_size)
         self._connect_times: deque[float] = deque(maxlen=buffer_size)
         self._raw_data_connection: list[tuple[float, bytes]] = []
-        self._raw_data_messages: list[tuple[float, bytes]] = []
+        self._raw_data_messages: deque[tuple[float, bytes]] = deque(maxlen=1000)
 
         self._disconnect_times: deque[float] = deque(maxlen=buffer_size)
         self._skip_first_messages: int = 8
@@ -332,7 +328,6 @@ class DeviceDiagnosticsCollector:
             raw_data_messages=self._raw_data_messages,
             iv=self._device._conn._encryption.iv,
             session_key=self._device._conn._encryption.session_key,
-            shared_key=getattr(self._device._conn, "_shared_key", b""),
         )
 
     @property

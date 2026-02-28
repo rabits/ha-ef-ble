@@ -13,8 +13,7 @@ from .packet import Packet
 class FrameAssembler(ABC):
     """Strategy for wire-level frame encoding and decoding"""
 
-    def __init__(self, encryption: EncryptionStrategy, mtu: int = 517) -> None:
-        self.mtu = mtu
+    def __init__(self, encryption: EncryptionStrategy) -> None:
         self._buffer = b""
         self._encryption = encryption
 
@@ -71,21 +70,21 @@ class EncPacketAssembler(FrameAssembler):
             payload_len = struct.unpack("<H", header[4:6])[0]
 
             # reject obviously corrupt length values instead of buffering
-            if payload_len > self.mtu:
+            if payload_len > 10_000:
                 data = data[2:]
                 continue
 
             data_end = 6 + payload_len
             if data_end > len(data):
                 # could be a genuine incomplete frame, or a false prefix inside payload
-                # data whose corrupcted length extends past the buffer - check whether
+                # data whose corrupted length extends past the buffer - check whether
                 # another real prefix exists later in the data - if so, this one is
                 # likely spurious
                 next_prefix = data[2:].find(EncPacket.PREFIX)
                 if next_prefix >= 0:
                     data = data[2 + next_prefix :]
                     continue
-                # no other candidate — buffer for next notification
+                # no other candidate - buffer for next notification
                 break
 
             payload_data = data[6 : data_end - 2]

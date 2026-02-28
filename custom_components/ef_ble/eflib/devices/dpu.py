@@ -56,23 +56,23 @@ class Device(DeviceBase, ProtobufProps):
 
     battery_1_enabled = Field[bool]()
     battery_1_battery_level = _BatteryLevel(1)
-    battery_1_cell_temperature = _BatteryLevel(1)
+    battery_1_cell_temperature = _BatteryTemperature(1)
 
     battery_2_enabled = Field[bool]()
     battery_2_battery_level = _BatteryLevel(2)
-    battery_2_cell_temperature = _BatteryLevel(2)
+    battery_2_cell_temperature = _BatteryTemperature(2)
 
     battery_3_enabled = Field[bool]()
     battery_3_battery_level = _BatteryLevel(3)
-    battery_3_cell_temperature = _BatteryLevel(3)
+    battery_3_cell_temperature = _BatteryTemperature(3)
 
     battery_4_enabled = Field[bool]()
     battery_4_battery_level = _BatteryLevel(4)
-    battery_4_cell_temperature = _BatteryLevel(4)
+    battery_4_cell_temperature = _BatteryTemperature(4)
 
     battery_5_enabled = Field[bool]()
     battery_5_battery_level = _BatteryLevel(5)
-    battery_5_cell_temperature = _BatteryLevel(5)
+    battery_5_cell_temperature = _BatteryTemperature(5)
 
     ac_l1_1_out_power = pb_field(pb_heartbeat.out_ac_l1_1_pwr)
     ac_l1_2_out_power = pb_field(pb_heartbeat.out_ac_l1_2_pwr)

@@ -68,21 +68,26 @@ Click on any device below to see available sensors, switches, and controls:
 
 <br>
 
-| *Sensors*                            |
-|--------------------------------------|
-| Battery Level                        |
-| Individual Battery Levels (disabled) |
-| Input Power                          |
-| Output Power                         |
-| Low Voltage Solar Power              |
-| High Voltage Solar Power             |
-| AC L1 (1) Output Power               |
-| AC L1 (2) Output Power               |
-| AC L2 (1) Output Power               |
-| AC L2 (2) Output Power               |
-| AC TT-30R Output Power               |
-| AC L14-30P Output Power              |
-| AC I/O Output Power                  |
+| *Sensors*                          |
+|------------------------------------|
+| Battery Level                      |
+| Battery Level (each battery) ¹     |
+| Cell Temperature (each battery)  ¹ |
+| Input Power                        |
+| Output Power                       |
+| Low Voltage Solar Power            |
+| High Voltage Solar Power           |
+| AC L1 (1) Output Power             |
+| AC L1 (2) Output Power             |
+| AC L2 (1) Output Power             |
+| AC L2 (2) Output Power             |
+| AC TT-30R Output Power             |
+| AC L14-30P Output Power            |
+| AC I/O Output Power                |
+
+<sup>¹ Extra batteries are only updated when you set up the device, but has to
+be manually reconfigured if battery is connected/disconnected.</sup>
+
 </details>
 <details>
 <summary><b>River 3</b> <i>(Plus, UPS, Plus Wireless)</i></summary>
@@ -363,30 +368,34 @@ first charging task</sup>
 
 <br>
 
-| *Sensors*                                 | *Switches*  | *Sliders*           |
-|-------------------------------------------|-------------|---------------------|
-| Battery Level                             | AC Ports    | Max Charge Limit    |
-| Main Battery Level                        | DC 12V Port | Min Discharge Limit |
-| Addon Battery Level (disabled)            | USB Ports   | Energy Backup       |
-| Input Power                               |             | AC Charging Speed   |
-| Output Power                              |             |                     |
-| AC Input Power                            |             |                     |
-| AC Input Voltage (disabled)               |             |                     |
-| AC Input Current (disabled)               |             |                     |
-| AC Output Power                           |             |                     |
-| DC Output Power                           |             |                     |
-| DC 12V Output Voltage (disabled)          |             |                     |
-| DC 12V Output Current (disabled)          |             |                     |
-| USB A (1) Output Power                    |             |                     |
-| USB A (2) Output Power                    |             |                     |
-| USB A QC (1) Output Power                 |             |                     |
-| USB A QC (2) Output Power                 |             |                     |
-| USB C (1) Output Power                    |             |                     |
-| USB C (2) Output Power                    |             |                     |
-| Cell Temperature (disabled)               |             |                     |
-| Addon Battery Cell Temperature (disabled) |             |                     |
-| Charge Time Remaining (disabled)          |             |                     |
-| Discharge Time Remaining (disabled)       |             |                     |
+| *Sensors*                                 | *Switches*     | *Sliders*           |
+|-------------------------------------------|----------------|---------------------|
+| Battery Level                             | AC Ports       | Max Charge Limit    |
+| Main Battery Level                        | DC 12V Port    | Min Discharge Limit |
+| Extra Battery 1 SOC                       | USB Ports      | Energy Backup       |
+| Extra Battery 1 Temperature               | Backup Reserve | AC Charging Speed   |
+| Input Power                               |                |                     |
+| Output Power                              |                |                     |
+| AC Input Power                            |                |                     |
+| AC Input Voltage (disabled)               |                |                     |
+| AC Input Current (disabled)               |                |                     |
+| AC Output Power                           |                |                     |
+| DC Output Power                           |                |                     |
+| DC 12V Output Voltage (disabled)          |                |                     |
+| DC 12V Output Current (disabled)          |                |                     |
+| USB A (1) Output Power                    |                |                     |
+| USB A (2) Output Power                    |                |                     |
+| USB A QC (1) Output Power                 |                |                     |
+| USB A QC (2) Output Power                 |                |                     |
+| USB C (1) Output Power                    |                |                     |
+| USB C (2) Output Power                    |                |                     |
+| Cell Temperature (disabled)               |                |                     |
+| Addon Battery Cell Temperature (disabled) |                |                     |
+| Charge Time Remaining (disabled)          |                |                     |
+| Discharge Time Remaining (disabled)       |                |                     |
+
+> **📝 Note:** Extra batteries are only updated when you set up the device, but has to
+> be manually reconfigured if battery is connected/disconnected.
 
 </details>
 

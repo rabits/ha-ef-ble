@@ -121,8 +121,11 @@ async def test_dpu_field_types_are_consistent(device, packet_sequence):
 
     numeric_fields = [
         Device.battery_1_battery_level,
+        Device.battery_1_cell_temperature,
         Device.battery_2_battery_level,
+        Device.battery_2_cell_temperature,
         Device.battery_3_battery_level,
+        Device.battery_3_cell_temperature,
         # TODO(gnox): needs more messages
         # Device.input_power,
         # Device.output_power,
@@ -165,8 +168,11 @@ async def test_dpu_exact_values_from_known_packets(device, packet_sequence):
 
     expected = {
         Device.battery_1_battery_level: 34,
+        Device.battery_1_cell_temperature: 39,
         Device.battery_2_battery_level: 45,
+        Device.battery_2_cell_temperature: 37,
         Device.battery_3_battery_level: 43,
+        Device.battery_3_cell_temperature: 35,
     }
 
     for field_name, expected_value in expected.items():

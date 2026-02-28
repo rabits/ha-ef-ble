@@ -168,18 +168,6 @@ async def test_delta2_max_field_types_are_consistent(device, packet_sequence):
             assert value in (0, 1), f"Boolean field {field_name} has invalid int value"
 
 
-async def test_delta2_max_no_addon_battery(device, packet_sequence):
-    assert device.battery_addon is False
-
-    for hex_packet in packet_sequence:
-        packet = await device.packet_parse(bytes.fromhex(hex_packet))
-        await device.data_parse(packet)
-
-    assert device.battery_addon is False, (
-        "Addon battery incorrectly detected when no battery_1 data present"
-    )
-
-
 async def test_delta2_max_ac_charging_power_limits(device, packet_sequence):
     for hex_packet in packet_sequence:
         packet = await device.packet_parse(bytes.fromhex(hex_packet))
@@ -199,6 +187,7 @@ async def test_delta2_max_exact_values_from_known_packets(device, packet_sequenc
     expected = {
         Device.battery_level: 75.44,
         Device.battery_level_main: 75.44,
+        Device.battery_1_battery_level: None,
         Device.input_power: 0,
         Device.output_power: 0,
         Device.ac_output_power: 0,
@@ -212,7 +201,6 @@ async def test_delta2_max_exact_values_from_known_packets(device, packet_sequenc
         Device.ac_ports: True,
         Device.usb_ports: False,
         Device.dc_12v_port: False,
-        Device.battery_addon: False,
         Device.max_ac_charging_power: 1800,
         Device.energy_backup_enabled: False,
         Device.ac_charging_speed: 300,

@@ -310,7 +310,7 @@ class EcoflowNumber(EcoflowEntity, NumberEntity):
         entity_description: EcoflowNumberEntityDescription[DeviceBase],
     ):
         super().__init__(device)
-        self._attr_unique_id = f"{device.name}_{entity_description.key}"
+        self._attr_unique_id = f"ef_{device.serial_number}_{entity_description.key}"
         self.entity_description = entity_description
         self._min_value_prop = entity_description.min_value_prop
         self._max_value_prop = entity_description.max_value_prop

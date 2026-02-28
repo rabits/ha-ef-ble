@@ -167,7 +167,7 @@ class EcoflowSelect(EcoflowEntity, SelectEntity):
     ):
         super().__init__(device)
 
-        self._attr_unique_id = f"{self._device.name}_{description.key}"
+        self._attr_unique_id = f"ef_{self._device.serial_number}_{description.key}"
         self.entity_description = description
         self._prop_name = self.entity_description.key
         self._set_state = description.set_state

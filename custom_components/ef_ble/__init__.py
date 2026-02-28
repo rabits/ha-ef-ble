@@ -6,13 +6,14 @@ from functools import partial
 import homeassistant.helpers.issue_registry as ir
 from homeassistant.components import bluetooth
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import CONF_ADDRESS, CONF_TYPE, Platform
+from homeassistant.const import CONF_ADDRESS, Platform
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import (
     ConfigEntryError,
     ConfigEntryNotReady,
 )
-from homeassistant.helpers.device_registry import DeviceInfo
+from homeassistant.helpers import device_registry as dr
+from homeassistant.helpers import entity_registry as er
 
 from . import eflib
 from .config_flow import CONF_COLLECT_PACKETS, ConfLogOptions, LogOptions, PacketVersion
@@ -24,7 +25,6 @@ from .const import (
     DEFAULT_CONNECTION_TIMEOUT,
     DEFAULT_UPDATE_PERIOD,
     DOMAIN,
-    MANUFACTURER,
 )
 from .eflib.connection import (
     AuthFailedError,
@@ -169,14 +169,39 @@ async def async_remove_entry(hass: HomeAssistant, entry: DeviceConfigEntry):
     ConnectionLog.clean_cache_for(entry.data[CONF_ADDRESS])
 
 
-def device_info(entry: ConfigEntry) -> DeviceInfo:
-    """Device info."""
-    return DeviceInfo(
-        identifiers={(DOMAIN, entry.data[CONF_ADDRESS])},
-        name=entry.title,
-        manufacturer=MANUFACTURER,
-        model=entry.data.get(CONF_TYPE),
+async def async_migrate_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
+    """Migrate old config entry to a newer version."""
+    _LOGGER.debug(
+        "Migrating configuration from version %s.%s",
+        config_entry.version,
+        config_entry.minor_version,
     )
+
+    match config_entry.version, config_entry.minor_version:
+        case 1, 0:
+            address = config_entry.data.get(CONF_ADDRESS)
+            device_reg = dr.async_get(hass)
+            device_entry = device_reg.async_get_device(identifiers={(DOMAIN, address)})
+
+            if device_entry is not None and device_entry.serial_number is not None:
+                serial_number = device_entry.serial_number
+                old_prefix = device_entry.name + "_"
+
+                entity_reg = er.async_get(hass)
+                for entity_entry in er.async_entries_for_config_entry(
+                    entity_reg, config_entry.entry_id
+                ):
+                    old_unique_id = entity_entry.unique_id
+                    if old_unique_id.startswith(old_prefix):
+                        key = old_unique_id[len(old_prefix) :]
+                        new_unique_id = f"ef_{serial_number}_{key}"
+                        entity_reg.async_update_entity(
+                            entity_entry.entity_id, new_unique_id=new_unique_id
+                        )
+
+            hass.config_entries.async_update_entry(config_entry, minor_version=1)
+
+    return True
 
 
 async def _update_listener(hass: HomeAssistant, entry: DeviceConfigEntry):

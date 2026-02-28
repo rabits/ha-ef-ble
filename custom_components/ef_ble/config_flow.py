@@ -82,7 +82,7 @@ class EFBLEConfigFlow(ConfigFlow, domain=DOMAIN):
     """EcoFlow BLE ConfigFlow"""
 
     VERSION = 1
-    MINOR_VERSION = 0
+    MINOR_VERSION = 1
 
     CONNECTION_CLASS = CONN_CLASS_LOCAL_PUSH
 

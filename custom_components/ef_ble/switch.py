@@ -151,7 +151,7 @@ class EcoflowSwitchEntity(EcoflowEntity, SwitchEntity):
     ) -> None:
         super().__init__(device)
 
-        self._attr_unique_id = f"{device.name}_{entity_description.key}"
+        self._attr_unique_id = f"ef_{device.serial_number}_{entity_description.key}"
         self._prop_name = entity_description.key
         self._method_name = f"enable_{self._prop_name}"
         self.entity_description = entity_description

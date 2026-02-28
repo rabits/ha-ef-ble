@@ -1047,7 +1047,7 @@ class EcoflowSensor(EcoflowEntity, SensorEntity):
         super().__init__(device)
 
         self._sensor = sensor
-        self._attr_unique_id = f"{device.name}_{sensor}"
+        self._attr_unique_id = f"ef_{device.serial_number}_{sensor}"
 
         if sensor in SENSOR_TYPES:
             self.entity_description = SENSOR_TYPES[sensor]

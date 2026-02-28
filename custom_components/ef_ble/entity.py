@@ -29,7 +29,7 @@ class EcoflowEntity(Entity):
             name=self._device.name,
             manufacturer=MANUFACTURER,
             model=self._device.device,
-            serial_number=self._device._sn,
+            serial_number=self._device.serial_number,
         )
 
     @property

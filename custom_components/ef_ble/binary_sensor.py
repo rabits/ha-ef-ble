@@ -146,7 +146,7 @@ class EcoflowBinarySensor(EcoflowEntity, BinarySensorEntity):
     ):
         super().__init__(device)
 
-        self._attr_unique_id = f"{self._device.name}_{sensor}"
+        self._attr_unique_id = f"ef_{self._device.serial_number}_{sensor}"
         if sensor in BINARY_SENSOR_TYPES:
             self.entity_description = BINARY_SENSOR_TYPES[sensor]
             self._prop_name = self.entity_description.key

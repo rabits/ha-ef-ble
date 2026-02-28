@@ -9,6 +9,7 @@ CONF_CONNECTION_TIMEOUT = "connection_timeout"
 CONF_PACKET_VERSION = "packet_version"
 CONF_COLLECT_PACKETS = "collect_packets"
 CONF_COLLECT_PACKETS_AMOUNT = "collect_packets_amount"
+CONF_EXTRA_BATTERY = "extra_battery"
 
 CONF_LOG_MASKED = "log_masked"
 CONF_LOG_PACKETS = "log_packets"

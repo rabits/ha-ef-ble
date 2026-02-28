@@ -4,7 +4,7 @@ import itertools
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any
+from typing import Any, Final
 
 from homeassistant.components.sensor import (
     SensorDeviceClass,
@@ -24,9 +24,11 @@ from homeassistant.const import (
     UnitOfTime,
 )
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.helpers import device_registry as dr
+from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
 from . import DeviceConfigEntry
+from .const import CONF_EXTRA_BATTERY, DOMAIN
 from .eflib import DeviceBase
 from .eflib.devices import (
     _delta3_base,
@@ -36,7 +38,7 @@ from .eflib.devices import (
     wave2,
     wave3,
 )
-from .entity import EcoflowEntity
+from .entity import EcoflowBatteryAddonEntity, EcoflowEntity
 
 _UPPER_WORDS = ["ac", "dc", "lv", "hv", "tt", "5p8"]
 
@@ -243,7 +245,7 @@ def _wave_unit(dev: wave3.Device):
     return UnitOfTemperature.CELSIUS
 
 
-SENSOR_TYPES: dict[str, SensorEntityDescription] = {
+SENSOR_TYPES: Final[dict[str, SensorEntityDescription]] = {
     # Common
     "battery_level": EcoflowSensorEntityDescription(
         key="battery_level",
@@ -366,30 +368,6 @@ SENSOR_TYPES: dict[str, SensorEntityDescription] = {
                 "ac_5p8_out",
             ],
         )
-    },
-    **{
-        f"battery_{i}_battery_level": SensorEntityDescription(
-            key=f"battery_{i}_battery_level",
-            native_unit_of_measurement=PERCENTAGE,
-            device_class=SensorDeviceClass.BATTERY,
-            state_class=SensorStateClass.MEASUREMENT,
-            translation_key="additional_battery_level",
-            translation_placeholders={"index": f"{i}"},
-            entity_registry_enabled_default=False,
-        )
-        for i in range(1, 6)
-    },
-    **{
-        f"battery_{i}_cell_temperature": SensorEntityDescription(
-            key=f"battery_{i}_cell_temperature",
-            native_unit_of_measurement=UnitOfTemperature.CELSIUS,
-            device_class=SensorDeviceClass.TEMPERATURE,
-            state_class=SensorStateClass.MEASUREMENT,
-            translation_key="additional_battery_temperature",
-            translation_placeholders={"index": f"{i}"},
-            entity_registry_enabled_default=False,
-        )
-        for i in range(1, 6)
     },
     # River 3, Delta 3
     "input_energy": SensorEntityDescription(
@@ -1021,10 +999,42 @@ SENSOR_TYPES: dict[str, SensorEntityDescription] = {
 }
 
 
+_BATTERY_ADDON_INDEX_SENSORS: Final[dict[str, SensorEntityDescription]] = {
+    "battery_{n}_battery_level": SensorEntityDescription(
+        key="battery_{n}_battery_level",
+        translation_key="battery_level",
+        device_class=SensorDeviceClass.BATTERY,
+        native_unit_of_measurement=PERCENTAGE,
+        state_class=SensorStateClass.MEASUREMENT,
+    ),
+    "battery_{n}_cell_temperature": SensorEntityDescription(
+        key="battery_{n}_cell_temperature",
+        translation_key="cell_temperature",
+        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
+        device_class=SensorDeviceClass.TEMPERATURE,
+        state_class=SensorStateClass.MEASUREMENT,
+    ),
+    "battery_{n}_input_power": SensorEntityDescription(
+        key="battery_{n}_input_power",
+        translation_key="input_power",
+        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
+        device_class=SensorDeviceClass.TEMPERATURE,
+        state_class=SensorStateClass.MEASUREMENT,
+    ),
+    "battery_{n}_output_power": SensorEntityDescription(
+        key="battery_{n}_output_power",
+        translation_key="output_power",
+        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
+        device_class=SensorDeviceClass.TEMPERATURE,
+        state_class=SensorStateClass.MEASUREMENT,
+    ),
+}
+
+
 async def async_setup_entry(
     hass: HomeAssistant,
     config_entry: DeviceConfigEntry,
-    async_add_entities: AddEntitiesCallback,
+    async_add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
     """Add sensors for passed config_entry in HA."""
     device = config_entry.runtime_data
@@ -1037,6 +1047,59 @@ async def async_setup_entry(
 
     if new_sensors:
         async_add_entities(new_sensors)
+
+    if battery_entities := _get_extra_battery_entities(
+        hass=hass, device=device, conf=config_entry.data.get(CONF_EXTRA_BATTERY)
+    ):
+        async_add_entities(battery_entities)
+
+
+def _get_extra_battery_entities(
+    hass: HomeAssistant, device: DeviceBase, conf: list[str] | None
+):
+    available_indices = [
+        i for i in range(1, 6) if hasattr(device, f"battery_{i}_battery_level")
+    ]
+
+    if not available_indices:
+        return []
+
+    if conf is not None:
+        enabled_indices = {int(i) for i in conf}
+    else:
+        enabled_indices = {
+            i
+            for i in available_indices
+            if getattr(device, f"battery_{i}_enabled", False)
+        }
+
+    registry = dr.async_get(hass)
+    for battery_index in available_indices:
+        if battery_index not in enabled_indices:
+            identifier = (DOMAIN, f"{device.address}_battery_{battery_index}")
+            if dev_entry := registry.async_get_device(identifiers={identifier}):
+                registry.async_remove_device(dev_entry.id)
+
+    battery_entities: list[EcoflowBatteryAddonSensor] = []
+    for battery_index in enabled_indices:
+        if battery_index not in available_indices:
+            continue
+
+        for template_key, desc in _BATTERY_ADDON_INDEX_SENSORS.items():
+            attr_name = template_key.replace("{n}", str(battery_index))
+            if not hasattr(device, attr_name):
+                continue
+
+            battery_entities.append(
+                EcoflowBatteryAddonSensor(
+                    device=device,
+                    sensor=attr_name,
+                    description=desc,
+                    battery_index=battery_index,
+                )
+            )
+
+    return battery_entities
 
 
 class EcoflowSensor(EcoflowEntity, SensorEntity):
@@ -1098,5 +1161,33 @@ class EcoflowSensor(EcoflowEntity, SensorEntity):
 
     async def async_will_remove_from_hass(self):
         """Entity being removed from hass."""
+        await super().async_will_remove_from_hass()
+        self._device.remove_callback(self.async_write_ha_state, self._sensor)
+
+
+class EcoflowBatteryAddonSensor(EcoflowBatteryAddonEntity, SensorEntity):
+    def __init__(
+        self,
+        device: DeviceBase,
+        sensor: str,
+        description: SensorEntityDescription,
+        battery_index: int,
+    ) -> None:
+        super().__init__(device=device, battery_index=battery_index)
+        self._sensor = sensor
+        self._attr_unique_id = f"ef_{device.serial_number}_{sensor}"
+        self.entity_description = description
+        if self.entity_description.translation_key is None:
+            self._attr_translation_key = self.entity_description.key
+
+    @property
+    def native_value(self):
+        return getattr(self._device, self._sensor, None)
+
+    async def async_added_to_hass(self):
+        await super().async_added_to_hass()
+        self._device.register_callback(self.async_write_ha_state, self._sensor)
+
+    async def async_will_remove_from_hass(self):
         await super().async_will_remove_from_hass()
         self._device.remove_callback(self.async_write_ha_state, self._sensor)

@@ -42,7 +42,7 @@ class Device(Delta2Base):
         self._update_ac_chg_limits()
 
     def _update_ac_chg_limits(self) -> None:
-        if self.battery_addon:
+        if self.battery_1_enabled or self.battery_2_enabled:
             self.max_ac_charging_power = 1500
         else:
             self.max_ac_charging_power = 1200

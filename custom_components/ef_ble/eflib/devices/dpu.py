@@ -5,6 +5,7 @@ from ..devicebase import AdvertisementData, BLEDevice, DeviceBase
 from ..packet import Packet
 from ..pb import yj751_sys_pb2
 from ..props import (
+    Field,
     ProtobufProps,
     pb_field,
     proto_attr_mapper,
@@ -27,6 +28,18 @@ class _BatteryLevel(
         return item.bp_soc if item.bp_no == self.battery_no else None
 
 
+@dataclass
+class _BatteryTemperature(
+    repeated_pb_field_type(
+        list_field=pb_bp_info.bp_info, value_field=lambda x: x.bp_temp, per_item=True
+    )
+):
+    battery_no: int
+
+    def get_value(self, item: yj751_sys_pb2.BPInfo) -> int | None:
+        return item.bp_temp if item.bp_no == self.battery_no else None
+
+
 class Device(DeviceBase, ProtobufProps):
     """Delta Pro Ultra"""
 
@@ -41,11 +54,25 @@ class Device(DeviceBase, ProtobufProps):
     input_power = pb_field(pb_heartbeat.watts_in_sum)
     output_power = pb_field(pb_heartbeat.watts_out_sum)
 
+    battery_1_enabled = Field[bool]()
     battery_1_battery_level = _BatteryLevel(1)
+    battery_1_cell_temperature = _BatteryLevel(1)
+
+    battery_2_enabled = Field[bool]()
     battery_2_battery_level = _BatteryLevel(2)
+    battery_2_cell_temperature = _BatteryLevel(2)
+
+    battery_3_enabled = Field[bool]()
     battery_3_battery_level = _BatteryLevel(3)
+    battery_3_cell_temperature = _BatteryLevel(3)
+
+    battery_4_enabled = Field[bool]()
     battery_4_battery_level = _BatteryLevel(4)
+    battery_4_cell_temperature = _BatteryLevel(4)
+
+    battery_5_enabled = Field[bool]()
     battery_5_battery_level = _BatteryLevel(5)
+    battery_5_cell_temperature = _BatteryLevel(5)
 
     ac_l1_1_out_power = pb_field(pb_heartbeat.out_ac_l1_1_pwr)
     ac_l1_2_out_power = pb_field(pb_heartbeat.out_ac_l1_2_pwr)
@@ -54,6 +81,8 @@ class Device(DeviceBase, ProtobufProps):
     ac_tt_out_power = pb_field(pb_heartbeat.out_ac_tt_pwr)
     ac_l14_out_power = pb_field(pb_heartbeat.out_ac_l14_pwr)
     ac_5p8_out_power = pb_field(pb_heartbeat.out_ac_5p8_pwr)
+
+    extra_battery_name = "Delta Pro Ultra Battery"
 
     @staticmethod
     def check(sn):

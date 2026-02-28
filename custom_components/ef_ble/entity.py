@@ -7,6 +7,7 @@ from homeassistant.helpers.entity import Entity
 
 from .const import DOMAIN, MANUFACTURER
 from .eflib import DeviceBase
+from .eflib.device_mappings import battery_name_from_device
 
 
 class EcoflowEntity(Entity):
@@ -74,3 +75,29 @@ class EcoflowEntity(Entity):
         for prop, state_callback in self._update_callbacks:
             self._device.remove_state_update_calback(state_callback, prop)
         await super().async_will_remove_from_hass()
+
+
+class EcoflowBatteryAddonEntity(EcoflowEntity):
+    def __init__(
+        self,
+        device: DeviceBase,
+        battery_index: int,
+    ) -> None:
+        super().__init__(device)
+        self._battery_index = battery_index
+
+    @property
+    def device_info(self) -> DeviceInfo:
+        battery_sn = getattr(self._device, f"battery_{self._battery_index}_sn", None)
+        battery_model = battery_name_from_device(self._device, self._battery_index)
+
+        return DeviceInfo(
+            identifiers={
+                (DOMAIN, f"{self._device.address}_battery_{self._battery_index}"),
+            },
+            name=f"{self._device.name} Extra Battery {self._battery_index}",
+            manufacturer=MANUFACTURER,
+            model=battery_model,
+            serial_number=battery_sn,
+            via_device=(DOMAIN, self._device.address),
+        )

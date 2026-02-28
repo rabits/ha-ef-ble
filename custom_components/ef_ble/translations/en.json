@@ -151,7 +151,8 @@
       },
       "reconfigure": {
         "data": {
-          "user_id": "EcoFlow User ID"
+          "user_id": "EcoFlow User ID",
+          "extra_battery": "Enabled Extra Batteries"
         }
       },
       "connecting": {

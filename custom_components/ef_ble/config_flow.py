@@ -27,6 +27,7 @@ from homeassistant.core import callback
 from homeassistant.data_entry_flow import section
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.selector import (
+    SelectOptionDict,
     SelectSelector,
     SelectSelectorConfig,
     SelectSelectorMode,
@@ -38,6 +39,7 @@ from .const import (
     CONF_COLLECT_PACKETS,
     CONF_COLLECT_PACKETS_AMOUNT,
     CONF_CONNECTION_TIMEOUT,
+    CONF_EXTRA_BATTERY,
     CONF_LOG_BLEAK,
     CONF_LOG_CONNECTION,
     CONF_LOG_ENCRYPTED_PAYLOADS,
@@ -54,6 +56,7 @@ from .const import (
     LINK_WIKI_SUPPORTING_NEW_DEVICES,
 )
 from .eflib.connection import ConnectionState
+from .eflib.device_mappings import battery_name_from_device
 from .eflib.logging_util import LogOptions
 
 _LOGGER = logging.getLogger(__name__)
@@ -314,6 +317,10 @@ class EFBLEConfigFlow(ConfigFlow, domain=DOMAIN):
     ) -> ConfigFlowResult:
         """Reconfiguration of the picked device."""
         reconfigure_entry = self._get_reconfigure_entry()
+        device: eflib.DeviceBase | None = getattr(
+            reconfigure_entry, "runtime_data", None
+        )
+
         errors = {}
         if user_input is not None:
             try:
@@ -333,6 +340,7 @@ class EFBLEConfigFlow(ConfigFlow, domain=DOMAIN):
             data_schema=(
                 schema_builder()
                 .user_id(reconfigure_entry.data.get(CONF_USER_ID))
+                .extra_battery(reconfigure_entry.data.get(CONF_EXTRA_BATTERY), device)
                 .build()
             ),
             errors=errors,
@@ -661,6 +669,47 @@ class _SchemaBuilder:
             return self
 
         return self.update({vol.Optional(key, default=default): selector})
+
+    def extra_battery(self, extra_battery_conf: list[str], device: eflib.DeviceBase):
+        available_battery_slots = (
+            [i for i in range(1, 6) if hasattr(device, f"battery_{i}_battery_level")]
+            if device is not None
+            else []
+        )
+
+        if not available_battery_slots:
+            return self
+
+        extra_batteries_default = (
+            extra_battery_conf
+            if extra_battery_conf is not None
+            else [
+                str(i)
+                for i in available_battery_slots
+                if getattr(device, f"battery_{i}_enabled", False)
+            ]
+        )
+
+        extra_battery_labels = {
+            i: f"{battery_name_from_device(device, i)} {i}"
+            for i in available_battery_slots
+        }
+
+        return self.optional(
+            key=CONF_EXTRA_BATTERY,
+            selector=SelectSelector(
+                SelectSelectorConfig(
+                    options=[
+                        SelectOptionDict(value=str(i), label=extra_battery_labels[i])
+                        for i in available_battery_slots
+                    ],
+                    multiple=True,
+                    mode=SelectSelectorMode.LIST,
+                )
+            ),
+            default=extra_batteries_default,
+            condition=bool(available_battery_slots),
+        )
 
 
 def schema_builder():

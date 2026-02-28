@@ -1,6 +1,3 @@
-from bleak.backends.device import BLEDevice
-from bleak.backends.scanner import AdvertisementData
-
 from ..devicebase import DeviceBase
 from ..model import (
     AllKitDetailData,
@@ -24,11 +21,16 @@ class _BmsHeartbeatBattery1(DirectBmsMDeltaHeartbeatPack):
     pass
 
 
+class _BmsHeartbeatBattery2(DirectBmsMDeltaHeartbeatPack):
+    pass
+
+
 pb_pd = dataclass_attr_mapper(BasePdHeart)
 pb_mppt = dataclass_attr_mapper(BaseMpptHeart)
 pb_ems = dataclass_attr_mapper(DirectEmsDeltaHeartbeatPack)
 pb_bms = dataclass_attr_mapper(_BmsHeartbeatBatteryMain)
 pb_bms_1 = dataclass_attr_mapper(_BmsHeartbeatBattery1)
+pb_bms_2 = dataclass_attr_mapper(_BmsHeartbeatBattery2)
 pb_inv = dataclass_attr_mapper(DirectInvDeltaHeartbeatPack)
 
 
@@ -40,8 +42,17 @@ class Delta2Base(DeviceBase, RawDataProps):
     ac_input_current = raw_field(pb_inv.ac_in_amp, lambda x: round(x / 1000, 2))
 
     battery_level_main = raw_field(pb_bms.f32_show_soc, lambda x: round(x, 2))
+
+    battery_1_enabled = Field[bool]()
     battery_1_battery_level = raw_field(pb_bms_1.f32_show_soc, lambda x: round(x, 2))
     battery_1_cell_temperature = raw_field(pb_bms_1.max_cell_temp)
+    battery_1_sn = Field[str]()
+
+    battery_2_enabled = Field[bool]()
+    battery_2_battery_level = raw_field(pb_bms_2.f32_show_soc, lambda x: round(x, 2))
+    battery_2_cell_temperature = raw_field(pb_bms_2.max_cell_temp)
+    battery_2_sn = Field[str]()
+
     battery_level = raw_field(pb_ems.f32_lcd_show_soc, lambda x: round(x, 2))
 
     master_design_cap = raw_field(pb_bms.design_cap)
@@ -50,7 +61,6 @@ class Delta2Base(DeviceBase, RawDataProps):
     slave_design_cap = raw_field(pb_bms_1.design_cap)
     slave_remain_cap = raw_field(pb_bms_1.remain_cap)
     slave_full_cap = raw_field(pb_bms_1.full_cap)
-    battery_addon = Field[bool]()
 
     input_power = raw_field(pb_pd.watts_in_sum)
     output_power = raw_field(pb_pd.watts_out_sum)
@@ -87,12 +97,6 @@ class Delta2Base(DeviceBase, RawDataProps):
     def mppt_heart_type(self):
         return BaseMpptHeart
 
-    def __init__(
-        self, ble_dev: BLEDevice, adv_data: AdvertisementData, sn: str
-    ) -> None:
-        super().__init__(ble_dev, adv_data, sn)
-        self.battery_addon = False
-
     @classmethod
     def check(cls, sn):
         return sn[:4] in cls.SN_PREFIX
@@ -126,7 +130,8 @@ class Delta2Base(DeviceBase, RawDataProps):
                 self.update_from_bytes(self.pd_heart_type, packet.payload)
                 processed = True
             case 0x03, 0x03, 0x0E:
-                self.update_from_bytes(AllKitDetailData, packet.payload)
+                kit_data = self.update_from_bytes(AllKitDetailData, packet.payload)
+                self._update_extra_batteries(kit_data)
                 processed = True
             case 0x03, 0x20, 0x02:
                 self.update_from_bytes(DirectEmsDeltaHeartbeatPack, packet.payload)
@@ -144,10 +149,6 @@ class Delta2Base(DeviceBase, RawDataProps):
                 self.update_from_bytes(self.mppt_heart_type, packet.payload)
                 processed = True
 
-        if processed:
-            if self.battery_1_battery_level is not None:
-                self.battery_addon = True
-
         self._after_message_parsed()
 
         for field_name in self.updated_fields:
@@ -159,6 +160,27 @@ class Delta2Base(DeviceBase, RawDataProps):
     @property
     def ac_commands_dst(self) -> int:
         return 0x05
+
+    def _update_extra_batteries(self, kit_data: AllKitDetailData):
+        battery_entity_map = [
+            {
+                "enabled": Delta2Base.battery_1_enabled,
+                "sn": Delta2Base.battery_1_sn,
+                "level": Delta2Base.battery_1_battery_level,
+            },
+            {
+                "enabled": Delta2Base.battery_2_enabled,
+                "sn": Delta2Base.battery_2_sn,
+                "level": Delta2Base.battery_2_battery_level,
+            },
+        ]
+        for i, kit in enumerate(kit_data.kit_base_info):
+            battery_dict = battery_entity_map[i]
+            available = kit.avai_flag
+            setattr(self, battery_dict["enabled"], bool(available))
+            if available:
+                setattr(self, battery_dict["sn"], kit.sn.decode())
+                setattr(self, battery_dict["level"], kit.f32_soc)
 
     async def set_ac_charging_speed(self, value: int):
         if self.max_ac_charging_power is None:

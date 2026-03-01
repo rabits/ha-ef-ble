@@ -152,6 +152,21 @@
             "manufacturer_id": 46517,
             "manufacturer_data_start": [19, 72, 87, 53, 49],
             "connectable": true
+        },
+        {
+            "local_name": "EF-DC",
+            "manufacturer_id": 46517,
+            "manufacturer_data_start": [19, 68, 67]
+        },
+        {
+            "local_name": "EF-DC",
+            "manufacturer_id": 46517,
+            "manufacturer_data_start": [19, 90, 49]
+        },
+        {
+            "local_name": "EF-DC",
+            "manufacturer_id": 46517,
+            "manufacturer_data_start": [19, 82, 23, 49, 49]
         }
     ],
 

@@ -1,4 +1,5 @@
 from asyncio import Lock
+from functools import cached_property
 
 from bleak.backends.device import BLEDevice
 from bleak.backends.scanner import AdvertisementData
@@ -70,14 +71,13 @@ class Device(DeviceBase, RawDataProps):
     ac_ports = raw_field(rd_inv.cfg_ac_enabled, lambda x: x == 1)
 
     ac_charging_speed = raw_field(rd_inv.cfg_slow_chg_watts)
-    max_ac_charging_power = raw_field(rd_inv.ac_chg_rated_power)
+    max_ac_charging_power = Field[int]()
 
     input_power = raw_field(rd_pd.watts_in_sum)
     output_power = raw_field(rd_pd.watts_out_sum)
     dc_output_power = raw_field(rd_pd.car_watts)
 
-    usb_ports = raw_field(rd_pd.dc_out_state, lambda x: x == 1)
-    dc_12v_port = raw_field(rd_pd.car_state, lambda x: x == 1)
+    dc_12v_port = raw_field(rd_mppt.car_state, lambda x: x == 1)
     energy_backup_enabled = raw_field(rd_pd.watth_is_config, lambda x: x == 1)
     energy_backup_battery_level = raw_field(rd_pd.backup_soc)
 
@@ -101,7 +101,7 @@ class Device(DeviceBase, RawDataProps):
         self._dormant = True
         self._wake_up_sent = False
         self._initialized = False
-        self._kit_data: AllKitDetailData | None = None
+        self.max_ac_charging_power = 2900
 
         self.add_timer_task(self.request_heartbeat, 0.35)
 
@@ -154,7 +154,7 @@ class Device(DeviceBase, RawDataProps):
                 self.update_from_bytes(DirectEmsDeltaHeartbeatPack, packet.payload)
             case 0x04, 0x20, 0x02:
                 self.update_from_bytes(DirectInvDeltaHeartbeatPack, packet.payload)
-            case 0x05, 0x20, 0x02:
+            case self._mppt_dst, 0x20, 0x02:
                 self.update_from_bytes(DirectMpptHeartbeatPack, packet.payload)
             case _:
                 return False
@@ -237,7 +237,11 @@ class Device(DeviceBase, RawDataProps):
             setattr(self, battery_dict["enabled"], bool(available))
             if available:
                 setattr(self, battery_dict["sn"], kit.sn.strip(b"\x00").decode())
-                setattr(self, battery_dict["level"], kit.f32_soc)
+                setattr(self, battery_dict["level"], round(kit.f32_soc, 2))
+
+    @cached_property
+    def _mppt_dst(self) -> int:
+        return 0x07 if self._sn.startswith("R511") else 0x05
 
     async def _send_config_packet(self, dst: int, cmd_id: int, payload: bytes):
         await self._conn.sendPacket(
@@ -246,17 +250,14 @@ class Device(DeviceBase, RawDataProps):
 
     async def enable_ac_ports(self, enabled: bool):
         payload = bytes([1 if enabled else 0, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF])
-        await self._send_config_packet(0x05, 0x42, payload)
+        await self._send_config_packet(0x04, 0x42, payload)
 
     async def enable_xboost(self, enabled: bool):
         payload = bytes([0xFF, 1 if enabled else 0, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF])
-        await self._send_config_packet(0x05, 0x42, payload)
+        await self._send_config_packet(0x04, 0x42, payload)
 
     async def enable_dc_12v_port(self, enabled: bool):
-        await self._send_config_packet(0x05, 0x51, enabled.to_bytes())
-
-    async def enable_usb_ports(self, enabled: bool):
-        await self._send_config_packet(0x02, 0x22, enabled.to_bytes())
+        await self._send_config_packet(self._mppt_dst, 0x51, enabled.to_bytes())
 
     async def set_battery_charge_limit_max(self, limit: int):
         await self._send_config_packet(0x03, 0x31, limit.to_bytes())
@@ -268,8 +269,10 @@ class Device(DeviceBase, RawDataProps):
         if self.max_ac_charging_power is None:
             return False
         value = max(1, min(value, self.max_ac_charging_power))
-        payload = value.to_bytes(2, "little") + bytes([0xFF])
-        await self._send_config_packet(0x05, 0x45, payload)
+        payload = bytes([0xFF, 0xFF]) + value.to_bytes(2, "little") + bytes([0xFF])
+        await self._conn.sendPacket(
+            Packet(0x20, 0x04, 0x20, 0x45, payload, version=0x02)
+        )
         return True
 
     async def enable_energy_backup(self, enabled: bool):
@@ -284,8 +287,7 @@ class Device(DeviceBase, RawDataProps):
         await self._send_config_packet(0x02, 0x5C, bytes([1 if enabled else 0]))
 
     async def set_buzzer(self, enabled: bool):
-        #  0 = on, 1 = off
-        await self._send_config_packet(0x05, 0x26, bytes([0 if enabled else 1]))
+        await self._send_config_packet(0x02, 0x26, bytes([0 if enabled else 1]))
 
     async def set_screen_timeout(self, seconds: int):
         payload = bytes([seconds & 0xFF, (seconds >> 8) & 0xFF, 0xFF])
@@ -295,7 +297,7 @@ class Device(DeviceBase, RawDataProps):
         await self._send_config_packet(0x02, 0x27, bytes([0xFF, 0xFF, value]))
 
     async def set_ac_standby_time(self, minutes: int):
-        await self._send_config_packet(0x05, 0x99, minutes.to_bytes(2, "little"))
+        await self._send_config_packet(0x04, 0x99, minutes.to_bytes(2, "little"))
 
     async def set_dc_standby_time(self, minutes: int):
         await self._send_config_packet(0x05, 0x54, minutes.to_bytes(2, "little"))

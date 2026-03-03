@@ -577,7 +577,7 @@ class Connection:
         self._logger.log_filtered(
             LogOptions.ENCRYPTED_PAYLOADS,
             "parseSimple: Data: %r",
-            bytearray(data).hex(),
+            data,
         )
 
         header = data[0:6]
@@ -608,7 +608,7 @@ class Connection:
         self._logger.log_filtered(
             LogOptions.ENCRYPTED_PAYLOADS,
             "parseEncPackets: Data: %r",
-            bytearray(data).hex(),
+            data,
         )
         if len(data) < 8:
             error_msg = (
@@ -663,6 +663,13 @@ class Connection:
                 self._listeners.on_packet_received(payload)
                 packet = await self._packet_parse(payload)
                 self._listeners.on_packet_parsed(packet)
+
+                self._logger.log_filtered(
+                    LogOptions.DECRYPTED_PAYLOADS,
+                    "decrypted payload: '%s'",
+                    payload,
+                )
+
                 self._logger.log_filtered(
                     LogOptions.PACKETS,
                     "Parsed packet: %s",
@@ -676,9 +683,7 @@ class Connection:
         return packets
 
     async def sendRequest(self, send_data: bytes, response_handler=None):
-        self._logger.log_filtered(
-            LogOptions.CONNECTION_DEBUG, "Sending: %r", bytearray(send_data).hex()
-        )
+        self._logger.log_filtered(LogOptions.CONNECTION_DEBUG, "Sending: %r", send_data)
         # In case exception happens we need to try again
         err = None
         for retry in range(4):
@@ -711,7 +716,7 @@ class Connection:
             self._logger.log_filtered(
                 LogOptions.CONNECTION_DEBUG,
                 "Skip sending: disconnected: %r",
-                bytearray(send_data).hex(),
+                send_data,
             )
             return
 
@@ -877,7 +882,7 @@ class Connection:
         self._logger.log_filtered(
             LogOptions.CONNECTION_DEBUG,
             "getAuthStatusHandler: data: %r",
-            bytearray(data).hex(),
+            data,
         )
         await self.autoAuthentication()
 

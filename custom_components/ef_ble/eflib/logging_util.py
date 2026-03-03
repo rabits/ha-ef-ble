@@ -134,6 +134,9 @@ class MaskingLogger(logging.Logger):
         level: int = logging.DEBUG,
     ) -> None:
         if options in self._options:
+            args = tuple(
+                _LazyHex(a) if isinstance(a, (bytes, bytearray)) else a for a in args
+            )
             self._logger.log(level, msg, *args)
 
 
@@ -397,3 +400,16 @@ class DeviceDiagnosticsCollector:
         self._last_errors.clear()
         self._connect_times.clear()
         self._disconnect_times.clear()
+
+
+class _LazyHex:
+    __slots__ = ("_data",)
+
+    def __init__(self, data: bytes | bytearray) -> None:
+        self._data = data
+
+    def __str__(self) -> str:
+        return bytes(self._data).hex()
+
+    def __repr__(self) -> str:
+        return bytes(self._data).hex()

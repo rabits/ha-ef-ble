@@ -393,6 +393,34 @@ first charging task</sup>
 </details>
 
 <details>
+<summary><b>Delta Pro</b></summary>
+
+<br>
+
+| *Sensors*              | *Switches*  | *Sliders*         |
+|------------------------|-------------|-------------------|
+| Battery Level          | AC Ports    | AC Charging Speed |
+| Input Power            | DC 12V Port | Backup Reserve    |
+| Output Power           |             | Charge Limit      |
+| AC Input Power         |             | Discharge Limit   |
+| AC Input Voltage       |             |                   |
+| AC Input Current       |             |                   |
+| AC Output Power        |             |                   |
+| DC Output Power        |             |                   |
+| USB C Output Power     |             |                   |
+| USB C (2) Output Power |             |                   |
+| USB A Output Power     |             |                   |
+| USB A (2) Output Power |             |                   |
+| USB A QC (1) Power     |             |                   |
+| USB A QC (2) Power     |             |                   |
+| Extra Battery Level ¹  |             |                   |
+
+<sup>¹ Extra batteries are only updated when you set up the device, but has to
+be manually reconfigured if battery is connected/disconnected.</sup>
+
+</details>
+
+<details>
 <summary><b>Delta 2</b> <i>(Max, Delta 3 1500)</i></summary>
 
 <br>

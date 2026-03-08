@@ -325,7 +325,7 @@ class DeviceDiagnosticsCollector:
             connect_times=list(self._connect_times),
             disconnect_times=list(self._disconnect_times),
             raw_data_connection=self._raw_data_connection,
-            raw_data_messages=self._raw_data_messages,
+            raw_data_messages=list(self._raw_data_messages),
             iv=self._device._conn._encryption.iv,
             session_key=self._device._conn._encryption.session_key,
         )
@@ -373,10 +373,6 @@ class DeviceDiagnosticsCollector:
         self._last_errors.append((time.time() - self._start_time, error_message))
 
     @property
-    def _now(self):
-        return time.time() - self._start_time
-
-    @property
     def packets_collected(self):
         """Get number of packets collected"""
         return len(self._last_packets)
@@ -403,15 +399,29 @@ class DeviceDiagnosticsCollector:
         """
         return self.packets_collected >= self.packet_buffer_size
 
-    def _with_time[T](self, data: T) -> tuple[float, T]:
-        return (self._now, data)
-
     def clear_callbacks(self):
         """Remove all registered listeners from device events"""
         for unlisten in self._unlisten_callbacks:
             unlisten()
 
         self._unlisten_callbacks.clear()
+
+    def with_buffer_size(self, buffer_size: int):
+        """Set the diagnostics buffer size"""
+
+        self._buffer_size = buffer_size
+        self._last_packets = deque(self._last_packets, maxlen=buffer_size)
+        self._last_errors = deque(self._last_errors, maxlen=buffer_size)
+        self._connect_times = deque(self._connect_times, maxlen=buffer_size)
+        self._disconnect_times = deque(self._disconnect_times, maxlen=buffer_size)
+        return self
+
+    @property
+    def _now(self):
+        return time.time() - self._start_time
+
+    def _with_time[T](self, data: T) -> tuple[float, T]:
+        return (self._now, data)
 
     def _on_disconnect(self, exc: Exception | type[Exception] | None = None):
         self._disconnect_times.append(self._now)

@@ -169,8 +169,11 @@ class DeviceBase(abc.ABC):
         )
         return self
 
-    def with_enabled_packet_diagnostics(self, enabled: bool = True):
+    def with_enabled_packet_diagnostics(
+        self, enabled: bool = True, buffer_size: int = 100
+    ):
         self._diagnostics.enabled(enabled)
+        self._diagnostics.with_buffer_size(buffer_size)
         return self
 
     def with_name(self, name: str):

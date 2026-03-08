@@ -18,6 +18,7 @@ from homeassistant.helpers import entity_registry as er
 from . import eflib
 from .config_flow import CONF_COLLECT_PACKETS, ConfLogOptions, LogOptions, PacketVersion
 from .const import (
+    CONF_COLLECT_PACKETS_AMOUNT,
     CONF_CONNECTION_TIMEOUT,
     CONF_PACKET_VERSION,
     CONF_UPDATE_PERIOD,
@@ -210,9 +211,13 @@ async def _update_listener(hass: HomeAssistant, entry: DeviceConfigEntry):
     packet_collection = merged_options.get(
         CONF_COLLECT_PACKETS, eflib.is_unsupported(device)
     )
+    diagnostics_buffer_size = merged_options.get(CONF_COLLECT_PACKETS_AMOUNT, 100)
 
     (
         device.with_update_period(period=update_period)
         .with_logging_options(ConfLogOptions.from_config(merged_options))
-        .with_enabled_packet_diagnostics(packet_collection)
+        .with_enabled_packet_diagnostics(
+            enabled=packet_collection,
+            buffer_size=diagnostics_buffer_size,
+        )
     )

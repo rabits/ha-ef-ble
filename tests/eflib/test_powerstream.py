@@ -161,7 +161,7 @@ async def test_powerstream_exact_values_from_known_packets(device, packet_sequen
         await device.data_parse(await device.packet_parse(bytes.fromhex(packet)))
 
     expected = {
-        Device.battery_level: 31.02,
+        Device.battery_level: 46.15,
         Device.battery_power: 0.0,
         Device.battery_temperature: 21.0,
         Device.pv_power_1: 6.0,

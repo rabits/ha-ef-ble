@@ -1,5 +1,3 @@
-"""Frame reassemblers for EcoFlow BLE packet assembly and disassembly."""
-
 import struct
 from abc import ABC, abstractmethod
 

@@ -391,9 +391,9 @@ class EFBLEConfigFlow(ConfigFlow, domain=DOMAIN):
         except ValueError:
             return {"base": "User ID can only contain numbers"}
 
-        if len(user_id) < 17:
+        if len(user_id) < 10:
             return {"base": "User ID is too short"}
-        if len(user_id) > 22:
+        if len(user_id) > 25:
             return {"base": "User ID is too long"}
         return None
 

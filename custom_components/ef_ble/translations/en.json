@@ -17,7 +17,7 @@
       "auth_failed_general_error": "Authentication failed - General error, try again later",
       "auth_failed_ota_upgrade": "Authentication failed - OTA Upgrade Error",
       "auth_failed_user_id_incorrect_length": "Authentication failed - Received key with incorrect length",
-      "auth_failed_iot_status_error": "Authentication failed - IOT status error, device needs IOT reset",
+      "auth_failed_iot_status_error": "Authentication failed - IOT status error, device may need to be IOT or factory reset",
       "auth_failed_user_key_read": "Authentication failed - User key read error",
       "auth_failed_unknown": "Authentication failed - Unknown error, check logs for more info",
       "auth_failed_key_info": "Authentication failed - Could not request key info",
@@ -475,7 +475,7 @@
         "name": "LV DC Port Input Power"
       },
       "dc_hv_input_power": {
-        "name": "LV DC Port Input Power"
+        "name": "HV DC Port Input Power"
       },
       "dc_lv_input_state": {
         "name": "LV DC Input Port State"

@@ -46,6 +46,12 @@
             "connectable": true
         },
         {
+            "local_name": "EF-D5*",
+            "manufacturer_id": 46517,
+            "manufacturer_data_start": [19, 68, 53, 49, 49],
+            "connectable": true
+        },
+        {
             "local_name": "EF-DP3*",
             "manufacturer_id": 46517,
             "manufacturer_data_start": [19, 77, 82, 53, 49],

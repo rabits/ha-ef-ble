@@ -4,7 +4,7 @@ from bleak.backends.scanner import AdvertisementData
 from ..commands import TimeCommands
 from ..pb import pd335_sys_pb2
 from ..props import pb_field
-from ._delta3_base import Delta3Base, _out_power, flow_is_on, pb
+from ._delta3_base import Delta3Base, flow_is_on, out_power, pb
 
 
 class Device(Delta3Base):
@@ -17,7 +17,7 @@ class Device(Delta3Base):
     energy_backup_battery_level = pb_field(pb.energy_backup_start_soc)
 
     dc_12v_port = pb_field(pb.flow_info_12v, flow_is_on)
-    dc12v_output_power = pb_field(pb.pow_get_12v, _out_power)
+    dc12v_output_power = pb_field(pb.pow_get_12v, out_power)
     disable_grid_bypass = pb_field(pb.bypass_out_disable)
 
     # NOTE(gnox): self_powered is the same thing as energy_backup, should we remove it?

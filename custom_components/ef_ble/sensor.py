@@ -759,6 +759,17 @@ SENSOR_TYPES: Final[dict[str, SensorEntityDescription]] = {
         for i in range(3)
     },
     **{
+        f"ac_power_{i}_{j}": SensorEntityDescription(
+            key=f"ac_power_{i}_{j}",
+            native_unit_of_measurement=UnitOfPower.WATT,
+            device_class=SensorDeviceClass.POWER,
+            state_class=SensorStateClass.MEASUREMENT,
+            translation_key="port_power",
+            translation_placeholders={"name": f"AC ({i}-{j})"},
+        )
+        for i, j in itertools.product(range(1, 3), range(1, 4))
+    },
+    **{
         f"pv_power_{i}": SensorEntityDescription(
             key=f"pv_power_{i}",
             native_unit_of_measurement=UnitOfPower.WATT,

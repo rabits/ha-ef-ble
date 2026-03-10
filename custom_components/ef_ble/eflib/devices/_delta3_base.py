@@ -21,7 +21,7 @@ pb = proto_attr_mapper(pd335_sys_pb2.DisplayPropertyUpload)
 pb_bms = proto_attr_mapper(pd335_bms_bp_pb2.BMSHeartBeatReport)
 
 
-def _out_power(x) -> float:
+def out_power(x) -> float:
     return -round(x, 2) if x != 0 else 0
 
 
@@ -78,7 +78,7 @@ class Delta3Base(DeviceBase, ProtobufProps):
     battery_level_main = pb_field(pb.bms_batt_soc, lambda value: round(value, 2))
 
     ac_input_power = pb_field(pb.pow_get_ac_in)
-    ac_output_power = pb_field(pb.pow_get_ac_out, _out_power)
+    ac_output_power = pb_field(pb.pow_get_ac_out, out_power)
 
     input_power = pb_field(pb.pow_in_sum_w)
     output_power = pb_field(pb.pow_out_sum_w)
@@ -86,10 +86,10 @@ class Delta3Base(DeviceBase, ProtobufProps):
     dc_port_input_power = pb_field(pb.pow_get_pv, lambda value: round(value, 2))
     dc_port_state = pb_field(pb.plug_in_info_pv_type, DCPortState.from_value)
 
-    usbc_output_power = pb_field(pb.pow_get_typec1, _out_power)
-    usbc2_output_power = pb_field(pb.pow_get_typec2, _out_power)
-    usba_output_power = pb_field(pb.pow_get_qcusb1, _out_power)
-    usba2_output_power = pb_field(pb.pow_get_qcusb2, _out_power)
+    usbc_output_power = pb_field(pb.pow_get_typec1, out_power)
+    usbc2_output_power = pb_field(pb.pow_get_typec2, out_power)
+    usba_output_power = pb_field(pb.pow_get_qcusb1, out_power)
+    usba2_output_power = pb_field(pb.pow_get_qcusb2, out_power)
 
     plugged_in_ac = pb_field(pb.plug_in_info_ac_charger_flag)
     battery_input_power = pb_field(pb.pow_get_bms, lambda value: max(0, value))

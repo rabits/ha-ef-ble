@@ -719,6 +719,11 @@ class Connection:
 
         await self.add_error(err)
 
+    async def _start_notify(self, callback: Callable):
+        await self._client.start_notify(
+            self._notify_characteristic, callback, bluez={"use_start_notify": True}
+        )
+
     async def _sendRequest(self, send_data: bytes, response_handler=None):
         # Make sure the connection is here, otherwise just skipping
         if self._client is None or not self._client.is_connected:
@@ -730,9 +735,8 @@ class Connection:
             return
 
         if response_handler:
-            await self._client.start_notify(
-                self._notify_characteristic, response_handler
-            )
+            await self._start_notify(response_handler)
+
         await self._client.write_gatt_char(
             self._write_characteristic, bytearray(send_data)
         )
@@ -790,9 +794,7 @@ class Connection:
         iv = hashlib.md5(self._dev_sn[::-1].encode()).digest()
         self._encryption = Type1Encryption(session_key, iv)
 
-        await self._client.start_notify(
-            self._notify_characteristic, self.listenForDataHandler
-        )
+        await self._start_notify(self.listenForDataHandler)
 
         await self.send_auth_status_packet()
         await self.autoAuthentication()

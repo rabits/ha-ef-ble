@@ -10,7 +10,7 @@ from .direct_inv_heartbeat_pack import (
 )
 from .direct_mppt_heartbeat_pack import DirectMpptHeartbeatPack
 from .direct_pd_heartbeat_pack import (
-    DirectPdDeltaProHeartbeatPack,
+    DirectPdHeartbeatPack,
 )
 from .kit_info import AllKitDetailData
 from .mppt_heart import BaseMpptHeart, Mr330MpptHeart, Mr350MpptHeart
@@ -18,7 +18,6 @@ from .pd_heart import (
     BasePdHeart,
     Mr330PdHeart,
     Mr330PdHeartDelta2,
-    Mr330PdHeartRiver2,
     Mr350PdHeartbeatDelta2Max,
 )
 
@@ -34,11 +33,10 @@ __all__ = [
     "DirectInvRiverHeartbeatPack",
     "DirectInvRiverMiniHeartbeatPack",
     "DirectMpptHeartbeatPack",
-    "DirectPdDeltaProHeartbeatPack",
+    "DirectPdHeartbeatPack",
     "Mr330MpptHeart",
     "Mr330PdHeart",
     "Mr330PdHeartDelta2",
-    "Mr330PdHeartRiver2",
     "Mr350MpptHeart",
     "Mr350PdHeartbeatDelta2Max",
     "RawData",

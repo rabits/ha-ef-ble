@@ -11,14 +11,14 @@ from ..model import (
     DirectEmsDeltaHeartbeatPack,
     DirectInvDeltaHeartbeatPack,
     DirectMpptHeartbeatPack,
-    DirectPdDeltaProHeartbeatPack,
+    DirectPdHeartbeatPack,
 )
 from ..packet import Packet
 from ..props import Field
 from ..props.raw_data_field import dataclass_attr_mapper, raw_field
 from ..props.raw_data_props import RawDataProps
 
-rd_pd = dataclass_attr_mapper(DirectPdDeltaProHeartbeatPack)
+rd_pd = dataclass_attr_mapper(DirectPdHeartbeatPack)
 rd_bms = dataclass_attr_mapper(DirectBmsMDeltaHeartbeatPack)
 rd_ems = dataclass_attr_mapper(DirectEmsDeltaHeartbeatPack)
 rd_inv = dataclass_attr_mapper(DirectInvDeltaHeartbeatPack)
@@ -147,7 +147,7 @@ class Device(DeviceBase, RawDataProps):
                     async with self._lock:
                         self._dormant = False
             case 0x02, 0x20, 0x02:
-                self.update_from_bytes(DirectPdDeltaProHeartbeatPack, packet.payload)
+                self.update_from_bytes(DirectPdHeartbeatPack, packet.payload)
             case 0x03, 0x20, 0x32:
                 self.update_from_bytes(DirectBmsMDeltaHeartbeatPack, packet.payload)
             case 0x03, 0x20, 0x02:

@@ -88,16 +88,6 @@ class Mr330PdHeartDelta2(Mr330PdHeart):
     redun_charge_flag: Annotated[int, "B", "redunChargeFlag"]
 
 
-class Mr330PdHeartRiver2(Mr330PdHeart):
-    ac_auto_out_config: Annotated[int, "B", "acAutoOutConfig"]
-    min_auto_soc: Annotated[int, "H", "minAutoSoc"]
-    ac_auto_out_pause: Annotated[int, "H", "acAutoOutPause"]
-    watthis_config: Annotated[int, "B", "watthisConfig"]
-    bp_power_soc: Annotated[int, "B", "bppowerSoc"]
-    hysteresis_soc: Annotated[int, "B", "hysteresisSoc"]
-    reply_switchcnt: Annotated[int, "I", "replySwitchcnt"]
-
-
 class Mr350PdHeartbeatCore(BasePdHeart):
     bms_kit_state: Annotated[int, "H", "bmsKitState"]
     other_kit_state: Annotated[int, "B", "otherKitState"]

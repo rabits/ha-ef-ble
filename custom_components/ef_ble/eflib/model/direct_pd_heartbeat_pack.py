@@ -3,7 +3,7 @@ from typing import Annotated
 from . import RawData
 
 
-class DirectPdDeltaProHeartbeatPack(RawData):
+class DirectPdHeartbeatPack(RawData):
     model: Annotated[int, "B", "model"]
     err_code: Annotated[bytes, "4s", "errCode"]
     sys_ver: Annotated[bytes, "4s", "sysVer"]

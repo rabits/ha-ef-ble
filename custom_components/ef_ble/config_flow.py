@@ -340,7 +340,7 @@ class EFBLEConfigFlow(ConfigFlow, domain=DOMAIN):
             step_id="reconfigure",
             data_schema=(
                 schema_builder()
-                .user_id(reconfigure_entry.data.get(CONF_USER_ID))
+                .user_id(reconfigure_entry.data.get(CONF_USER_ID, ""))
                 .extra_battery(reconfigure_entry.data.get(CONF_EXTRA_BATTERY), device)
                 .build()
             ),
@@ -648,7 +648,11 @@ class _SchemaBuilder:
 
     def user_id(self, user_id: str, required: bool = False):
         marker = vol.Required if required else vol.Optional
-        user_id = cast("str", vol.UNDEFINED) if not user_id.strip() else user_id
+        user_id = (
+            cast("str", vol.UNDEFINED)
+            if user_id is None or not user_id.strip()
+            else user_id
+        )
 
         return self.update({marker(CONF_USER_ID, default=user_id): str})
 
@@ -712,7 +716,9 @@ class _SchemaBuilder:
 
         return self.update({vol.Optional(key, default=default): selector})
 
-    def extra_battery(self, extra_battery_conf: list[str], device: eflib.DeviceBase):
+    def extra_battery(
+        self, extra_battery_conf: list[str] | None, device: eflib.DeviceBase
+    ):
         available_battery_slots = (
             [i for i in range(1, 6) if hasattr(device, f"battery_{i}_battery_level")]
             if device is not None

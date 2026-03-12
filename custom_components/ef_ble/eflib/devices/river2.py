@@ -6,8 +6,8 @@ from ..model import (
     DirectBmsMDeltaHeartbeatPack,
     DirectEmsDeltaHeartbeatPack,
     DirectInvDeltaHeartbeatPack,
+    DirectPdHeartbeatPack,
     Mr330MpptHeart,
-    Mr330PdHeartRiver2,
 )
 from ..packet import Packet
 from ..props import Field
@@ -15,7 +15,7 @@ from ..props.enums import IntFieldValue
 from ..props.raw_data_field import dataclass_attr_mapper, raw_field
 from ..props.raw_data_props import RawDataProps
 
-pb_pd = dataclass_attr_mapper(Mr330PdHeartRiver2)
+pb_pd = dataclass_attr_mapper(DirectPdHeartbeatPack)
 pb_mppt = dataclass_attr_mapper(Mr330MpptHeart)
 pb_ems = dataclass_attr_mapper(DirectEmsDeltaHeartbeatPack)
 pb_bms = dataclass_attr_mapper(DirectBmsMDeltaHeartbeatPack)
@@ -41,8 +41,8 @@ class Device(DeviceBase, RawDataProps):
     dc12v_output_power = raw_field(pb_pd.car_watts)
     ac_xboost = raw_field(pb_mppt.cfg_ac_xboost, lambda x: x == 1)
 
-    energy_backup = raw_field(pb_pd.watthis_config, lambda x: x == 1)
-    energy_backup_battery_level = raw_field(pb_pd.bp_power_soc)
+    energy_backup = raw_field(pb_pd.watth_is_config, lambda x: x == 1)
+    energy_backup_battery_level = raw_field(pb_pd.backup_soc)
 
     battery_charge_limit_min = raw_field(pb_ems.min_dsg_soc)
     battery_charge_limit_max = raw_field(pb_ems.max_charge_soc)
@@ -65,7 +65,7 @@ class Device(DeviceBase, RawDataProps):
     car_input_power = Field[int]()
 
     usbc_output_power = raw_field(pb_pd.typec1_watts)
-    usba_output_power = raw_field(pb_pd.usb1_watt)
+    usba_output_power = raw_field(pb_pd.usb1_watts)
 
     dc_charging_max_amps = raw_field(pb_mppt.cfg_dc_chg_current, lambda x: x / 1000)
     dc_charging_current_max = Field[int]()
@@ -107,7 +107,7 @@ class Device(DeviceBase, RawDataProps):
 
         match (packet.src, packet.cmdSet, packet.cmdId):
             case 0x02, 0x20, 0x02:
-                self.update_from_bytes(Mr330PdHeartRiver2, packet.payload)
+                self.update_from_bytes(DirectPdHeartbeatPack, packet.payload)
                 processed = True
 
             case 0x03, 0x20, 0x02:

@@ -1,10 +1,9 @@
 """EcoFlow BLE sensor"""
 
-import itertools
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Final
+from typing import Any, Final, TypedDict, Unpack
 
 from homeassistant.components.sensor import (
     SensorDeviceClass,
@@ -38,200 +37,140 @@ from .eflib.devices import (
     wave2,
     wave3,
 )
-from .entity import EcoflowBatteryAddonEntity, EcoflowEntity
-
-_UPPER_WORDS = ["ac", "dc", "lv", "hv", "tt", "5p8"]
-
-
-def _auto_name_from_key(key: str):
-    return " ".join(
-        [
-            part.capitalize() if part.lower() not in _UPPER_WORDS else part.upper()
-            for part in key.split("_")
-        ]
-    )
-
-
-def _create_shp2_backup_channel_sensors():
-    """Create sensor descriptions for SHP2 backup channel info"""
-    sensors = {}
-
-    for i in range(1, shp2.Device.NUM_OF_CHANNELS + 1):
-        sensors.update(
-            {
-                f"ch{i}_ctrl_status": SensorEntityDescription(
-                    key=f"ch{i}_ctrl_status",
-                    device_class=SensorDeviceClass.ENUM,
-                    options=shp2.ControlStatus.options(include_unknown=False),
-                    translation_key="backup_ctrl_status",
-                    translation_placeholders={"channel": f"{i}"},
-                ),
-                f"ch{i}_force_charge": SensorEntityDescription(
-                    key=f"ch{i}_force_charge",
-                    device_class=SensorDeviceClass.ENUM,
-                    options=shp2.ForceChargeStatus.options(include_unknown=False),
-                    translation_key="backup_force_charge",
-                    translation_placeholders={"channel": f"{i}"},
-                    entity_registry_enabled_default=False,
-                ),
-                f"ch{i}_backup_rly1_cnt": SensorEntityDescription(
-                    key=f"ch{i}_backup_rly1_cnt",
-                    state_class=SensorStateClass.TOTAL,
-                    translation_key="backup_relay1_count",
-                    translation_placeholders={"channel": f"{i}"},
-                    entity_registry_enabled_default=False,
-                    entity_category=EntityCategory.DIAGNOSTIC,
-                ),
-                f"ch{i}_backup_rly2_cnt": SensorEntityDescription(
-                    key=f"ch{i}_backup_rly2_cnt",
-                    state_class=SensorStateClass.TOTAL,
-                    translation_key="backup_relay2_count",
-                    translation_placeholders={"channel": f"{i}"},
-                    entity_registry_enabled_default=False,
-                    entity_category=EntityCategory.DIAGNOSTIC,
-                ),
-                f"ch{i}_wake_up_charge_status": SensorEntityDescription(
-                    key=f"ch{i}_wake_up_charge_status",
-                    native_unit_of_measurement=PERCENTAGE,
-                    device_class=SensorDeviceClass.BATTERY,
-                    state_class=SensorStateClass.MEASUREMENT,
-                    translation_key="backup_wakeup_charge",
-                    translation_placeholders={"channel": f"{i}"},
-                    entity_registry_enabled_default=False,
-                ),
-                f"ch{i}_5p8_type": SensorEntityDescription(
-                    key=f"ch{i}_5p8_type",
-                    translation_key="backup_connector_type",
-                    translation_placeholders={"channel": f"{i}"},
-                    entity_registry_enabled_default=False,
-                    entity_category=EntityCategory.DIAGNOSTIC,
-                ),
-            }
-        )
-
-    return sensors
-
-
-def _create_shp2_channel_sensors():
-    """Create sensor descriptions for SHP2 channel info"""
-    sensors = {}
-
-    for i in range(1, shp2.Device.NUM_OF_CHANNELS + 1):
-        sensors.update(
-            {
-                f"channel{i}_sn": SensorEntityDescription(
-                    key=f"channel{i}_sn",
-                    translation_key="channel_serial_number",
-                    translation_placeholders={"channel": f"{i}"},
-                    entity_registry_enabled_default=False,
-                    entity_category=EntityCategory.DIAGNOSTIC,
-                ),
-                f"channel{i}_type": SensorEntityDescription(
-                    key=f"channel{i}_type",
-                    translation_key="channel_device_type",
-                    translation_placeholders={"channel": f"{i}"},
-                    entity_registry_enabled_default=False,
-                    entity_category=EntityCategory.DIAGNOSTIC,
-                ),
-                f"channel{i}_capacity": SensorEntityDescription(
-                    key=f"channel{i}_capacity",
-                    native_unit_of_measurement=UnitOfEnergy.WATT_HOUR,
-                    device_class=SensorDeviceClass.ENERGY_STORAGE,
-                    state_class=SensorStateClass.MEASUREMENT,
-                    suggested_display_precision=0,
-                    suggested_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
-                    translation_key="channel_full_capacity",
-                    translation_placeholders={"channel": f"{i}"},
-                    entity_registry_enabled_default=False,
-                ),
-                f"channel{i}_rate_power": SensorEntityDescription(
-                    key=f"channel{i}_rate_power",
-                    native_unit_of_measurement=UnitOfPower.WATT,
-                    device_class=SensorDeviceClass.POWER,
-                    state_class=SensorStateClass.MEASUREMENT,
-                    suggested_display_precision=0,
-                    translation_key="channel_rated_power",
-                    translation_placeholders={"channel": f"{i}"},
-                    entity_registry_enabled_default=False,
-                ),
-                f"channel{i}_battery_percentage": SensorEntityDescription(
-                    key=f"channel{i}_battery_percentage",
-                    native_unit_of_measurement=PERCENTAGE,
-                    device_class=SensorDeviceClass.BATTERY,
-                    state_class=SensorStateClass.MEASUREMENT,
-                    translation_key="channel_battery_level",
-                    translation_placeholders={"channel": f"{i}"},
-                ),
-                f"channel{i}_output_power": SensorEntityDescription(
-                    key=f"channel{i}_output_power",
-                    native_unit_of_measurement=UnitOfPower.WATT,
-                    device_class=SensorDeviceClass.POWER,
-                    state_class=SensorStateClass.MEASUREMENT,
-                    suggested_display_precision=1,
-                    translation_key="channel_output_power",
-                    translation_placeholders={"channel": f"{i}"},
-                ),
-                f"channel{i}_battery_temp": SensorEntityDescription(
-                    key=f"channel{i}_battery_temp",
-                    native_unit_of_measurement=UnitOfTemperature.CELSIUS,
-                    device_class=SensorDeviceClass.TEMPERATURE,
-                    state_class=SensorStateClass.MEASUREMENT,
-                    translation_key="channel_battery_temperature",
-                    translation_placeholders={"channel": f"{i}"},
-                ),
-                f"channel{i}_lcd_input": SensorEntityDescription(
-                    key=f"channel{i}_lcd_input",
-                    native_unit_of_measurement=UnitOfPower.WATT,
-                    device_class=SensorDeviceClass.POWER,
-                    state_class=SensorStateClass.MEASUREMENT,
-                    suggested_display_precision=0,
-                    translation_key="channel_lcd_input_power",
-                    translation_placeholders={"channel": f"{i}"},
-                    entity_registry_enabled_default=False,
-                ),
-                f"channel{i}_pv_status": SensorEntityDescription(
-                    key=f"channel{i}_pv_status",
-                    device_class=SensorDeviceClass.ENUM,
-                    options=shp2.PVStatus.options(include_unknown=False),
-                    translation_key="channel_pv_status",
-                    translation_placeholders={"channel": f"{i}"},
-                    entity_registry_enabled_default=False,
-                ),
-                f"channel{i}_pv_lv_input": SensorEntityDescription(
-                    key=f"channel{i}_pv_lv_input",
-                    native_unit_of_measurement=UnitOfPower.WATT,
-                    device_class=SensorDeviceClass.POWER,
-                    state_class=SensorStateClass.MEASUREMENT,
-                    suggested_display_precision=0,
-                    translation_key="channel_pv_lv_input_power",
-                    translation_placeholders={"channel": f"{i}"},
-                ),
-                f"channel{i}_pv_hv_input": SensorEntityDescription(
-                    key=f"channel{i}_pv_hv_input",
-                    native_unit_of_measurement=UnitOfPower.WATT,
-                    device_class=SensorDeviceClass.POWER,
-                    state_class=SensorStateClass.MEASUREMENT,
-                    suggested_display_precision=0,
-                    translation_key="channel_pv_hv_input_power",
-                    translation_placeholders={"channel": f"{i}"},
-                ),
-                f"channel{i}_error_code": SensorEntityDescription(
-                    key=f"channel{i}_error_code",
-                    state_class=SensorStateClass.MEASUREMENT,
-                    translation_key="channel_error_count",
-                    translation_placeholders={"channel": f"{i}"},
-                    entity_category=EntityCategory.DIAGNOSTIC,
-                ),
-            }
-        )
-
-    return sensors
+from .eflib.props.enums import IntFieldValue
+from .entity import (
+    EcoflowBatteryAddonEntity,
+    EcoflowEntity,
+    resolve_entity_description_keys,
+)
 
 
 @dataclass(frozen=True, kw_only=True)
 class EcoflowSensorEntityDescription[Device: DeviceBase](SensorEntityDescription):
     state_attribute_fields: list[str] = field(default_factory=list)
     native_unit_of_measurement_field: str | Callable[[Device], str] | None = None
+    indexed_range: range | None = None
+
+
+class _SensorKwargs(TypedDict, total=False):
+    translation_key: str
+    translation_placeholders: dict[str, str]
+    indexed_range: range
+    entity_category: EntityCategory
+    state_attribute_fields: list[str]
+
+
+def battery(
+    key: str = "", enabled: bool = True, **kwargs: Unpack[_SensorKwargs]
+) -> EcoflowSensorEntityDescription:
+    return EcoflowSensorEntityDescription(
+        key=key,
+        native_unit_of_measurement=PERCENTAGE,
+        device_class=SensorDeviceClass.BATTERY,
+        state_class=SensorStateClass.MEASUREMENT,
+        entity_registry_enabled_default=enabled,
+        **kwargs,
+    )
+
+
+def power(
+    key: str = "",
+    *,
+    enabled: bool = True,
+    precision: int | None = None,
+    state_class: SensorStateClass | None = SensorStateClass.MEASUREMENT,
+    **kwargs: Unpack[_SensorKwargs],
+) -> EcoflowSensorEntityDescription:
+    return EcoflowSensorEntityDescription(
+        key=key,
+        native_unit_of_measurement=UnitOfPower.WATT,
+        device_class=SensorDeviceClass.POWER,
+        state_class=state_class,
+        suggested_display_precision=precision,
+        entity_registry_enabled_default=enabled,
+        **kwargs,
+    )
+
+
+def energy(
+    key: str = "", enabled: bool = True, **kwargs: Unpack[_SensorKwargs]
+) -> EcoflowSensorEntityDescription:
+    return EcoflowSensorEntityDescription(
+        key=key,
+        native_unit_of_measurement=UnitOfEnergy.WATT_HOUR,
+        device_class=SensorDeviceClass.ENERGY,
+        state_class=SensorStateClass.TOTAL_INCREASING,
+        suggested_display_precision=3,
+        suggested_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
+        entity_registry_enabled_default=enabled,
+        **kwargs,
+    )
+
+
+def energy_storage(
+    key: str = "", enabled: bool = True, **kwargs: Unpack[_SensorKwargs]
+) -> EcoflowSensorEntityDescription:
+    """Create an energy storage capacity sensor description."""
+    return EcoflowSensorEntityDescription(
+        key=key,
+        native_unit_of_measurement=UnitOfEnergy.WATT_HOUR,
+        device_class=SensorDeviceClass.ENERGY_STORAGE,
+        state_class=SensorStateClass.MEASUREMENT,
+        suggested_display_precision=0,
+        suggested_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
+        entity_registry_enabled_default=enabled,
+        **kwargs,
+    )
+
+
+def voltage(
+    key: str = "",
+    *,
+    enabled: bool = True,
+    precision: int | None = None,
+    **kwargs: Unpack[_SensorKwargs],
+) -> EcoflowSensorEntityDescription:
+    return EcoflowSensorEntityDescription(
+        key=key,
+        native_unit_of_measurement=UnitOfElectricPotential.VOLT,
+        device_class=SensorDeviceClass.VOLTAGE,
+        state_class=SensorStateClass.MEASUREMENT,
+        suggested_display_precision=precision,
+        entity_registry_enabled_default=enabled,
+        **kwargs,
+    )
+
+
+def current(
+    key: str = "",
+    *,
+    enabled: bool = True,
+    precision: int | None = None,
+    state_class: SensorStateClass | None = SensorStateClass.MEASUREMENT,
+    **kwargs: Unpack[_SensorKwargs],
+) -> EcoflowSensorEntityDescription:
+    return EcoflowSensorEntityDescription(
+        key=key,
+        native_unit_of_measurement=UnitOfElectricCurrent.AMPERE,
+        device_class=SensorDeviceClass.CURRENT,
+        state_class=state_class,
+        suggested_display_precision=precision,
+        entity_registry_enabled_default=enabled,
+        **kwargs,
+    )
+
+
+def temperature(
+    key: str = "", enabled: bool = True, **kwargs: Unpack[_SensorKwargs]
+) -> EcoflowSensorEntityDescription:
+    return EcoflowSensorEntityDescription(
+        key=key,
+        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
+        device_class=SensorDeviceClass.TEMPERATURE,
+        state_class=SensorStateClass.MEASUREMENT,
+        entity_registry_enabled_default=enabled,
+        **kwargs,
+    )
 
 
 def _wave_unit(dev: wave3.Device):
@@ -245,887 +184,443 @@ def _wave_unit(dev: wave3.Device):
     return UnitOfTemperature.CELSIUS
 
 
-SENSOR_TYPES: Final[dict[str, SensorEntityDescription]] = {
-    # Common
-    "battery_level": EcoflowSensorEntityDescription(
-        key="battery_level",
-        native_unit_of_measurement=PERCENTAGE,
-        device_class=SensorDeviceClass.BATTERY,
-        state_class=SensorStateClass.MEASUREMENT,
-    ),
-    "battery_level_main": SensorEntityDescription(
-        key="battery_level_main",
-        native_unit_of_measurement=PERCENTAGE,
-        device_class=SensorDeviceClass.BATTERY,
-        state_class=SensorStateClass.MEASUREMENT,
-    ),
-    "input_power": SensorEntityDescription(
-        key="input_power",
-        native_unit_of_measurement=UnitOfPower.WATT,
-        device_class=SensorDeviceClass.POWER,
-        state_class=SensorStateClass.MEASUREMENT,
-        suggested_display_precision=0,
-    ),
-    "output_power": SensorEntityDescription(
-        key="output_power",
-        native_unit_of_measurement=UnitOfPower.WATT,
-        device_class=SensorDeviceClass.POWER,
-        state_class=SensorStateClass.MEASUREMENT,
-        suggested_display_precision=0,
-    ),
-    "remaining_time_charging": SensorEntityDescription(
-        key="remaining_time_charging",
-        native_unit_of_measurement=UnitOfTime.MINUTES,
-        device_class=SensorDeviceClass.DURATION,
-        state_class=SensorStateClass.MEASUREMENT,
-        suggested_unit_of_measurement=UnitOfTime.HOURS,
-        entity_registry_enabled_default=False,
-    ),
-    "remaining_time_discharging": SensorEntityDescription(
-        key="remaining_time_discharging",
-        native_unit_of_measurement=UnitOfTime.MINUTES,
-        device_class=SensorDeviceClass.DURATION,
-        state_class=SensorStateClass.MEASUREMENT,
-        suggested_unit_of_measurement=UnitOfTime.HOURS,
-        entity_registry_enabled_default=False,
-    ),
-    # SHP2
-    "grid_power": SensorEntityDescription(
-        key="grid_power",
-        native_unit_of_measurement=UnitOfPower.WATT,
-        device_class=SensorDeviceClass.POWER,
-        state_class=SensorStateClass.MEASUREMENT,
-        suggested_display_precision=1,
-    ),
-    "in_use_power": SensorEntityDescription(
-        key="in_use_power",
-        native_unit_of_measurement=UnitOfPower.WATT,
-        device_class=SensorDeviceClass.POWER,
-        state_class=SensorStateClass.MEASUREMENT,
-        suggested_display_precision=2,
-    ),
-    **{
-        f"circuit_power_{i}": SensorEntityDescription(
-            key=f"circuit_power_{i}",
-            device_class=SensorDeviceClass.POWER,
-            native_unit_of_measurement=UnitOfPower.WATT,
-            state_class=SensorStateClass.MEASUREMENT,
-            suggested_display_precision=2,
-            translation_key="circuit_power",
-            translation_placeholders={"index": f"{i:02}"},
-        )
-        for i in range(1, shp2.Device.NUM_OF_CIRCUITS + 1)
-    },
-    **{
-        f"circuit_current_{i}": SensorEntityDescription(
-            key=f"circuit_current_{i}",
-            device_class=SensorDeviceClass.CURRENT,
-            native_unit_of_measurement=UnitOfElectricCurrent.AMPERE,
-            suggested_display_precision=2,
-            entity_registry_enabled_default=False,
-            translation_key="circuit_current",
-            translation_placeholders={"index": f"{i:02}"},
-        )
-        for i in range(1, shp2.Device.NUM_OF_CIRCUITS + 1)
-    },
-    **{
-        f"channel_power_{i}": SensorEntityDescription(
-            key=f"channel_power_{i}",
-            device_class=SensorDeviceClass.POWER,
-            native_unit_of_measurement=UnitOfPower.WATT,
-            suggested_display_precision=2,
-            translation_key="channel_power",
-            translation_placeholders={"index": f"{i:02}"},
-        )
-        for i in range(1, shp2.Device.NUM_OF_CHANNELS + 1)
-    },
-    # SHP2 Backup Channel Info - dynamically generated
-    **_create_shp2_backup_channel_sensors(),
-    # SHP2 Energy Info - dynamically generated
-    **_create_shp2_channel_sensors(),
-    # DPU
-    **{
-        f"{sensor}_{measurement}": SensorEntityDescription(
-            key=f"{sensor}_{measurement}",
-            native_unit_of_measurement=UnitOfPower.WATT,
-            device_class=SensorDeviceClass.POWER,
-            state_class=SensorStateClass.MEASUREMENT,
-            translation_key=f"port_{measurement}",
-            translation_placeholders={"name": _auto_name_from_key(sensor)},
-            suggested_display_precision=2,
-        )
-        for measurement, sensor in itertools.product(
-            ["power"],
-            [
-                "lv_solar",
-                "hv_solar",
-                "ac_l1_1_out",
-                "ac_l1_2_out",
-                "ac_l2_1_out",
-                "ac_l2_2_out",
-                "ac_l14_out",
-                "ac_tt_out",
-                "ac_5p8_out",
-            ],
-        )
-    },
-    # River 3, Delta 3
-    "input_energy": SensorEntityDescription(
-        key="input_energy",
-        native_unit_of_measurement=UnitOfEnergy.WATT_HOUR,
-        device_class=SensorDeviceClass.ENERGY,
-        state_class=SensorStateClass.TOTAL_INCREASING,
-        suggested_display_precision=3,
-        suggested_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
-    ),
-    "output_energy": SensorEntityDescription(
-        key="output_energy",
-        native_unit_of_measurement=UnitOfEnergy.WATT_HOUR,
-        device_class=SensorDeviceClass.ENERGY,
-        state_class=SensorStateClass.TOTAL_INCREASING,
-        suggested_display_precision=3,
-        suggested_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
-    ),
-    "ac_input_power": SensorEntityDescription(
-        key="ac_input_power",
-        native_unit_of_measurement=UnitOfPower.WATT,
-        device_class=SensorDeviceClass.POWER,
-        state_class=SensorStateClass.MEASUREMENT,
-        suggested_display_precision=2,
-    ),
-    "ac_input_voltage": SensorEntityDescription(
-        key="ac_input_voltage",
-        native_unit_of_measurement=UnitOfElectricPotential.VOLT,
-        device_class=SensorDeviceClass.VOLTAGE,
-        state_class=SensorStateClass.MEASUREMENT,
-        suggested_display_precision=1,
-        entity_registry_enabled_default=False,
-    ),
-    "ac_input_current": SensorEntityDescription(
-        key="ac_input_current",
-        native_unit_of_measurement=UnitOfElectricCurrent.AMPERE,
-        device_class=SensorDeviceClass.CURRENT,
-        state_class=SensorStateClass.MEASUREMENT,
-        suggested_display_precision=2,
-        entity_registry_enabled_default=False,
-    ),
-    "ac_output_power": SensorEntityDescription(
-        key="ac_output_power",
-        native_unit_of_measurement=UnitOfPower.WATT,
-        device_class=SensorDeviceClass.POWER,
-        state_class=SensorStateClass.MEASUREMENT,
-        suggested_display_precision=2,
-    ),
-    "ac_input_energy": SensorEntityDescription(
-        key="ac_input_energy",
-        native_unit_of_measurement=UnitOfEnergy.WATT_HOUR,
-        device_class=SensorDeviceClass.ENERGY,
-        state_class=SensorStateClass.TOTAL_INCREASING,
-        suggested_display_precision=3,
-        suggested_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
-    ),
-    "ac_output_energy": SensorEntityDescription(
-        key="ac_output_energy",
-        native_unit_of_measurement=UnitOfEnergy.WATT_HOUR,
-        device_class=SensorDeviceClass.ENERGY,
-        state_class=SensorStateClass.TOTAL_INCREASING,
-        suggested_display_precision=3,
-        suggested_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
-    ),
-    "dc_input_power": SensorEntityDescription(
-        key="dc_input_power",
-        native_unit_of_measurement=UnitOfPower.WATT,
-        device_class=SensorDeviceClass.POWER,
-        state_class=SensorStateClass.MEASUREMENT,
-        suggested_display_precision=2,
-    ),
-    "dc_input_energy": SensorEntityDescription(
-        key="dc_input_energy",
-        native_unit_of_measurement=UnitOfEnergy.WATT_HOUR,
-        device_class=SensorDeviceClass.ENERGY,
-        state_class=SensorStateClass.TOTAL_INCREASING,
-        suggested_display_precision=3,
-        suggested_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
-    ),
-    "dc_output_power": SensorEntityDescription(
-        key="dc_output_power",
-        native_unit_of_measurement=UnitOfPower.WATT,
-        device_class=SensorDeviceClass.POWER,
-        state_class=SensorStateClass.MEASUREMENT,
-        suggested_display_precision=2,
-    ),
-    "dc12v_output_power": SensorEntityDescription(
-        key="dc12v_output_power",
-        native_unit_of_measurement=UnitOfPower.WATT,
-        device_class=SensorDeviceClass.POWER,
-        state_class=SensorStateClass.MEASUREMENT,
-        suggested_display_precision=2,
-    ),
-    "dc12v_output_energy": SensorEntityDescription(
-        key="dc12v_output_energy",
-        native_unit_of_measurement=UnitOfEnergy.WATT_HOUR,
-        device_class=SensorDeviceClass.ENERGY,
-        state_class=SensorStateClass.TOTAL_INCREASING,
-        suggested_display_precision=3,
-        suggested_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
-    ),
-    "usbc_output_power": SensorEntityDescription(
-        key="usbc_output_power",
-        native_unit_of_measurement=UnitOfPower.WATT,
-        device_class=SensorDeviceClass.POWER,
-        state_class=SensorStateClass.MEASUREMENT,
-    ),
-    "usbc_output_energy": SensorEntityDescription(
-        key="usbc_output_energy",
-        native_unit_of_measurement=UnitOfEnergy.WATT_HOUR,
-        device_class=SensorDeviceClass.ENERGY,
-        state_class=SensorStateClass.TOTAL_INCREASING,
-        suggested_display_precision=3,
-        suggested_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
-    ),
-    "usba_output_power": SensorEntityDescription(
-        key="usba_output_power",
-        native_unit_of_measurement=UnitOfPower.WATT,
-        device_class=SensorDeviceClass.POWER,
-        state_class=SensorStateClass.MEASUREMENT,
-    ),
-    "usba_output_energy": SensorEntityDescription(
-        key="usba_output_energy",
-        native_unit_of_measurement=UnitOfEnergy.WATT_HOUR,
-        device_class=SensorDeviceClass.ENERGY,
-        state_class=SensorStateClass.TOTAL_INCREASING,
-        suggested_display_precision=3,
-        suggested_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
-    ),
-    "usbc2_output_power": SensorEntityDescription(
-        key="usbc2_output_power",
-        native_unit_of_measurement=UnitOfPower.WATT,
-        device_class=SensorDeviceClass.POWER,
-        state_class=SensorStateClass.MEASUREMENT,
-    ),
-    "usbc3_output_power": SensorEntityDescription(
-        key="usbc2_output_power",
-        native_unit_of_measurement=UnitOfPower.WATT,
-        device_class=SensorDeviceClass.POWER,
-        state_class=SensorStateClass.MEASUREMENT,
-    ),
-    "usba2_output_power": SensorEntityDescription(
-        key="usba2_output_power",
-        native_unit_of_measurement=UnitOfPower.WATT,
-        device_class=SensorDeviceClass.POWER,
-        state_class=SensorStateClass.MEASUREMENT,
-    ),
-    "qc_usb1_output_power": SensorEntityDescription(
-        key="qc_usb1_output_power",
-        native_unit_of_measurement=UnitOfPower.WATT,
-        device_class=SensorDeviceClass.POWER,
-        state_class=SensorStateClass.MEASUREMENT,
-    ),
-    "qc_usb2_output_power": SensorEntityDescription(
-        key="qc_usb2_output_power",
-        native_unit_of_measurement=UnitOfPower.WATT,
-        device_class=SensorDeviceClass.POWER,
-        state_class=SensorStateClass.MEASUREMENT,
-    ),
-    "battery_input_power": SensorEntityDescription(
-        key="battery_input_power",
-        native_unit_of_measurement=UnitOfPower.WATT,
-        device_class=SensorDeviceClass.POWER,
-        state_class=SensorStateClass.MEASUREMENT,
-        entity_registry_enabled_default=False,
-    ),
-    "battery_output_power": SensorEntityDescription(
-        key="battery_output_power",
-        native_unit_of_measurement=UnitOfPower.WATT,
-        device_class=SensorDeviceClass.POWER,
-        state_class=SensorStateClass.MEASUREMENT,
-        entity_registry_enabled_default=False,
-    ),
-    "cell_temperature": SensorEntityDescription(
-        key="cell_temperature",
-        device_class=SensorDeviceClass.TEMPERATURE,
-        state_class=SensorStateClass.MEASUREMENT,
-        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
-        entity_registry_enabled_default=False,
-    ),
-    "dc_port_input_power": SensorEntityDescription(
-        key="dc_port_input_power",
-        device_class=SensorDeviceClass.POWER,
-        state_class=SensorStateClass.MEASUREMENT,
-        native_unit_of_measurement=UnitOfPower.WATT,
-        suggested_display_precision=2,
-    ),
-    "dc_port_2_input_power": SensorEntityDescription(
-        key="dc_port_input_power_2",
-        device_class=SensorDeviceClass.POWER,
-        state_class=SensorStateClass.MEASUREMENT,
-        native_unit_of_measurement=UnitOfPower.WATT,
-        suggested_display_precision=2,
-    ),
-    "dc_port_state": SensorEntityDescription(
-        key="dc_port_state",
-        device_class=SensorDeviceClass.ENUM,
-        options=_delta3_base.DCPortState.options(),
-    ),
-    "dc_port_2_state": SensorEntityDescription(
-        key="dc_port_2_state",
-        device_class=SensorDeviceClass.ENUM,
-        options=_delta3_base.DCPortState.options(),
-    ),
-    "solar_input_power": SensorEntityDescription(
-        key="input_power_solar",
-        native_unit_of_measurement=UnitOfPower.WATT,
-        device_class=SensorDeviceClass.POWER,
-        state_class=SensorStateClass.MEASUREMENT,
-        entity_registry_enabled_default=False,
-    ),
-    "solar_input_power_2": SensorEntityDescription(
-        key="input_power_solar_2",
-        native_unit_of_measurement=UnitOfPower.WATT,
-        device_class=SensorDeviceClass.POWER,
-        state_class=SensorStateClass.MEASUREMENT,
-        entity_registry_enabled_default=False,
-    ),
-    # DP3
-    "ac_lv_output_power": SensorEntityDescription(
-        key="ac_lv_output_power",
-        native_unit_of_measurement=UnitOfPower.WATT,
-        device_class=SensorDeviceClass.POWER,
-        state_class=SensorStateClass.MEASUREMENT,
-        suggested_display_precision=2,
-    ),
-    "ac_hv_output_power": SensorEntityDescription(
-        key="ac_hv_output_power",
-        native_unit_of_measurement=UnitOfPower.WATT,
-        device_class=SensorDeviceClass.POWER,
-        state_class=SensorStateClass.MEASUREMENT,
-        suggested_display_precision=2,
-    ),
-    "solar_lv_power": SensorEntityDescription(
-        key="input_power_solar_lv",
-        native_unit_of_measurement=UnitOfPower.WATT,
-        device_class=SensorDeviceClass.POWER,
-        state_class=SensorStateClass.MEASUREMENT,
-        entity_registry_enabled_default=False,
-    ),
-    "solar_hv_power": SensorEntityDescription(
-        key="input_power_solar_hv",
-        native_unit_of_measurement=UnitOfPower.WATT,
-        device_class=SensorDeviceClass.POWER,
-        state_class=SensorStateClass.MEASUREMENT,
-        entity_registry_enabled_default=False,
-    ),
-    "dc_lv_input_power": SensorEntityDescription(
-        key="dc_lv_input_power",
-        device_class=SensorDeviceClass.POWER,
-        state_class=SensorStateClass.MEASUREMENT,
-        native_unit_of_measurement=UnitOfPower.WATT,
-        suggested_display_precision=2,
-    ),
-    "dc_hv_input_power": SensorEntityDescription(
-        key="dc_hv_input_power",
-        device_class=SensorDeviceClass.POWER,
-        state_class=SensorStateClass.MEASUREMENT,
-        native_unit_of_measurement=UnitOfPower.WATT,
-        suggested_display_precision=2,
-    ),
-    "dc_lv_input_state": SensorEntityDescription(
-        key="dc_lv_input_state",
-        device_class=SensorDeviceClass.ENUM,
-        options=delta_pro_3.DCPortState.options(),
-    ),
-    "dc_hv_input_state": SensorEntityDescription(
-        key="dc_hv_input_state",
-        device_class=SensorDeviceClass.ENUM,
-        options=delta_pro_3.DCPortState.options(),
-    ),
-    # Smart Generator
-    "xt150_battery_level": SensorEntityDescription(
-        key="xt150_battery_level",
-        native_unit_of_measurement=PERCENTAGE,
-        device_class=SensorDeviceClass.BATTERY,
-        state_class=SensorStateClass.MEASUREMENT,
-    ),
-    "engine_state": SensorEntityDescription(
-        key="engine_state",
-        device_class=SensorDeviceClass.ENUM,
-        options=smart_generator.EngineOpen.options(),
-    ),
-    "liquefied_gas_type": SensorEntityDescription(
-        key="liquefied_gas_type",
-        device_class=SensorDeviceClass.ENUM,
-        options=smart_generator.LiquefiedGasType.options(),
-    ),
-    "liquefied_gas_consumption": EcoflowSensorEntityDescription[smart_generator.Device](
-        key="liquefied_gas_consumption",
-        device_class=SensorDeviceClass.WEIGHT,
-        state_class=SensorStateClass.MEASUREMENT,
-        suggested_display_precision=2,
-    ),
-    "liquefied_gas_remaining": EcoflowSensorEntityDescription[smart_generator.Device](
-        key="liquefied_gas_remaining",
-        device_class=SensorDeviceClass.WEIGHT,
-        state_class=SensorStateClass.MEASUREMENT,
-        suggested_display_precision=2,
-    ),
-    "generator_abnormal_state": SensorEntityDescription(
-        key="generator_abnormal_state",
-        device_class=SensorDeviceClass.ENUM,
-        options=smart_generator.AbnormalState.options(),
-    ),
-    "sub_battery_soc": SensorEntityDescription(
-        key="sub_battery_soc",
-        native_unit_of_measurement=PERCENTAGE,
-        device_class=SensorDeviceClass.BATTERY,
-        state_class=SensorStateClass.MEASUREMENT,
-    ),
-    "sub_battery_state": SensorEntityDescription(
-        key="sub_battery_state",
-        device_class=SensorDeviceClass.ENUM,
-        options=smart_generator.SubBatteryState.options(),
-    ),
-    "fuel_type": SensorEntityDescription(
-        key="fuel_type",
-        device_class=SensorDeviceClass.ENUM,
-    ),
-    # Alternator Charger
-    "battery_temperature": SensorEntityDescription(
-        key="battery_temperature",
-        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
-        device_class=SensorDeviceClass.TEMPERATURE,
-        state_class=SensorStateClass.MEASUREMENT,
-    ),
-    "car_battery_voltage": SensorEntityDescription(
-        key="car_battery_voltage",
-        native_unit_of_measurement=UnitOfElectricPotential.VOLT,
-        device_class=SensorDeviceClass.VOLTAGE,
-        state_class=SensorStateClass.MEASUREMENT,
-    ),
-    "dc_power": SensorEntityDescription(
-        key="dc_power",
-        native_unit_of_measurement=UnitOfPower.WATT,
-        device_class=SensorDeviceClass.POWER,
-        state_class=SensorStateClass.MEASUREMENT,
-    ),
-    # STREAM
-    "grid_voltage": SensorEntityDescription(
-        key="grid_voltage",
-        native_unit_of_measurement=UnitOfElectricPotential.VOLT,
-        device_class=SensorDeviceClass.VOLTAGE,
-        state_class=SensorStateClass.MEASUREMENT,
-        suggested_display_precision=1,
-    ),
-    "grid_frequency": SensorEntityDescription(
-        key="grid_frequency",
-        native_unit_of_measurement=UnitOfFrequency.HERTZ,
-        device_class=SensorDeviceClass.FREQUENCY,
-        state_class=SensorStateClass.MEASUREMENT,
-        suggested_display_precision=2,
-    ),
-    "grid_current": SensorEntityDescription(
-        key="grid_current",
-        native_unit_of_measurement=UnitOfElectricCurrent.AMPERE,
-        device_class=SensorDeviceClass.CURRENT,
-        state_class=SensorStateClass.MEASUREMENT,
-        suggested_display_precision=2,
-    ),
-    "load_from_battery": SensorEntityDescription(
-        key="load_from_battery",
-        native_unit_of_measurement=UnitOfPower.WATT,
-        device_class=SensorDeviceClass.POWER,
-        state_class=SensorStateClass.MEASUREMENT,
-    ),
-    "load_from_grid": SensorEntityDescription(
-        key="load_from_grid",
-        native_unit_of_measurement=UnitOfPower.WATT,
-        device_class=SensorDeviceClass.POWER,
-        state_class=SensorStateClass.MEASUREMENT,
-    ),
-    "load_from_pv": SensorEntityDescription(
-        key="load_from_pv",
-        native_unit_of_measurement=UnitOfPower.WATT,
-        device_class=SensorDeviceClass.POWER,
-        state_class=SensorStateClass.MEASUREMENT,
-    ),
-    **{
-        f"ac_power_{i}": SensorEntityDescription(
-            key=f"ac_power_{i}",
-            native_unit_of_measurement=UnitOfPower.WATT,
-            device_class=SensorDeviceClass.POWER,
-            state_class=SensorStateClass.MEASUREMENT,
-            translation_key="port_power",
-            translation_placeholders={"name": f"AC ({i})"},
-        )
-        for i in range(3)
-    },
-    **{
-        f"ac_power_{i}_{j}": SensorEntityDescription(
-            key=f"ac_power_{i}_{j}",
-            native_unit_of_measurement=UnitOfPower.WATT,
-            device_class=SensorDeviceClass.POWER,
-            state_class=SensorStateClass.MEASUREMENT,
-            translation_key="port_power",
-            translation_placeholders={"name": f"AC ({i}-{j})"},
-        )
-        for i, j in itertools.product(range(1, 3), range(1, 4))
-    },
-    **{
-        f"pv_power_{i}": SensorEntityDescription(
-            key=f"pv_power_{i}",
-            native_unit_of_measurement=UnitOfPower.WATT,
-            device_class=SensorDeviceClass.POWER,
-            state_class=SensorStateClass.MEASUREMENT,
-            suggested_display_precision=1,
-            translation_key="port_power",
-            translation_placeholders={"name": f"PV ({i})"},
-        )
-        for i in range(5)
-    },
-    "pv_power_sum": SensorEntityDescription(
-        key="pv_power_sum",
-        native_unit_of_measurement=UnitOfPower.WATT,
-        device_class=SensorDeviceClass.POWER,
-        state_class=SensorStateClass.MEASUREMENT,
-        suggested_display_precision=1,
-        translation_key="pv_power_sum",
-    ),
-    # Smart Meter
-    "grid_energy": SensorEntityDescription(
-        key="grid_energy",
-        native_unit_of_measurement=UnitOfEnergy.WATT_HOUR,
-        device_class=SensorDeviceClass.ENERGY,
-        state_class=SensorStateClass.TOTAL_INCREASING,
-        suggested_display_precision=3,
-        suggested_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
-    ),
-    **{
-        f"l{i}_power": SensorEntityDescription(
-            key=f"l{i}_power",
-            native_unit_of_measurement=UnitOfPower.WATT,
-            device_class=SensorDeviceClass.POWER,
-            state_class=SensorStateClass.MEASUREMENT,
-            translation_key="port_power",
-            translation_placeholders={"name": f"L{i}"},
-            entity_registry_enabled_default=False,
-        )
-        for i in range(4)
-    },
-    **{
-        f"l{i}_current": SensorEntityDescription(
-            key=f"l{i}_current",
-            native_unit_of_measurement=UnitOfElectricCurrent.AMPERE,
-            device_class=SensorDeviceClass.CURRENT,
-            state_class=SensorStateClass.MEASUREMENT,
-            translation_key="port_current",
-            translation_placeholders={"name": f"L{i}"},
-            entity_registry_enabled_default=False,
-        )
-        for i in range(4)
-    },
-    **{
-        f"l{i}_voltage": SensorEntityDescription(
-            key=f"l{i}_voltage",
-            native_unit_of_measurement=UnitOfElectricPotential.VOLT,
-            device_class=SensorDeviceClass.VOLTAGE,
-            state_class=SensorStateClass.MEASUREMENT,
-            translation_key="port_voltage",
-            translation_placeholders={"name": f"L{i}"},
-            entity_registry_enabled_default=False,
-        )
-        for i in range(4)
-    },
-    **{
-        f"l{i}_energy": SensorEntityDescription(
-            key=f"l{i}_energy",
-            native_unit_of_measurement=UnitOfEnergy.WATT_HOUR,
-            device_class=SensorDeviceClass.ENERGY,
-            state_class=SensorStateClass.TOTAL_INCREASING,
-            suggested_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
-            suggested_display_precision=3,
-            translation_key="port_energy",
-            translation_placeholders={"name": f"L{i}"},
-            entity_registry_enabled_default=False,
-        )
-        for i in range(4)
-    },
-    # Wave 3
-    "ambient_temperature": EcoflowSensorEntityDescription[wave3.Device](
-        key="ambient_temperature",
+def wave_temperature(
+    key: str = "", enabled: bool = True, **kwargs: Unpack[_SensorKwargs]
+) -> EcoflowSensorEntityDescription:
+    return EcoflowSensorEntityDescription(
+        key=key,
         device_class=SensorDeviceClass.TEMPERATURE,
         state_class=SensorStateClass.MEASUREMENT,
         native_unit_of_measurement_field=_wave_unit,
-    ),
-    "ambient_humidity": SensorEntityDescription(
-        key="ambient_humidity",
+        entity_registry_enabled_default=enabled,
+        **kwargs,
+    )
+
+
+def duration(
+    key: str = "", enabled: bool = True, **kwargs: Unpack[_SensorKwargs]
+) -> EcoflowSensorEntityDescription:
+    return EcoflowSensorEntityDescription(
+        key=key,
+        native_unit_of_measurement=UnitOfTime.MINUTES,
+        device_class=SensorDeviceClass.DURATION,
+        state_class=SensorStateClass.MEASUREMENT,
+        suggested_unit_of_measurement=UnitOfTime.HOURS,
+        entity_registry_enabled_default=enabled,
+        **kwargs,
+    )
+
+
+def frequency(
+    key: str = "",
+    *,
+    enabled: bool = True,
+    precision: int | None = None,
+    **kwargs: Unpack[_SensorKwargs],
+) -> EcoflowSensorEntityDescription:
+    return EcoflowSensorEntityDescription(
+        key=key,
+        native_unit_of_measurement=UnitOfFrequency.HERTZ,
+        device_class=SensorDeviceClass.FREQUENCY,
+        state_class=SensorStateClass.MEASUREMENT,
+        suggested_display_precision=precision,
+        entity_registry_enabled_default=enabled,
+        **kwargs,
+    )
+
+
+def weight(
+    key: str = "", enabled: bool = True, **kwargs: Unpack[_SensorKwargs]
+) -> EcoflowSensorEntityDescription:
+    return EcoflowSensorEntityDescription(
+        key=key,
+        device_class=SensorDeviceClass.WEIGHT,
+        state_class=SensorStateClass.MEASUREMENT,
+        suggested_display_precision=2,
+        entity_registry_enabled_default=enabled,
+        **kwargs,
+    )
+
+
+def humidity(
+    key: str = "", enabled: bool = True, **kwargs: Unpack[_SensorKwargs]
+) -> EcoflowSensorEntityDescription:
+    return EcoflowSensorEntityDescription(
+        key=key,
+        native_unit_of_measurement=PERCENTAGE,
         device_class=SensorDeviceClass.HUMIDITY,
         state_class=SensorStateClass.MEASUREMENT,
+        entity_registry_enabled_default=enabled,
+        **kwargs,
+    )
+
+
+def percentage(
+    key: str = "", enabled: bool = True, **kwargs: Unpack[_SensorKwargs]
+) -> EcoflowSensorEntityDescription:
+    return EcoflowSensorEntityDescription(
+        key=key,
         native_unit_of_measurement=PERCENTAGE,
-    ),
-    "operating_mode": SensorEntityDescription(
-        key="operating_mode",
+        state_class=SensorStateClass.MEASUREMENT,
+        entity_registry_enabled_default=enabled,
+        **kwargs,
+    )
+
+
+def enum(
+    key: str = "",
+    enabled: bool = True,
+    options: list[str] | type[IntFieldValue] | None = None,
+    name: str | None = None,
+    **kwargs: Unpack[_SensorKwargs],
+) -> EcoflowSensorEntityDescription:
+    if options and type(options) is type and issubclass(options, IntFieldValue):
+        options = options.options()
+
+    return EcoflowSensorEntityDescription(
+        key=key,
+        name=name,
         device_class=SensorDeviceClass.ENUM,
-        options=wave3.OperatingMode.options(),
+        options=options,
+        entity_registry_enabled_default=enabled,
+        **kwargs,
+    )
+
+
+def raw(
+    key: str = "",
+    enabled: bool = True,
+    state_class: SensorStateClass | None = None,
+    **kwargs: Unpack[_SensorKwargs],
+) -> EcoflowSensorEntityDescription:
+    return EcoflowSensorEntityDescription(
+        key=key,
+        state_class=state_class,
+        entity_registry_enabled_default=enabled,
+        **kwargs,
+    )
+
+
+def port_power(
+    name: str,
+    *,
+    enabled: bool = True,
+    precision: int | None = None,
+    **kwargs: Unpack[_SensorKwargs],
+) -> EcoflowSensorEntityDescription:
+    return power(
+        enabled=enabled,
+        precision=precision,
+        translation_key="port_power",
+        translation_placeholders={"name": name},
+        **kwargs,
+    )
+
+
+_shp2_circuit_range = range(1, shp2.Device.NUM_OF_CIRCUITS + 1)
+_shp2_channel_range = range(1, shp2.Device.NUM_OF_CHANNELS + 1)
+
+
+def shp2_channel(
+    fn: Callable[..., EcoflowSensorEntityDescription],
+    translation_key: str | None = None,
+    **kwargs,
+) -> EcoflowSensorEntityDescription:
+    """Indexed SHP2 channel sensor with channel placeholder pre-filled."""
+    return fn(
+        translation_key=translation_key,
+        translation_placeholders={"channel": "{n}"},
+        indexed_range=_shp2_channel_range,
+        **kwargs,
+    )
+
+
+def shp2_circuit(
+    fn: Callable[..., EcoflowSensorEntityDescription],
+    translation_key: str | None = None,
+    **kwargs,
+) -> EcoflowSensorEntityDescription:
+    """Indexed SHP2 circuit sensor with zero-padded index placeholder pre-filled."""
+    return fn(
+        translation_key=translation_key,
+        translation_placeholders={"index": "{n:02d}"},
+        indexed_range=_shp2_circuit_range,
+        **kwargs,
+    )
+
+
+_SENSORS: Final[dict[str, SensorEntityDescription]] = {
+    # Common
+    "battery_level": battery(),
+    "battery_level_main": battery(),
+    "input_power": power(precision=0),
+    "output_power": power(precision=0),
+    "remaining_time_charging": duration(enabled=False),
+    "remaining_time_discharging": duration(enabled=False),
+    # SHP2
+    "grid_power": power(precision=1),
+    "in_use_power": power(precision=2),
+    "circuit_power_{n}": shp2_circuit(power, "circuit_power", precision=2),
+    "circuit_current_{n}": shp2_circuit(
+        current, "circuit_current", precision=2, enabled=False, state_class=None
     ),
-    "condensate_water_level": SensorEntityDescription(
-        key="condensate_water_level",
-        state_class=SensorStateClass.MEASUREMENT,
-        native_unit_of_measurement=PERCENTAGE,
+    "channel_power_{n}": power(
+        precision=2,
+        state_class=None,
+        translation_key="channel_power",
+        translation_placeholders={"index": "{n:02d}"},
+        indexed_range=_shp2_channel_range,
     ),
-    "sleep_state": SensorEntityDescription(
-        key="sleep_state",
-        device_class=SensorDeviceClass.ENUM,
-        options=wave3.SleepState.options(),
+    "ch{n}_ctrl_status": shp2_channel(
+        enum, "backup_ctrl_status", options=shp2.ControlStatus
     ),
-    "pcs_fan_level": SensorEntityDescription(
-        key="pcs_fan_level",
-        state_class=SensorStateClass.MEASUREMENT,
-        native_unit_of_measurement=PERCENTAGE,
+    "ch{n}_force_charge": shp2_channel(
+        enum,
+        "backup_force_charge",
+        enabled=False,
+        options=shp2.ForceChargeStatus.options(include_unknown=False),
     ),
-    "in_drainage": SensorEntityDescription(
-        key="in_drainage",
-    ),
-    "drainage_mode": SensorEntityDescription(
-        key="drainage_mode",
-    ),
-    "lcd_show_temp_type": SensorEntityDescription(
-        key="lcd_show_temp_type",
-    ),
-    "temp_indoor_supply_air": EcoflowSensorEntityDescription(
-        key="temp_indoor_supply_air",
-        device_class=SensorDeviceClass.TEMPERATURE,
-        state_class=SensorStateClass.MEASUREMENT,
-        native_unit_of_measurement_field=_wave_unit,
-    ),
-    "temp_indoor_return_air": EcoflowSensorEntityDescription(
-        key="temp_indoor_return_air",
-        device_class=SensorDeviceClass.TEMPERATURE,
-        state_class=SensorStateClass.MEASUREMENT,
-        native_unit_of_measurement_field=_wave_unit,
-    ),
-    "temp_outdoor_ambient": EcoflowSensorEntityDescription(
-        key="temp_outdoor_ambient",
-        device_class=SensorDeviceClass.TEMPERATURE,
-        state_class=SensorStateClass.MEASUREMENT,
-        native_unit_of_measurement_field=_wave_unit,
-    ),
-    "temp_condenser": EcoflowSensorEntityDescription(
-        key="temp_condenser",
-        device_class=SensorDeviceClass.TEMPERATURE,
-        state_class=SensorStateClass.MEASUREMENT,
-        native_unit_of_measurement_field=_wave_unit,
-    ),
-    "temp_evaporator": EcoflowSensorEntityDescription(
-        key="temp_evaporator",
-        device_class=SensorDeviceClass.TEMPERATURE,
-        state_class=SensorStateClass.MEASUREMENT,
-        native_unit_of_measurement_field=_wave_unit,
-    ),
-    "temp_compressor_discharge": EcoflowSensorEntityDescription(
-        key="temp_compressor_discharge",
-        device_class=SensorDeviceClass.TEMPERATURE,
-        state_class=SensorStateClass.MEASUREMENT,
-        native_unit_of_measurement_field=_wave_unit,
-    ),
-    # Delta 2
-    "dc12v_output_voltage": SensorEntityDescription(
-        key="dc12v_output_voltage",
-        native_unit_of_measurement=UnitOfElectricPotential.VOLT,
-        device_class=SensorDeviceClass.VOLTAGE,
-        state_class=SensorStateClass.MEASUREMENT,
-        suggested_display_precision=2,
-        entity_registry_enabled_default=False,
-    ),
-    "dc12v_output_current": SensorEntityDescription(
-        key="dc12v_output_current",
-        native_unit_of_measurement=UnitOfElectricCurrent.AMPERE,
-        device_class=SensorDeviceClass.CURRENT,
-        state_class=SensorStateClass.MEASUREMENT,
-        suggested_display_precision=2,
-        entity_registry_enabled_default=False,
-    ),
-    "dc_input_voltage": SensorEntityDescription(
-        key="dc_input_voltage",
-        native_unit_of_measurement=UnitOfElectricPotential.VOLT,
-        device_class=SensorDeviceClass.VOLTAGE,
-        state_class=SensorStateClass.MEASUREMENT,
-        suggested_display_precision=2,
-        entity_registry_enabled_default=False,
-    ),
-    "dc_input_current": SensorEntityDescription(
-        key="dc_input_current",
-        native_unit_of_measurement=UnitOfElectricCurrent.AMPERE,
-        device_class=SensorDeviceClass.CURRENT,
-        state_class=SensorStateClass.MEASUREMENT,
-        suggested_display_precision=2,
-        entity_registry_enabled_default=False,
-    ),
-    "xt60_input_power": SensorEntityDescription(
-        key="xt60_input_power",
-        native_unit_of_measurement=UnitOfPower.WATT,
-        device_class=SensorDeviceClass.POWER,
-        state_class=SensorStateClass.MEASUREMENT,
-    ),
-    # Wave 2
-    "outlet_temperature": SensorEntityDescription(
-        key="outlet_temperature",
-        device_class=SensorDeviceClass.TEMPERATURE,
-        state_class=SensorStateClass.MEASUREMENT,
-        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
-    ),
-    "power_battery": SensorEntityDescription(
-        key="power_battery",
-        native_unit_of_measurement=UnitOfPower.WATT,
-        device_class=SensorDeviceClass.POWER,
-        state_class=SensorStateClass.MEASUREMENT,
-        suggested_display_precision=0,
-    ),
-    "power_psdr": SensorEntityDescription(
-        key="power_psdr",
-        native_unit_of_measurement=UnitOfPower.WATT,
-        device_class=SensorDeviceClass.POWER,
-        state_class=SensorStateClass.MEASUREMENT,
-        suggested_display_precision=0,
-    ),
-    "power_mppt": SensorEntityDescription(
-        key="power_mppt",
-        native_unit_of_measurement=UnitOfPower.WATT,
-        device_class=SensorDeviceClass.POWER,
-        state_class=SensorStateClass.MEASUREMENT,
-        suggested_display_precision=0,
-    ),
-    "water_level": SensorEntityDescription(
-        key="water_level",
-        device_class=SensorDeviceClass.ENUM,
-        options=wave2.WaterLevel.options(),
-    ),
-    # unsupported
-    "collecting_data": SensorEntityDescription(
-        key="collecting_data",
-        name="Collecting data",
-        device_class=SensorDeviceClass.ENUM,
+    "ch{n}_backup_rly1_cnt": shp2_channel(
+        raw,
+        "backup_relay1_count",
+        enabled=False,
+        state_class=SensorStateClass.TOTAL,
         entity_category=EntityCategory.DIAGNOSTIC,
     ),
-    **{
-        f"pv_current_{i}": SensorEntityDescription(
-            key=f"pv_current_{i}",
-            native_unit_of_measurement=UnitOfElectricCurrent.AMPERE,
-            device_class=SensorDeviceClass.CURRENT,
-            state_class=SensorStateClass.MEASUREMENT,
-            suggested_display_precision=2,
-            translation_key="port_current",
-            translation_placeholders={"name": f"PV ({i})"},
-        )
-        for i in range(1, 3)
-    },
-    **{
-        f"pv_voltage_{i}": SensorEntityDescription(
-            key=f"pv_voltage_{i}",
-            native_unit_of_measurement=UnitOfElectricPotential.VOLT,
-            device_class=SensorDeviceClass.VOLTAGE,
-            state_class=SensorStateClass.MEASUREMENT,
-            suggested_display_precision=1,
-            translation_key="port_voltage",
-            translation_placeholders={"name": f"PV ({i})"},
-        )
-        for i in range(1, 3)
-    },
+    "ch{n}_backup_rly2_cnt": shp2_channel(
+        raw,
+        "backup_relay2_count",
+        enabled=False,
+        state_class=SensorStateClass.TOTAL,
+        entity_category=EntityCategory.DIAGNOSTIC,
+    ),
+    "ch{n}_wake_up_charge_status": shp2_channel(
+        battery, "backup_wakeup_charge", enabled=False
+    ),
+    "ch{n}_5p8_type": shp2_channel(
+        raw,
+        "backup_connector_type",
+        enabled=False,
+        entity_category=EntityCategory.DIAGNOSTIC,
+    ),
+    "channel{n}_sn": shp2_channel(
+        raw,
+        "channel_serial_number",
+        enabled=False,
+        entity_category=EntityCategory.DIAGNOSTIC,
+    ),
+    "channel{n}_type": shp2_channel(
+        raw,
+        "channel_device_type",
+        enabled=False,
+        entity_category=EntityCategory.DIAGNOSTIC,
+    ),
+    "channel{n}_capacity": shp2_channel(
+        energy_storage, "channel_full_capacity", enabled=False
+    ),
+    "channel{n}_rate_power": shp2_channel(
+        power, "channel_rated_power", precision=0, enabled=False
+    ),
+    "channel{n}_battery_percentage": shp2_channel(battery, "channel_battery_level"),
+    "channel{n}_output_power": shp2_channel(power, "channel_output_power", precision=1),
+    "channel{n}_battery_temp": shp2_channel(temperature, "channel_battery_temperature"),
+    "channel{n}_lcd_input": shp2_channel(
+        power, "channel_lcd_input_power", precision=0, enabled=False
+    ),
+    "channel{n}_pv_status": shp2_channel(
+        enum,
+        "channel_pv_status",
+        enabled=False,
+        options=shp2.PVStatus.options(include_unknown=False),
+    ),
+    "channel{n}_pv_lv_input": shp2_channel(
+        power, "channel_pv_lv_input_power", precision=0
+    ),
+    "channel{n}_pv_hv_input": shp2_channel(
+        power, "channel_pv_hv_input_power", precision=0
+    ),
+    "channel{n}_error_code": shp2_channel(
+        raw,
+        "channel_error_count",
+        state_class=SensorStateClass.MEASUREMENT,
+        entity_category=EntityCategory.DIAGNOSTIC,
+    ),
+    # DPU
+    "lv_solar_power": port_power("LV Solar", precision=2),
+    "hv_solar_power": port_power("HV Solar", precision=2),
+    "ac_l1_1_out_power": port_power("AC L1 1 Out", precision=2),
+    "ac_l1_2_out_power": port_power("AC L1 2 Out", precision=2),
+    "ac_l2_1_out_power": port_power("AC L2 1 Out", precision=2),
+    "ac_l2_2_out_power": port_power("AC L2 2 Out", precision=2),
+    "ac_l14_out_power": port_power("AC L14 Out", precision=2),
+    "ac_tt_out_power": port_power("AC TT Out", precision=2),
+    "ac_5p8_out_power": port_power("AC 5P8 Out", precision=2),
+    # River 3, Delta 3
+    "input_energy": energy(),
+    "output_energy": energy(),
+    "ac_input_power": power(precision=2),
+    "ac_input_voltage": voltage(precision=1, enabled=False),
+    "ac_input_current": current(precision=2, enabled=False),
+    "ac_output_power": power(precision=2),
+    "ac_input_energy": energy(),
+    "ac_output_energy": energy(),
+    "dc_input_power": power(precision=2),
+    "dc_input_energy": energy(),
+    "dc_output_power": power(precision=2),
+    "dc12v_output_power": power(precision=2),
+    "dc12v_output_energy": energy(),
+    "usba_output_power": power(),
+    "usba_output_energy": energy(),
+    "usba2_output_power": power(),
+    "usbc_output_power": power(),
+    "usbc_output_energy": energy(),
+    "usbc2_output_power": power(),
+    "usbc3_output_power": power(),
+    "qc_usb1_output_power": power(),
+    "qc_usb2_output_power": power(),
+    "battery_input_power": power(enabled=False),
+    "battery_output_power": power(enabled=False),
+    "cell_temperature": temperature(enabled=False),
+    "dc_port_input_power": power(precision=2),
+    "dc_port_2_input_power": power("dc_port_input_power_2", precision=2),
+    "dc_port_state": enum(options=_delta3_base.DCPortState),
+    "dc_port_2_state": enum(options=_delta3_base.DCPortState),
+    "solar_input_power": power("input_power_solar", enabled=False),
+    "solar_input_power_2": power("input_power_solar_2", enabled=False),
+    # DP3
+    "ac_lv_output_power": power(precision=2),
+    "ac_hv_output_power": power(precision=2),
+    "solar_lv_power": power("input_power_solar_lv", enabled=False),
+    "solar_hv_power": power("input_power_solar_hv", enabled=False),
+    "dc_lv_input_power": power(precision=2),
+    "dc_hv_input_power": power(precision=2),
+    "dc_lv_input_state": enum(options=delta_pro_3.DCPortState),
+    "dc_hv_input_state": enum(options=delta_pro_3.DCPortState),
+    # Smart Generator
+    "xt150_battery_level": battery(),
+    "engine_state": enum(options=smart_generator.EngineOpen),
+    "liquefied_gas_type": enum(options=smart_generator.LiquefiedGasType),
+    "liquefied_gas_consumption": weight(),
+    "liquefied_gas_remaining": weight(),
+    "generator_abnormal_state": enum(options=smart_generator.AbnormalState),
+    "sub_battery_soc": battery(),
+    "sub_battery_state": enum(options=smart_generator.SubBatteryState),
+    "fuel_type": enum(),
+    # Alternator Charger
+    "battery_temperature": temperature(),
+    "car_battery_voltage": voltage(),
+    "dc_power": power(),
+    # STREAM
+    "grid_voltage": voltage(precision=1),
+    "grid_frequency": frequency(precision=2),
+    "grid_current": current(precision=2),
+    "load_from_battery": power(),
+    "load_from_grid": power(),
+    "load_from_pv": power(),
+    "ac_power_{n}": port_power("AC ({n})", indexed_range=range(3)),
+    "ac_power_1_1": port_power("AC (1-1)"),
+    "ac_power_1_2": port_power("AC (1-2)"),
+    "ac_power_1_3": port_power("AC (1-3)"),
+    "ac_power_2_1": port_power("AC (2-1)"),
+    "ac_power_2_2": port_power("AC (2-2)"),
+    "ac_power_2_3": port_power("AC (2-3)"),
+    "pv_power_{n}": port_power("PV ({n})", precision=1, indexed_range=range(5)),
+    "pv_power_sum": power(precision=1, translation_key="pv_power_sum"),
+    # Smart Meter
+    "grid_energy": energy(),
+    "l{n}_power": port_power("L{n}", enabled=False, indexed_range=range(4)),
+    "l{n}_current": current(
+        enabled=False,
+        translation_key="port_current",
+        translation_placeholders={"name": "L{n}"},
+        indexed_range=range(4),
+    ),
+    "l{n}_voltage": voltage(
+        enabled=False,
+        translation_key="port_voltage",
+        translation_placeholders={"name": "L{n}"},
+        indexed_range=range(4),
+    ),
+    "l{n}_energy": energy(
+        enabled=False,
+        translation_key="port_energy",
+        translation_placeholders={"name": "L{n}"},
+        indexed_range=range(4),
+    ),
+    # Wave 3
+    "ambient_temperature": wave_temperature(),
+    "ambient_humidity": humidity(),
+    "operating_mode": enum(options=wave3.OperatingMode),
+    "condensate_water_level": percentage(),
+    "sleep_state": enum(options=wave3.SleepState),
+    "pcs_fan_level": percentage(),
+    "in_drainage": raw(),
+    "drainage_mode": raw(),
+    "lcd_show_temp_type": raw(),
+    "temp_indoor_supply_air": wave_temperature(),
+    "temp_indoor_return_air": wave_temperature(),
+    "temp_outdoor_ambient": wave_temperature(),
+    "temp_condenser": wave_temperature(),
+    "temp_evaporator": wave_temperature(),
+    "temp_compressor_discharge": wave_temperature(),
+    # Delta 2
+    "dc12v_output_voltage": voltage(precision=2, enabled=False),
+    "dc12v_output_current": current(precision=2, enabled=False),
+    "dc_input_voltage": voltage(precision=2, enabled=False),
+    "dc_input_current": current(precision=2, enabled=False),
+    "xt60_input_power": power(),
+    "pv_current_{n}": current(
+        precision=2,
+        translation_key="port_current",
+        translation_placeholders={"name": "PV ({n})"},
+        indexed_range=range(1, 3),
+    ),
+    "pv_voltage_{n}": voltage(
+        precision=1,
+        translation_key="port_voltage",
+        translation_placeholders={"name": "PV ({n})"},
+        indexed_range=range(1, 3),
+    ),
+    # Wave 2
+    "outlet_temperature": temperature(),
+    "power_battery": power(precision=0),
+    "power_psdr": power(precision=0),
+    "power_mppt": power(precision=0),
+    "water_level": enum(options=wave2.WaterLevel),
     # PowerStream
-    "battery_power": SensorEntityDescription(
-        key="battery_power",
-        native_unit_of_measurement=UnitOfPower.WATT,
-        device_class=SensorDeviceClass.POWER,
-        state_class=SensorStateClass.MEASUREMENT,
-        suggested_display_precision=1,
-    ),
-    "inverter_temperature": SensorEntityDescription(
-        key="inverter_temperature",
-        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
-        device_class=SensorDeviceClass.TEMPERATURE,
-        state_class=SensorStateClass.MEASUREMENT,
-    ),
-    "inverter_current": SensorEntityDescription(
-        key="inverter_current",
-        native_unit_of_measurement=UnitOfElectricCurrent.AMPERE,
-        device_class=SensorDeviceClass.CURRENT,
-        state_class=SensorStateClass.MEASUREMENT,
-        suggested_display_precision=2,
-    ),
-    "inverter_power": SensorEntityDescription(
-        key="inverter_power",
-        native_unit_of_measurement=UnitOfPower.WATT,
-        device_class=SensorDeviceClass.POWER,
-        state_class=SensorStateClass.MEASUREMENT,
-        suggested_display_precision=0,
-    ),
-    "inverter_voltage": SensorEntityDescription(
-        key="inverter_voltage",
-        native_unit_of_measurement=UnitOfElectricPotential.VOLT,
-        device_class=SensorDeviceClass.VOLTAGE,
-        state_class=SensorStateClass.MEASUREMENT,
-        suggested_display_precision=1,
-    ),
-    "inverter_frequency": SensorEntityDescription(
-        key="inverter_frequency",
-        native_unit_of_measurement=UnitOfFrequency.HERTZ,
-        device_class=SensorDeviceClass.FREQUENCY,
-        state_class=SensorStateClass.MEASUREMENT,
-        suggested_display_precision=1,
-    ),
-    "pv_temperature_1": SensorEntityDescription(
-        key="pv_temperature_1",
-        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
-        device_class=SensorDeviceClass.TEMPERATURE,
-        state_class=SensorStateClass.MEASUREMENT,
+    "battery_power": power(precision=1),
+    "inverter_temperature": temperature(),
+    "inverter_current": current(precision=2),
+    "inverter_power": power(precision=0),
+    "inverter_voltage": voltage(precision=1),
+    "inverter_frequency": frequency(precision=1),
+    "pv_temperature_{n}": temperature(
         translation_key="port_temperature",
-        translation_placeholders={"name": "PV (1)"},
+        translation_placeholders={"name": "PV ({n})"},
+        indexed_range=range(1, 3),
     ),
-    "pv_temperature_2": SensorEntityDescription(
-        key="pv_temperature_2",
-        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
-        device_class=SensorDeviceClass.TEMPERATURE,
-        state_class=SensorStateClass.MEASUREMENT,
-        translation_key="port_temperature",
-        translation_placeholders={"name": "PV (2)"},
-    ),
-    "llc_temperature": SensorEntityDescription(
-        key="llc_temperature",
-        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
-        device_class=SensorDeviceClass.TEMPERATURE,
-        state_class=SensorStateClass.MEASUREMENT,
+    "llc_temperature": temperature(),
+    # unsupported
+    "collecting_data": enum(
+        name="Collecting data",
+        entity_category=EntityCategory.DIAGNOSTIC,
     ),
 }
 
+SENSOR_TYPES: Final[dict[str, SensorEntityDescription]] = (
+    resolve_entity_description_keys(_SENSORS, EcoflowSensorEntityDescription)
+)
 
-_BATTERY_ADDON_INDEX_SENSORS: Final[dict[str, SensorEntityDescription]] = {
-    "battery_{n}_battery_level": SensorEntityDescription(
-        key="battery_{n}_battery_level",
-        translation_key="battery_level",
-        device_class=SensorDeviceClass.BATTERY,
-        native_unit_of_measurement=PERCENTAGE,
-        state_class=SensorStateClass.MEASUREMENT,
-    ),
-    "battery_{n}_cell_temperature": SensorEntityDescription(
-        key="battery_{n}_cell_temperature",
-        translation_key="cell_temperature",
-        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
-        device_class=SensorDeviceClass.TEMPERATURE,
-        state_class=SensorStateClass.MEASUREMENT,
-    ),
-    "battery_{n}_input_power": SensorEntityDescription(
-        key="battery_{n}_input_power",
-        translation_key="input_power",
-        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
-        device_class=SensorDeviceClass.TEMPERATURE,
-        state_class=SensorStateClass.MEASUREMENT,
-    ),
-    "battery_{n}_output_power": SensorEntityDescription(
-        key="battery_{n}_output_power",
-        translation_key="output_power",
-        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
-        device_class=SensorDeviceClass.TEMPERATURE,
-        state_class=SensorStateClass.MEASUREMENT,
-    ),
-}
+
+_BATTERY_ADDON_INDEX_SENSORS: Final = resolve_entity_description_keys(
+    {
+        "battery_{n}_battery_level": battery(translation_key="battery_level"),
+        "battery_{n}_cell_temperature": temperature(translation_key="cell_temperature"),
+        "battery_{n}_input_power": power(precision=0, translation_key="input_power"),
+        "battery_{n}_output_power": power(precision=0, translation_key="output_power"),
+    },
+    EcoflowSensorEntityDescription,
+)
 
 
 async def async_setup_entry(
@@ -1273,6 +768,7 @@ class EcoflowBatteryAddonSensor(EcoflowBatteryAddonEntity, SensorEntity):
         super().__init__(device=device, battery_index=battery_index)
         self._sensor = sensor
         self._attr_unique_id = f"ef_{device.serial_number}_{sensor}"
+        self._attr_native_value = getattr(device, sensor, None)
         self.entity_description = description
         if self.entity_description.translation_key is None:
             self._attr_translation_key = self.entity_description.key

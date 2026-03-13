@@ -1,3 +1,4 @@
+import dataclasses
 from collections.abc import Callable
 from typing import Any
 
@@ -8,6 +9,39 @@ from homeassistant.helpers.entity import Entity
 from .const import DOMAIN, MANUFACTURER
 from .eflib import DeviceBase
 from .eflib.device_mappings import battery_name_from_device
+
+
+def resolve_entity_description_keys(
+    descriptions: dict[str, Any],
+    indexed_type: type,
+) -> dict[str, Any]:
+    """
+    Fill in description keys from dict key, and expand indexed ({n}) descriptions.
+
+    Descriptions with {n} in their key that are instances of indexed_type with
+    indexed_range set are expanded across the range. {n} in translation_placeholder
+    values is also replaced, supporting format specs like {n:02d}.
+    """
+    result = {}
+    for k, v in descriptions.items():
+        if "{n}" in k and isinstance(v, indexed_type) and v.indexed_range is not None:
+            for i in v.indexed_range:
+                actual_key = k.replace("{n}", str(i))
+                placeholders = v.translation_placeholders
+                if placeholders:
+                    placeholders = {
+                        pk: pv.format(n=i) for pk, pv in placeholders.items()
+                    }
+                result[actual_key] = dataclasses.replace(
+                    v,
+                    key=actual_key,
+                    indexed_range=None,
+                    translation_placeholders=placeholders,
+                )
+            continue
+
+        result[k] = dataclasses.replace(v, key=k) if not v.key else v
+    return result
 
 
 class EcoflowEntity(Entity):

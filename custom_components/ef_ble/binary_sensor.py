@@ -1,8 +1,8 @@
 """EcoFlow BLE binary sensor"""
 
-import logging
 from collections.abc import Callable
 from dataclasses import dataclass
+from typing import Final, TypedDict, Unpack
 
 from homeassistant.components.binary_sensor import (
     BinarySensorDeviceClass,
@@ -17,107 +17,129 @@ from custom_components.ef_ble.eflib import DeviceBase
 from custom_components.ef_ble.eflib.devices import shp2
 
 from . import DeviceConfigEntry
-from .entity import EcoflowEntity
-
-_LOGGER = logging.getLogger(__name__)
-
-
-def _create_shp2_binary_sensors():
-    """Create binary sensor descriptions for SHP2 backup channel and energy info"""
-    sensors = {}
-
-    # Backup channel binary sensors
-    for i in range(1, shp2.Device.NUM_OF_CHANNELS + 1):
-        sensors[f"ch{i}_backup_is_ready"] = BinarySensorEntityDescription(
-            key=f"ch{i}_backup_is_ready",
-            translation_key="channel_backup_is_ready",
-            translation_placeholders={"channel": f"{i}"},
-            device_class=BinarySensorDeviceClass.BATTERY,
-            entity_registry_enabled_default=False,
-        )
-
-    # Energy binary sensors
-    for i in range(1, shp2.Device.NUM_OF_CHANNELS + 1):
-        sensors.update(
-            {
-                f"channel{i}_is_enabled": BinarySensorEntityDescription(
-                    key=f"channel{i}_is_enabled",
-                    translation_key="channel_is_enabled",
-                    translation_placeholders={"channel": f"{i}"},
-                    device_class=BinarySensorDeviceClass.POWER,
-                ),
-                f"channel{i}_is_connected": BinarySensorEntityDescription(
-                    key=f"channel{i}_is_connected",
-                    translation_key="channel_is_connected",
-                    translation_placeholders={"channel": f"{i}"},
-                    device_class=BinarySensorDeviceClass.CONNECTIVITY,
-                ),
-                f"channel{i}_is_ac_open": BinarySensorEntityDescription(
-                    key=f"channel{i}_is_ac_open",
-                    translation_key="channel_is_ac_open",
-                    translation_placeholders={"channel": f"{i}"},
-                    device_class=BinarySensorDeviceClass.POWER,
-                    entity_registry_enabled_default=False,
-                ),
-                f"channel{i}_is_power_output": BinarySensorEntityDescription(
-                    key=f"channel{i}_is_power_output",
-                    translation_key="channel_is_power_output",
-                    translation_placeholders={"channel": f"{i}"},
-                    device_class=BinarySensorDeviceClass.POWER,
-                    entity_registry_enabled_default=False,
-                ),
-                f"channel{i}_is_grid_charge": BinarySensorEntityDescription(
-                    key=f"channel{i}_is_grid_charge",
-                    translation_key="channel_is_grid_charge",
-                    translation_placeholders={"channel": f"{i}"},
-                    device_class=BinarySensorDeviceClass.BATTERY_CHARGING,
-                    entity_registry_enabled_default=False,
-                ),
-                f"channel{i}_is_mppt_charge": BinarySensorEntityDescription(
-                    key=f"channel{i}_is_mppt_charge",
-                    translation_key="channel_is_mppt_charge",
-                    translation_placeholders={"channel": f"{i}"},
-                    device_class=BinarySensorDeviceClass.BATTERY_CHARGING,
-                    entity_registry_enabled_default=False,
-                ),
-                f"channel{i}_ems_charging": BinarySensorEntityDescription(
-                    key=f"channel{i}_ems_charging",
-                    translation_key="channel_ems_charging",
-                    translation_placeholders={"channel": f"{i}"},
-                    device_class=BinarySensorDeviceClass.POWER,
-                    entity_registry_enabled_default=False,
-                ),
-                f"channel{i}_hw_connected": BinarySensorEntityDescription(
-                    key=f"channel{i}_hw_connected",
-                    translation_key="channel_hw_connected",
-                    translation_placeholders={"channel": f"{i}"},
-                    device_class=BinarySensorDeviceClass.CONNECTIVITY,
-                    entity_registry_enabled_default=False,
-                ),
-            }
-        )
-
-    return sensors
+from .entity import EcoflowEntity, resolve_entity_description_keys
 
 
 @dataclass(frozen=True, kw_only=True)
 class EcoflowBinarySensorEntityDescription(BinarySensorEntityDescription):
+    """Binary sensor entity description with optional indexed expansion support."""
+
     update_state: Callable[[bool], None] | None = None
+    indexed_range: range | None = None
 
 
-BINARY_SENSOR_TYPES = {
-    "error_happened": BinarySensorEntityDescription(
-        key="error",
-        device_class=BinarySensorDeviceClass.PROBLEM,
-        entity_category=EntityCategory.DIAGNOSTIC,
+class _BinarySensorKwargs(TypedDict, total=False):
+    translation_key: str
+    translation_placeholders: dict[str, str]
+    indexed_range: range
+    entity_category: EntityCategory
+
+
+def _make_desc(
+    device_class: BinarySensorDeviceClass,
+    key: str = "",
+    *,
+    enabled: bool = True,
+    **kwargs: Unpack[_BinarySensorKwargs],
+) -> EcoflowBinarySensorEntityDescription:
+    return EcoflowBinarySensorEntityDescription(
+        key=key,
+        device_class=device_class,
+        entity_registry_enabled_default=enabled,
+        **kwargs,
+    )
+
+
+def problem(
+    key: str = "", *, enabled: bool = True, **kwargs: Unpack[_BinarySensorKwargs]
+) -> EcoflowBinarySensorEntityDescription:
+    return _make_desc(BinarySensorDeviceClass.PROBLEM, key, enabled=enabled, **kwargs)
+
+
+def plug(
+    key: str = "", *, enabled: bool = True, **kwargs: Unpack[_BinarySensorKwargs]
+) -> EcoflowBinarySensorEntityDescription:
+    return _make_desc(BinarySensorDeviceClass.PLUG, key, enabled=enabled, **kwargs)
+
+
+def battery(
+    key: str = "", *, enabled: bool = True, **kwargs: Unpack[_BinarySensorKwargs]
+) -> EcoflowBinarySensorEntityDescription:
+    return _make_desc(BinarySensorDeviceClass.BATTERY, key, enabled=enabled, **kwargs)
+
+
+def power(
+    key: str = "", *, enabled: bool = True, **kwargs: Unpack[_BinarySensorKwargs]
+) -> EcoflowBinarySensorEntityDescription:
+    return _make_desc(BinarySensorDeviceClass.POWER, key, enabled=enabled, **kwargs)
+
+
+def connectivity(
+    key: str = "", *, enabled: bool = True, **kwargs: Unpack[_BinarySensorKwargs]
+) -> EcoflowBinarySensorEntityDescription:
+    return _make_desc(
+        BinarySensorDeviceClass.CONNECTIVITY, key, enabled=enabled, **kwargs
+    )
+
+
+def battery_charging(
+    key: str = "", *, enabled: bool = True, **kwargs: Unpack[_BinarySensorKwargs]
+) -> EcoflowBinarySensorEntityDescription:
+    return _make_desc(
+        BinarySensorDeviceClass.BATTERY_CHARGING, key, enabled=enabled, **kwargs
+    )
+
+
+_shp2_channel_range = range(1, shp2.Device.NUM_OF_CHANNELS + 1)
+
+
+def shp2_channel(
+    fn: Callable[..., EcoflowBinarySensorEntityDescription],
+    translation_key: str,
+    **kwargs,
+) -> EcoflowBinarySensorEntityDescription:
+    """Indexed SHP2 channel binary sensor with channel placeholder pre-filled."""
+    return fn(
+        translation_key=translation_key,
+        translation_placeholders={"channel": "{n}"},
+        indexed_range=_shp2_channel_range,
+        **kwargs,
+    )
+
+
+_BINARY_SENSORS: Final[dict[str, BinarySensorEntityDescription]] = {
+    "error_happened": problem("error", entity_category=EntityCategory.DIAGNOSTIC),
+    "plugged_in_ac": plug(),
+    # SHP2 backup channel binary sensors
+    "ch{n}_backup_is_ready": shp2_channel(
+        battery, "channel_backup_is_ready", enabled=False
     ),
-    "plugged_in_ac": BinarySensorEntityDescription(
-        key="plugged_in_ac",
-        device_class=BinarySensorDeviceClass.PLUG,
+    # SHP2 energy binary sensors
+    "channel{n}_is_enabled": shp2_channel(power, "channel_is_enabled"),
+    "channel{n}_is_connected": shp2_channel(connectivity, "channel_is_connected"),
+    "channel{n}_is_ac_open": shp2_channel(power, "channel_is_ac_open", enabled=False),
+    "channel{n}_is_power_output": shp2_channel(
+        power, "channel_is_power_output", enabled=False
     ),
-    # SHP2 Binary Sensors - dynamically generated
-    **_create_shp2_binary_sensors(),
+    "channel{n}_is_grid_charge": shp2_channel(
+        battery_charging, "channel_is_grid_charge", enabled=False
+    ),
+    "channel{n}_is_mppt_charge": shp2_channel(
+        battery_charging, "channel_is_mppt_charge", enabled=False
+    ),
+    "channel{n}_ems_charging": shp2_channel(
+        power, "channel_ems_charging", enabled=False
+    ),
+    "channel{n}_hw_connected": shp2_channel(
+        connectivity, "channel_hw_connected", enabled=False
+    ),
 }
+
+BINARY_SENSOR_TYPES: Final[dict[str, BinarySensorEntityDescription]] = (
+    resolve_entity_description_keys(
+        _BINARY_SENSORS, EcoflowBinarySensorEntityDescription
+    )
+)
 
 
 async def async_setup_entry(
@@ -147,6 +169,8 @@ class EcoflowBinarySensor(EcoflowEntity, BinarySensorEntity):
         super().__init__(device)
 
         self._attr_unique_id = f"ef_{self._device.serial_number}_{sensor}"
+        self._attr_is_on = getattr(self._device, sensor, None)
+
         if sensor in BINARY_SENSOR_TYPES:
             self.entity_description = BINARY_SENSOR_TYPES[sensor]
             self._prop_name = self.entity_description.key

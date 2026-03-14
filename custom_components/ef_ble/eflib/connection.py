@@ -876,10 +876,14 @@ class Connection:
         await self._client.stop_notify(self._notify_characteristic)
 
         if encrypted_data[0] != 0x02:
-            raise AuthErrors.KeyInfoReqFailed(
+            exc = AuthErrors.KeyInfoReqFailed(
                 "Received type of KeyInfo is != 0x02, need to dig into: "
                 f"{encrypted_data.hex()}"
             )
+            self._set_state(ConnectionState.ERROR_AUTH_FAILED, exc)
+            if self._client is not None and self._client.is_connected:
+                await self._client.disconnect()
+            raise exc
 
         assert self._encryption is not None
 

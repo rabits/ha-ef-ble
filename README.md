@@ -448,6 +448,8 @@ be manually reconfigured if battery is connected/disconnected.</sup>
 | DC 12V Output Voltage (disabled)          |                |                     |
 | DC 12V Output Current (disabled)          |                |                     |
 | XT60 Input Power ¹                        |                |                     |
+| XT60 (1) Input Power ²                    |                |                     |
+| XT60 (2) Input Power ²                    |                |                     |
 | DC Input Voltage (disabled)               |                |                     |
 | DC Input Current (disabled)               |                |                     |
 | USB A (1) Output Power                    |                |                     |
@@ -465,6 +467,7 @@ be manually reconfigured if battery is connected/disconnected.</sup>
 > be manually reconfigured if battery is connected/disconnected.
 
 <sup>¹ Only available on Delta 2 and Delta 2 1500</sup><br>
+<sup>² Only available on Delta 2 Max</sup><br>
 
 </details>
 

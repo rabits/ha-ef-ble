@@ -569,6 +569,8 @@ _SENSORS: Final[dict[str, SensorEntityDescription]] = {
     "dc_input_voltage": voltage(precision=2, enabled=False),
     "dc_input_current": current(precision=2, enabled=False),
     "xt60_input_power": power(),
+    "xt60_1_input_power": power(),
+    "xt60_2_input_power": power(),
     "pv_current_{n}": current(
         precision=2,
         translation_key="port_current",

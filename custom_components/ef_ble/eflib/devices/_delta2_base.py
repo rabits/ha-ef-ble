@@ -44,12 +44,12 @@ class Delta2Base(DeviceBase, RawDataProps):
     battery_level_main = raw_field(pb_bms.f32_show_soc, lambda x: round(x, 2))
 
     battery_1_enabled = Field[bool]()
-    battery_1_battery_level = raw_field(pb_bms_1.f32_show_soc, lambda x: round(x, 2))
+    battery_1_battery_level = Field[float]()
     battery_1_cell_temperature = raw_field(pb_bms_1.max_cell_temp)
     battery_1_sn = Field[str]()
 
     battery_2_enabled = Field[bool]()
-    battery_2_battery_level = raw_field(pb_bms_2.f32_show_soc, lambda x: round(x, 2))
+    battery_2_battery_level = Field[float]()
     battery_2_cell_temperature = raw_field(pb_bms_2.max_cell_temp)
     battery_2_sn = Field[str]()
 
@@ -176,7 +176,7 @@ class Delta2Base(DeviceBase, RawDataProps):
             setattr(self, battery_dict["enabled"], bool(available))
             if available:
                 setattr(self, battery_dict["sn"], kit.sn.decode())
-                setattr(self, battery_dict["level"], kit.f32_soc)
+                setattr(self, battery_dict["level"], round(kit.f32_soc, 2))
 
     async def set_ac_charging_speed(self, value: int):
         if self.max_ac_charging_power is None:

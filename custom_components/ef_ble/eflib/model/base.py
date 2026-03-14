@@ -47,7 +47,7 @@ class RawData:
     def __init_subclass__(cls) -> None:
         # set byte order to litte-endian (or for subclasses, get the full format str
         # from parent)
-        format_str = getattr(cls, "_FULL_STRUCT_FMT", ["<"])
+        format_str = list(getattr(cls, "_FULL_STRUCT_FMT", ["<"]))
 
         for name, annotation in get_annotations(cls).items():
             if get_origin(annotation) is Annotated:

@@ -730,6 +730,12 @@
       "xt60_input_power": {
         "name": "XT60 Input Power"
       },
+      "xt60_1_input_power": {
+        "name": "XT60 (1) Input Power"
+      },
+      "xt60_2_input_power": {
+        "name": "XT60 (2) Input Power"
+      },
       "dc_input_voltage": {
         "name": "DC Input Voltage"
       },

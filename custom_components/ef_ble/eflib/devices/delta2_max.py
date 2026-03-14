@@ -21,6 +21,9 @@ class Device(Delta2Base):
     energy_backup_enabled = raw_field(pb_pd.watthisconfig, lambda x: x == 1)
     energy_backup_battery_level = raw_field(pb_pd.bp_power_soc)
 
+    xt60_1_input_power = raw_field(pb_pd.pv1_charge_watts)
+    xt60_2_input_power = raw_field(pb_pd.pv2_charge_watts)
+
     def __init__(
         self, ble_dev: BLEDevice, adv_data: AdvertisementData, sn: str
     ) -> None:

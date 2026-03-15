@@ -124,7 +124,7 @@ class Device(DeviceBase, ProtobufProps):
 
     async def _send_config_packet(self, message: ac517_apl_comm_pb2.ConfigWrite):
         payload = message.SerializeToString()
-        packet = Packet(0x20, 0x14, 0xFE, 0x11, payload, 0x01, 0x01, 0x13)
+        packet = Packet(0x20, 0x42, 0xFE, 0x11, payload, 0x01, 0x01, 0x13)
         await self._conn.sendPacket(packet)
 
     async def set_battery_charge_limit_min(self, limit: int):
@@ -152,7 +152,11 @@ class Device(DeviceBase, ProtobufProps):
         return True
 
     async def enable_power(self, enabled: bool):
-        # cfg_sys_pause=True means standby, False means running
-        await self._send_config_packet(
-            ac517_apl_comm_pb2.ConfigWrite(cfg_sys_pause=not enabled)
-        )
+        if enabled:
+            await self._send_config_packet(
+                ac517_apl_comm_pb2.ConfigWrite(cfg_power_on=True)
+            )
+        else:
+            await self._send_config_packet(
+                ac517_apl_comm_pb2.ConfigWrite(cfg_power_off=True)
+            )

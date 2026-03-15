@@ -304,8 +304,6 @@ NUMBER_TYPES: list[EcoflowNumberEntityDescription] = [
     ),
     EcoflowNumberEntityDescription[shp2.Device](
         key="backup_reserve_level",
-        name="Backup Reserve",
-        icon="mdi:battery-arrow-down-outline",
         device_class=NumberDeviceClass.BATTERY,
         native_unit_of_measurement=PERCENTAGE,
         native_step=1.0,
@@ -318,8 +316,6 @@ NUMBER_TYPES: list[EcoflowNumberEntityDescription] = [
     ),
     EcoflowNumberEntityDescription[shp2.Device](
         key="backup_charge_limit",
-        name="Charge Limit",
-        icon="mdi:battery-arrow-up",
         device_class=NumberDeviceClass.BATTERY,
         native_unit_of_measurement=PERCENTAGE,
         native_step=1.0,

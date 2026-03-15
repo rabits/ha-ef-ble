@@ -666,14 +666,18 @@ class Device(DeviceBase, ProtobufProps):
     async def set_eps_mode(self, value: bool):
         self._logger.debug("set_eps_mode: %d", value)
 
+        if value and self.smart_backup_mode != SmartBackupMode.NONE:
+            # App forces setting of operating mode to NONE when EPS is enabled.
+            # We set this to NONE first or the SHP2 will sometimes report a grid outage if
+            # we set it all in one PPS command.
+            # Note: unlike operating mode force charge is allowed with EPS mode
+            ppas_sbm = pd303_pb2.ProtoPushAndSet()
+            ppas_sbm.smart_backup_mode = SmartBackupMode.NONE
+            await self._send_config_packet(ppas_sbm)
+
         ppas = pd303_pb2.ProtoPushAndSet()
 
         ppas.eps_mode_info = value
-        if value:
-            # App sets operating mode to NONE when EPS is enabled
-            # However, unlike operating mode force charge is allowed with EPS mode
-            ppas.smart_backup_mode = SmartBackupMode.NONE
-
         await self._send_config_packet(ppas)
         return True
 

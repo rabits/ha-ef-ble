@@ -152,8 +152,6 @@ SELECT_TYPES: list[EcoflowSelectEntityDescription] = [
     ),
     EcoflowSelectEntityDescription[shp2.Device](
         key="smart_backup_mode",
-        name="Smart Backup Mode",
-        icon="mdi:leaf",
         options=shp2.SmartBackupMode.options(include_unknown=False),
         set_state=(
             lambda device, value: device.set_smart_backup_mode(

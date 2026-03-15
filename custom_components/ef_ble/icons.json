@@ -1,5 +1,25 @@
 {
     "entity": {
+        "binary_sensor": {
+            "channel_is_enabled": {
+                "default": "mdi:power-plug-battery",
+                "state": {
+                    "off": "mdi:power-plug-battery-outline"
+                }
+            },
+            "grid_status": {
+                "default": "mdi:transmission-tower",
+                "state": {
+                    "off": "mdi:toggle-switch-variant-off"
+                }
+            },
+            "storm_mode": {
+                "default": "mdi:flash-alert",
+                "state": {
+                    "off": "mdi:flash-alert-outline"
+                }
+            }
+        },
         "sensor": {
             "input_power": {
                 "default": "mdi:home-lightning-bolt-outline"
@@ -124,35 +144,41 @@
             "grid_frequency": {
                 "default": "mdi:cosine-wave"
             },
-            "channel1_pv_status": {
-                "default": "mdi:solar-power"
-            },
-            "channel2_pv_status": {
-                "default": "mdi:solar-power"
-            },
-            "channel3_pv_status": {
-                "default": "mdi:solar-power"
-            },
-            "channel1_pv_lv_input": {
+            "channel_pv_lv_input": {
                 "default": "mdi:solar-panel"
             },
-            "channel2_pv_lv_input": {
-                "default": "mdi:solar-panel"
-            },
-            "channel3_pv_lv_input": {
-                "default": "mdi:solar-panel"
-            },
-            "channel1_pv_hv_input": {
-                "default": "mdi:solar-panel-large"
-            },
-            "channel2_pv_hv_input": {
-                "default": "mdi:solar-panel-large"
-            },
-            "channel3_pv_hv_input": {
+            "channel_pv_hv_input": {
                 "default": "mdi:solar-panel-large"
             },
             "grid_current": {
                 "default": "mdi:current-ac"
+            },
+            "channel_pv_status": {
+                "default": "mdi:solar-power-variant",
+                "state": {
+                    "none": "mdi:solar-power-variant-outline",
+                    "hv": "mdi:solar-panel-large",
+                    "lv": "mdi:solar-panel"
+                }
+            },
+            "backup_ctrl_status": {
+                "default": "mdi:battery-unknown",
+                "state": {
+                    "discharge": "mdi:battery-minus",
+                    "charge": "mdi:battery-plus",
+                    "emergency_stop": "mdi:battery-alert-variant",
+                    "standby": "mdi:battery-remove"
+                }
+            },
+            "power_status": {
+                "default": "mdi:home-lightning-bolt",
+                "state": {
+                    "grid_power": "mdi:transmission-tower",
+                    "battery_power": "mdi:home-battery",
+                    "oil_power": "mdi:generator-mobile",
+                    "emergency_stop": "mdi:alert-octagon",
+                    "off_power": "mdi:power-off"
+                }
             }
         },
         "switch": {
@@ -167,16 +193,55 @@
                 "state": {
                     "off": "mdi:meter-gas-outline"
                 }
+            },
+            "eps_mode": {
+                "default": "mdi:shield-home",
+                "state": {
+                    "off": "mdi:shield-home-outline"
+                }
+            },
+            "ch_force_charge": {
+                "default": "mdi:battery-plus",
+                "state": {
+                    "off": "mdi:battery-plus-outline"
+                }
+            },
+            "channel_is_enabled": {
+                "default": "mdi:battery",
+                "state": {
+                    "off": "mdi:battery-off-outline"
+                }
+            },
+            "circuit_is_enabled": {
+                "default": "mdi:electric-switch",
+                "state": {
+                    "on": "mdi:electric-switch-closed"
+                }
             }
         },
         "select": {
             "liquefied_gas_unit": {
                 "default": "mdi:storage-tank-outline"
+            },
+            "smart_backup_mode": {
+                "default": "mdi:state-machine",
+                "state": {
+                    "none": "mdi:transmission-tower",
+                    "time_of_use": "mdi:cash-clock",
+                    "self_powered": "mdi:solar-power-variant",
+                    "scheduled": "mdi:battery-clock"
+                }
             }
         },
         "number": {
             "liquefied_gas_value": {
                 "default": "mdi:storage-tank"
+            },
+            "backup_charge_limit": {
+                "default": "mdi:battery-arrow-up"
+            },
+            "backup_reserve_level": {
+                "default": "mdi:battery-arrow-down-outline"
             }
         }
     }

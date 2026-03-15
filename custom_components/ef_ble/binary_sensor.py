@@ -33,7 +33,6 @@ class _BinarySensorKwargs(TypedDict, total=False):
     translation_placeholders: dict[str, str]
     indexed_range: range
     entity_category: EntityCategory
-    icon: str
 
 
 def _make_desc(
@@ -142,8 +141,8 @@ _BINARY_SENSORS: Final[dict[str, BinarySensorEntityDescription]] = {
         connectivity, "channel_hw_connected", enabled=False
     ),
     # SHP2 generic binary sensors
-    "grid_status": connectivity("grid_status", enabled=True, icon="mdi:connection"),
-    "storm_mode": safety("storm_mode", enabled=True, icon="mdi:flash-alert"),
+    "grid_status": connectivity("grid_status", enabled=True),
+    "storm_mode": safety("storm_mode", enabled=True),
 }
 
 BINARY_SENSOR_TYPES: Final[dict[str, BinarySensorEntityDescription]] = (

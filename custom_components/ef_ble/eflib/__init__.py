@@ -8,6 +8,9 @@ from bleak.backends.scanner import AdvertisementData
 from . import devices
 from .devicebase import DeviceBase
 from .devices import powerstream, stream_microinverter, unsupported
+from .entity import controls as controls
+from .entity import units as units
+from .props.updatable_props import UpdatableProps
 
 if TYPE_CHECKING:
     from .props import ProtobufProps, RawDataProps
@@ -47,12 +50,6 @@ def NewDevice(ble_dev: BLEDevice, adv_data: AdvertisementData) -> DeviceBase | N
     return unsupported.UnsupportedDevice(ble_dev, adv_data, sn.decode("ASCII"))
 
 
-__all__ = [
-    "DeviceBase",
-    "NewDevice",
-]
-
-
 def get_protobuf_device(device: DeviceBase | None) -> "ProtobufProps | None":
     from .props import ProtobufProps  # noqa: PLC0415
 
@@ -63,3 +60,30 @@ def get_fixed_length_coding_device(device: DeviceBase | None) -> "RawDataProps |
     from .props import RawDataProps  # noqa: PLC0415
 
     return device if isinstance(device, RawDataProps) else None
+
+
+def get_updatable_prop_device(device: "DeviceBase"):
+    if not isinstance(device, UpdatableProps):
+        raise TypeError("Device has to be subclass of UpdatableProps")
+
+    return device
+
+
+def get_controls[E: "controls.ControlType"](
+    device: "DeviceBase", control_type: type[E]
+) -> list[E]:
+    return get_updatable_prop_device(device).get_controls(control_type)
+
+
+__all__ = [
+    "DeviceBase",
+    "NewDevice",
+    "controls",
+    "get_controls",
+    "get_fixed_length_coding_device",
+    "get_protobuf_device",
+    "get_updatable_prop_device",
+    "is_solar_only",
+    "is_unsupported",
+    "units",
+]

@@ -1,5 +1,11 @@
+import inspect
 from collections.abc import Callable, Iterator
-from typing import Any, ClassVar, overload
+from functools import cached_property
+from typing import TYPE_CHECKING, Any, ClassVar, Self, overload
+
+if TYPE_CHECKING:
+    from ..entity import controls
+    from ..entity.base import EntityKind, EntityType
 
 
 class UpdatableProps:
@@ -58,6 +64,32 @@ class UpdatableProps:
         ]
         return f"{cls}:\n" + "\n".join(lines)
 
+    def _get_entities[E: "EntityType"](
+        self,
+        sensor_type: type[E],
+        collection_attr: str,
+    ) -> list[E]:
+        if getattr(self, collection_attr) is None:
+            return []
+        return [
+            item
+            for cls in inspect.getmro(type(self))
+            if cls.__dict__.get(collection_attr)
+            for item in cls.__dict__.get(collection_attr, [])
+            if isinstance(item, sensor_type)
+        ]
+
+    @cached_property
+    def _controls(self):
+        return [f.sensor_type for f in self._fields if f.sensor_type is not None]
+
+    def get_controls[E: "controls.ControlType"](
+        self,
+        control_type: type[E],
+    ):
+        """Return all registered controls matching the given type"""
+        return [c for c in self._controls if isinstance(c, control_type)]
+
 
 class Skip:
     """Sentinel value for skipping assignment in field's transform function"""
@@ -67,6 +99,7 @@ class Field[T]:
     """Descriptor for updating values only if they changed"""
 
     transform_value: Callable[[Any], T] | None = None
+    sensor_type: "EntityType | None" = None
 
     def __set_name__[P: UpdatableProps](
         self,
@@ -128,6 +161,39 @@ class Field[T]:
         if instance is None:
             return self
         return getattr(instance, self.private_name, None)
+
+    def sensor(
+        self,
+        sensor: "EntityKind",
+        db_precision: int | None = None,
+    ) -> Self:
+        """
+        Mark this field as sensor type
+
+        Parameters
+        ----------
+        sensor
+            Sensor type
+        db_precision, optional
+            Floating point precision to use for writing to db, by default None
+
+        Returns
+        -------
+        Same field
+        """
+        if db_precision is not None:
+
+            def _transform_precision(value: Any) -> T:
+                return round(value, db_precision)
+
+            self._transform_value = _transform_precision
+
+        if isinstance(sensor, type):
+            sensor = sensor(self)
+        else:
+            sensor.field = self
+        self.sensor_type = sensor
+        return self
 
 
 class FieldGroupView[T]:

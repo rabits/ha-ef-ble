@@ -382,13 +382,11 @@ class EcoflowNumber(EcoflowEntity, NumberEntity):
             self._max_value_prop,
             lambda state: state if state is not None else self.SkipWrite,
         )
-        if self._step_value_prop is not None:
-            self._attr_native_step = getattr(device, self._step_value_prop)
-            self._register_update_callback(
-                "_attr_native_step",
-                self._step_value_prop,
-                lambda state: state if state is not None else self.SkipWrite,
-            )
+        self._register_update_callback(
+            "_attr_native_step",
+            self._step_value_prop,
+            lambda state: state if state is not None else self.SkipWrite,
+        )
 
     @property
     def available(self):

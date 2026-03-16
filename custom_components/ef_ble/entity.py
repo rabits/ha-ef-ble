@@ -85,6 +85,9 @@ class EcoflowEntity(Entity):
         if prop_name is None:
             return
 
+        if val := getattr(self._device, prop_name, None):
+            setattr(self, entity_attr, get_state(val))
+
         @callback
         def state_updated(state: Any):
             if (state := get_state(state)) is EcoflowEntity.SkipWrite:

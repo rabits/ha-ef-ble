@@ -152,11 +152,9 @@ class Device(DeviceBase, ProtobufProps):
         return True
 
     async def enable_power(self, enabled: bool):
+        cfg = ac517_apl_comm_pb2.ConfigWrite()
         if enabled:
-            await self._send_config_packet(
-                ac517_apl_comm_pb2.ConfigWrite(cfg_power_on=True)
-            )
+            cfg.cfg_power_on = True
         else:
-            await self._send_config_packet(
-                ac517_apl_comm_pb2.ConfigWrite(cfg_power_off=True)
-            )
+            cfg.cfg_power_off = True
+        await self._send_config_packet(cfg)

@@ -4,8 +4,18 @@ from ..devicebase import DeviceBase
 from ..packet import Packet
 from ..pb import bk_series_pb2
 from ..props import ProtobufProps, pb_field, proto_attr_mapper
+from ..props.enums import IntFieldValue
 
 pb = proto_attr_mapper(bk_series_pb2.DisplayPropertyUpload)
+
+
+class GridStatus(IntFieldValue):
+    UNKNOWN = -1
+
+    NOT_VALID = 0
+    GRID_IN = 1
+    GRID_OFFLINE = 2
+    FEED_GRID = 3
 
 
 def _round(precision: int = 2):
@@ -33,7 +43,9 @@ class Device(DeviceBase, ProtobufProps):
     grid_voltage = pb_field(pb.grid_connection_vol, _round())
     grid_current = pb_field(pb.grid_connection_amp, _round())
     grid_frequency = pb_field(pb.grid_connection_freq, _round())
+    grid_connection_status = pb_field(pb.grid_connection_sta, GridStatus.from_value)
 
+    wifi_rssi = pb_field(pb.module_wifi_rssi, _round(0))
     feed_grid_mode_power_limit = pb_field(pb.feed_grid_mode_pow_limit)
     feed_grid_mode_power_max = pb_field(pb.feed_grid_mode_pow_max)
 

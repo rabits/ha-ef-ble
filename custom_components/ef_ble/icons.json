@@ -141,6 +141,18 @@
             "load_from_pv": {
                 "default": "mdi:solar-power-variant"
             },
+            "grid_connection_status": {
+                "default": "mdi:transmission-tower",
+                "state": {
+                    "not_valid": "mdi:transmission-tower-off",
+                    "grid_offline": "mdi:transmission-tower-off",
+                    "grid_in": "mdi:transmission-tower",
+                    "feed_grid": "mdi:transmission-tower-export"
+                }
+            },
+            "wifi_rssi": {
+                "default": "mdi:wifi"
+            },
             "grid_frequency": {
                 "default": "mdi:cosine-wave"
             },

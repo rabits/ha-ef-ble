@@ -582,6 +582,19 @@
       "load_from_pv": {
         "name": "Load From PV"
       },
+      "grid_connection_status": {
+        "name": "Grid Connection Status",
+        "state": {
+          "unknown": "Unknown",
+          "not_valid": "Not Valid",
+          "grid_in": "Grid In",
+          "grid_offline": "Grid Offline",
+          "feed_grid": "Feeding Grid"
+        }
+      },
+      "wifi_rssi": {
+        "name": "WiFi RSSI"
+      },
       "grid_voltage": {
         "name": "Grid Voltage"
       },

@@ -13,6 +13,7 @@ from homeassistant.components.sensor import (
 )
 from homeassistant.const import (
     PERCENTAGE,
+    SIGNAL_STRENGTH_DECIBELS_MILLIWATT,
     EntityCategory,
     UnitOfElectricCurrent,
     UnitOfElectricPotential,
@@ -35,6 +36,7 @@ from .eflib.devices import (
     delta_pro_3,
     shp2,
     smart_generator,
+    stream_microinverter,
     wave2,
     wave3,
 )
@@ -554,6 +556,17 @@ _SENSORS: Final[dict[str, SensorEntityDescription]] = {
     "car_battery_voltage": voltage(),
     "dc_power": power(),
     # STREAM
+    "grid_connection_status": enum(
+        enabled=False,
+        options=stream_microinverter.GridStatus,
+        entity_category=EntityCategory.DIAGNOSTIC,
+    ),
+    "wifi_rssi": raw(
+        enabled=False,
+        entity_category=EntityCategory.DIAGNOSTIC,
+        native_unit_of_measurement=SIGNAL_STRENGTH_DECIBELS_MILLIWATT,
+        state_class=SensorStateClass.MEASUREMENT,
+    ),
     "grid_voltage": voltage(precision=1),
     "grid_frequency": frequency(precision=2),
     "grid_current": current(precision=2),

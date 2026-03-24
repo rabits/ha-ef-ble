@@ -429,8 +429,8 @@ first charging task</sup>
 
 <br>
 
-Supported serial prefix **C101** only (e.g. [PowerPulse EV Charger 9.6 kW](https://us.ecoflow.com/products/powerpulse-ev-charger)).
-BLE advertisement names may look like **EF_C10\*** or **EF-C10\***. Other PowerPulse models are not implemented in this integration yet.
+[PowerPulse EV Charger 9.6 kW](https://us.ecoflow.com/products/powerpulse-ev-charger).
+Other PowerPulse models are not implemented in this integration yet.
 
 | *Sensors*                         |
 |-----------------------------------|
@@ -446,11 +446,7 @@ BLE advertisement names may look like **EF_C10\*** or **EF-C10\***. Other PowerP
 
 > **📝 Note:** **AC Plug State** exposes charger connection status as:
 > **Plugged In**, **Charging**, **Charge Complete**, **Unplugged**, or **Unknown**
-> (mapped from C101 `2/2/33` top-level state values).
 
-> **📝 Note:** Protocol handling follows the same AC517 BLE pattern as Wave 3. If values
-> stay **unknown** after pairing, your firmware may use different packet routing—open an
-> issue with diagnostics or debug logs.
 
 </details>
 

@@ -951,8 +951,6 @@ class EcoflowSensor(EcoflowEntity, SensorEntity):
     def native_value(self):
         """Return the value of the sensor."""
         value = getattr(self._device, self._sensor, None)
-        if isinstance(value, IntFieldValue):
-            return value.state_name
         if isinstance(value, Enum):
             return value.name.lower()
         return value

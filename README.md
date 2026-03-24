@@ -447,7 +447,6 @@ Other PowerPulse models are not implemented in this integration yet.
 > **📝 Note:** **AC Plug State** exposes charger connection status as:
 > **Plugged In**, **Charging**, **Charge Complete**, **Unplugged**, or **Unknown**
 
-
 </details>
 
 <details>

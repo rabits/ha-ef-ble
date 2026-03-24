@@ -93,7 +93,9 @@ def _cmd_2_2_33_payload(
     return state_field + top_key + _encode_varint(len(nested)) + nested
 
 
-async def test_powerpulse_ev_cmdset2_status_packet_parses_nested_metrics(device: Device):
+async def test_powerpulse_ev_cmdset2_status_packet_parses_nested_metrics(
+    device: Device,
+):
     packet = Packet(
         src=0x02,
         dst=0x20,
@@ -115,7 +117,14 @@ async def test_powerpulse_ev_cmdset2_status_packet_parses_nested_metrics(device:
 
 
 @pytest.mark.parametrize(
-    ("power_w", "voltage_v", "current_a", "expected_voltage", "expected_current", "expected_power"),
+    (
+        "power_w",
+        "voltage_v",
+        "current_a",
+        "expected_voltage",
+        "expected_current",
+        "expected_power",
+    ),
     [
         # Car plugged in but not charging: voltage present, current/power are near zero.
         (0.0, 239.2, 0.0, 239.2, 0.0, 0.0),
@@ -156,7 +165,9 @@ async def test_powerpulse_ev_cmdset2_status_packet_maps_representative_log_value
     assert device.get_value(Device.output_power) == expected_power
 
 
-async def test_powerpulse_ev_cmdset2_status_packet_clamps_idle_noise_to_zero(device: Device):
+async def test_powerpulse_ev_cmdset2_status_packet_clamps_idle_noise_to_zero(
+    device: Device,
+):
     packet = Packet(
         src=0x02,
         dst=0x20,
@@ -174,7 +185,9 @@ async def test_powerpulse_ev_cmdset2_status_packet_clamps_idle_noise_to_zero(dev
     assert device.get_value(Device.ac_plug_state) == AcPlugState.PLUGGED_IN
 
 
-async def test_powerpulse_ev_handles_time_sync_request(device: Device, mocker: MockerFixture):
+async def test_powerpulse_ev_handles_time_sync_request(
+    device: Device, mocker: MockerFixture
+):
     mocker.patch.object(device._time_commands, "async_send_all")
     packet = Packet(
         src=0x35,

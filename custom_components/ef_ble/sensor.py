@@ -35,6 +35,7 @@ from .eflib.devices import (
     _delta3_base,
     delta_pro_3,
     dpu,
+    powerpulse_ev,
     shp2,
     smart_generator,
     stream_microinverter,
@@ -475,6 +476,7 @@ _SENSORS: Final[dict[str, SensorEntityDescription]] = {
     "output_power": power(precision=0),
     "remaining_time_charging": duration(enabled=False),
     "remaining_time_discharging": duration(enabled=False),
+    "ac_plug_state": enum(options=powerpulse_ev.AcPlugState),
     # SHP2
     "grid_power": power(precision=1),
     "power_status": enum(options=shp2.PowerStatus),
@@ -949,6 +951,8 @@ class EcoflowSensor(EcoflowEntity, SensorEntity):
     def native_value(self):
         """Return the value of the sensor."""
         value = getattr(self._device, self._sensor, None)
+        if isinstance(value, IntFieldValue):
+            return value.state_name
         if isinstance(value, Enum):
             return value.name.lower()
         return value

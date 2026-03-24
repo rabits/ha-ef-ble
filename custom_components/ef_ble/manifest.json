@@ -160,6 +160,18 @@
             "connectable": true
         },
         {
+            "local_name": "EF_C10*",
+            "manufacturer_id": 46517,
+            "manufacturer_data_start": [19, 67, 49, 48, 49],
+            "connectable": true
+        },
+        {
+            "local_name": "EF-C10*",
+            "manufacturer_id": 46517,
+            "manufacturer_data_start": [19, 67, 49, 48, 49],
+            "connectable": true
+        },
+        {
             "local_name": "EF-DC",
             "manufacturer_id": 46517,
             "manufacturer_data_start": [19, 68, 67]
@@ -192,5 +204,5 @@
         "protobuf"
     ],
 
-    "version": "0.7.1"
+    "version": "0.7.1.1"
 }

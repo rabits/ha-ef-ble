@@ -181,6 +181,7 @@ ECOFLOW_DEVICE_LIST = {
     # =====================
     # POWERPULSE
     # =====================
+    "C101":{"name": "EcoFlow PowerPulse EV Charger (9.6 kW)", "packets": "v3"},
     "C371":{"name": "EcoFlow PowerPulse 7KW", "packets": "?"},
     "C372":{"name": "EcoFlow PowerPulse 22KW", "packets": "?"},
     "C373":{"name": "EcoFlow PowerPulse 22KW Pro", "packets": "?"},

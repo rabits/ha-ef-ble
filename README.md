@@ -23,8 +23,8 @@ No internet connection required • Real-time status updates • Full local cont
 
 ## Overview
 
-This integration enables local communication with EcoFlow power stations and accessories
-through **Bluetooth LE**, allowing you to:
+This integration enables local communication with EcoFlow power stations, EV chargers,
+and accessories through **Bluetooth LE**, allowing you to:
 
 - **Monitor** battery levels, power flow, and device status
 - **Control** outputs, charging parameters, and device settings
@@ -421,6 +421,36 @@ first charging task</sup>
 | Inverter Frequency   |                  |                       |
 | Inverter Temperature |                  |                       |
 | LLC Temperature      |                  |                       |
+
+</details>
+
+<details>
+<summary><b>PowerPulse EV Charger</b> <i>(9.6 kW US)</i></summary>
+
+<br>
+
+Supported serial prefix **C101** only (e.g. [PowerPulse EV Charger 9.6 kW](https://us.ecoflow.com/products/powerpulse-ev-charger)).
+BLE advertisement names may look like **EF_C10\*** or **EF-C10\***. Other PowerPulse models are not implemented in this integration yet.
+
+| *Sensors*                         |
+|-----------------------------------|
+| Output Power                      |
+| AC Output Voltage (disabled)      |
+| AC Output Current (disabled)      |
+| AC Plug State                     |
+
+> **📝 Note:** Power sensors use **watts** (Home Assistant’s standard `power` device class).
+> For kilowatts, use the entity’s display precision, a template sensor, or an Energy
+> dashboard helper. **AC Output Voltage** and **AC Output Current** are off by default—enable
+> them under the entity settings if you need them.
+
+> **📝 Note:** **AC Plug State** exposes charger connection status as:
+> **Plugged In**, **Charging**, **Charge Complete**, **Unplugged**, or **Unknown**
+> (mapped from C101 `2/2/33` top-level state values).
+
+> **📝 Note:** Protocol handling follows the same AC517 BLE pattern as Wave 3. If values
+> stay **unknown** after pairing, your firmware may use different packet routing—open an
+> issue with diagnostics or debug logs.
 
 </details>
 

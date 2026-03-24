@@ -383,6 +383,16 @@
       "remaining_time_discharging": {
         "name": "Discharge Time Remaining"
       },
+      "ac_plug_state": {
+        "name": "AC Plug State",
+        "state": {
+          "unknown": "Unknown",
+          "unplugged": "Unplugged",
+          "plugged_in": "Plugged In",
+          "charging": "Charging",
+          "charge_complete": "Charge Complete"
+        }
+      },
       "grid_power": {
         "name": "Grid Power"
       },

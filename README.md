@@ -273,15 +273,16 @@ be manually reconfigured if battery is connected/disconnected.</sup>
 |-------------------------------------|-------------|-------------------------|-----------------|
 | Battery Level                       | Feed Grid   | Feed Grid Power Limit   | Energy Strategy |
 | Main Battery Level                  | AC (1) ᴬᴹᴾᵁ | Backup Reserve Level    |                 |
-| Grid Power                          | AC (2) ᴬᴾᵁ  | Charge Limit            |                 |
-| Grid Voltage                        |             | Discharge Limit         |                 |
-| Grid Frequency                      |             | Base Load Power ¹       |                 |
-| Load from Battery                   |             | Grid Input Power Limit  |                 |
-| Load from Grid                      |             | Charging Power Limit ²ꜝ |                 |
-| Load from PV ᴹᴾᵁ                    |             | Charging Target SOC ²ꜝ  |                 |
+| Battery Power                       | AC (2) ᴬᴾᵁ  | Charge Limit            |                 |
+| Grid Power                          |             | Discharge Limit         |                 |
+| Grid Voltage                        |             | Base Load Power ¹       |                 |
+| Grid Frequency                      |             | Grid Input Power Limit  |                 |
+| Load from Battery                   |             | Charging Power Limit ²ꜝ |                 |
+| Load from Grid                      |             | Charging Target SOC ²ꜝ  |                 |
+| Load from PV ᴹᴾᵁ                    |             |                         |                 |
 | AC (1) Power ᴬᴹᴾᵁ                   |             |                         |                 |
 | AC (2) Power ᴬᴾᵁ                    |             |                         |                 |
-| PV (1) Poweri ᴹᴾᵁ                   |             |                         |                 |
+| PV (1) Power ᴹᴾᵁ                    |             |                         |                 |
 | PV (2) Power ᴹᴾᵁ                    |             |                         |                 |
 | PV (3) Power ᴾᵁ                     |             |                         |                 |
 | PV (4) Power ᵁ                      |             |                         |                 |
@@ -309,18 +310,20 @@ first charging task</sup>
 
 <br>
 
-| *Sensors*      | *Sliders*            |
-|----------------|----------------------|
-| Grid Power     | Maximum Output Power |
-| Grid Voltage   |                      |
-| Grid Current   |                      |
-| Grid Frequency |                      |
-| PV (1) Power   |                      |
-| PV (1) Current |                      |
-| PV (1) Voltage |                      |
-| PV (2) Power   |                      |
-| PV (2) Current |                      |
-| PV (2) Voltage |                      |
+| *Sensors*                         | *Sliders*            |
+|-----------------------------------|----------------------|
+| Grid Power                        | Maximum Output Power |
+| Grid Voltage                      |                      |
+| Grid Current                      |                      |
+| Grid Frequency                    |                      |
+| Grid Connection Status            |                      |
+| PV (1) Power                      |                      |
+| PV (1) Current                    |                      |
+| PV (1) Voltage                    |                      |
+| PV (2) Power                      |                      |
+| PV (2) Current                    |                      |
+| PV (2) Voltage                    |                      |
+| WiFi RSSI (disabled)              |                      |
 
 </details>
 

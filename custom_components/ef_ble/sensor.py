@@ -476,7 +476,7 @@ _SENSORS: Final[dict[str, SensorEntityDescription]] = {
     "output_power": power(precision=0),
     "remaining_time_charging": duration(enabled=False),
     "remaining_time_discharging": duration(enabled=False),
-    "ac_plug_state": enum(options=powerpulse_ev.AcPlugState),
+    "total_energy": energy(),
     # SHP2
     "grid_power": power(precision=1),
     "power_status": enum(options=shp2.PowerStatus),
@@ -835,6 +835,8 @@ _SENSORS: Final[dict[str, SensorEntityDescription]] = {
         indexed_range=range(1, 3),
     ),
     "llc_temperature": temperature(),
+    # PowerPulse EV
+    "ac_plug_state": enum(options=powerpulse_ev.AcPlugState),
     # unsupported
     "collecting_data": enum(
         name="Collecting data",

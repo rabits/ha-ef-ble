@@ -1,42 +1,51 @@
-"""EcoFlow PowerPulse EV charger (BLE / AC517 APL)."""
-
-import logging
+"""EcoFlow PowerPulse EV charger (CP307 protocol)."""
 
 from bleak.backends.device import BLEDevice
 from bleak.backends.scanner import AdvertisementData
-from google.protobuf.message import DecodeError
 
 from ..commands import TimeCommands
 from ..devicebase import DeviceBase
 from ..packet import Packet
-from ..pb import ac517_powerpulse_ev_pb2
-from ..props import Field, ProtobufProps
+from ..pb import cp307_iot_pb2
+from ..props import ProtobufProps, pb_field, proto_attr_mapper
 from ..props.enums import IntFieldValue
 from ..props.utils import pround
 
-_LOGGER = logging.getLogger(__name__)
+pb = proto_attr_mapper(cp307_iot_pb2.HeartBeat)
 
 
 class AcPlugState(IntFieldValue):
     UNKNOWN = -1
-    UNPLUGGED = 0
-    PLUGGED_IN = 1
-    CHARGING = 2
-    CHARGE_COMPLETE = 3
+    UNPLUGGED = 1
+    PLUGGED_IN = 2
+    CHARGING = 3
+    PAUSED = 4
+    CHARGE_COMPLETE = 6
+    STANDBY = 7
+    UPDATING = 8
 
 
 class Device(DeviceBase, ProtobufProps):
     """PowerPulse"""
 
-    # Only C101 (9.6 kW US EV charger) is verified.
-    # Other PowerPulse SKUs remain unsupported.
-    SN_PREFIX = (b"C101",)
-    NAME_PREFIX = "EF-PP"
+    SN_PREFIX = (
+        b"C101",  # PowerPulse 9.6 kW DIY
+        b"C102",  # PowerPulse 11.5 kW
+        b"C103",  # PowerPulse 9.6 kW
+        b"C371",  # PowerPulse 7 kW
+        b"C372",  # PowerPulse 22 kW
+        b"C373",  # PowerPulse 22 kW Pro
+        b"C374",  # PowerPulse 22 kW Meter
+        b"C375",  # PowerPulse 11 kW
+        b"C376",  # PowerPulse 11 kW Meter
+    )
+    NAME_PREFIX = "EF-C10"
 
-    output_power = Field[float]()
-    ac_output_voltage = Field[float]()
-    ac_output_current = Field[float]()
-    ac_plug_state = Field[AcPlugState]()
+    ac_plug_state = pb_field(pb.system_state, AcPlugState.from_value)
+    output_power = pb_field(pb.charge_power, pround(1))
+    ac_output_voltage = pb_field(pb.mid_meter.volt_l1, pround(1))
+    ac_output_current = pb_field(pb.mid_meter.curr_l1, pround(2))
+    total_energy = pb_field(pb.energy_value)
 
     def __init__(
         self, ble_dev: BLEDevice, adv_data: AdvertisementData, sn: str
@@ -50,90 +59,42 @@ class Device(DeviceBase, ProtobufProps):
 
     @property
     def device(self) -> str:
-        return "EcoFlow PowerPulse EV Charger (9.6 kW)"
+        match self._sn[:4]:
+            case "C102":
+                model = "11.5 kW"
+            case "C103":
+                model = "9.6 kW"
+            case "C371":
+                model = "7 kW"
+            case "C372":
+                model = "22 kW"
+            case "C373":
+                model = "22 kW Pro"
+            case "C374":
+                model = "22 kW Meter"
+            case "C375":
+                model = "11 kW"
+            case "C376":
+                model = "11 kW Meter"
+            case _:
+                model = "9.6 kW DIY"
+        return f"PowerPulse EV Charger ({model})"
 
     async def packet_parse(self, data: bytes):
         return Packet.fromBytes(data, xor_payload=True)
 
-    def _apply_plug_state(self, state: int | None, payload_len: int) -> None:
-        if state == 1:
-            self.ac_plug_state = AcPlugState.UNPLUGGED
-            return
-        if state == 2:
-            self.ac_plug_state = AcPlugState.PLUGGED_IN
-            return
-        if state == 3:
-            self.ac_plug_state = AcPlugState.CHARGING
-            return
-        if state == 6:
-            self.ac_plug_state = AcPlugState.CHARGE_COMPLETE
-            return
-        if state is None and payload_len == 0:
-            # Empty heartbeat carries no explicit plug state.
-            self.ac_plug_state = AcPlugState.UNKNOWN
-
-    def _apply_metrics(
-        self, power_w: float | None, voltage_v: float | None, current_a: float | None
-    ) -> None:
-        # Small near-zero noise values can appear while unplugged/idle.
-        if current_a is not None and abs(current_a) < 0.05:
-            current_a = 0.0
-        if power_w is not None and abs(power_w) < 1.0:
-            power_w = 0.0
-
-        if voltage_v is not None:
-            self.ac_output_voltage = pround(1)(voltage_v)
-        if current_a is not None:
-            self.ac_output_current = pround(2)(current_a)
-        if power_w is not None:
-            self.output_power = pround(1)(power_w)
-
-        if self.ac_output_voltage is None:
-            self.ac_output_voltage = 0.0
-        if self.ac_output_current is None:
-            self.ac_output_current = 0.0
-        if self.output_power is None:
-            self.output_power = 0.0
-
-    def _parse_status_packet(self, packet: Packet) -> bool:
-        if packet.src != 0x02 or packet.cmdSet != 0x02 or packet.cmdId != 0x21:
-            return False
-
-        try:
-            msg = self.update_from_bytes(
-                ac517_powerpulse_ev_pb2.Cmd2_2_33Status, packet.payload
-            )
-        except DecodeError:
-            return False
-
-        state = msg.state if msg.state != 0 else None
-        if msg.HasField("metrics"):
-            metrics = msg.metrics
-            power_w = float(metrics.power_w)
-            voltage_v = float(metrics.voltage_v)
-            current_a = float(metrics.current_a)
-        else:
-            power_w = voltage_v = current_a = None
-
-        self._apply_plug_state(state=state, payload_len=len(packet.payload))
-        self._apply_metrics(power_w=power_w, voltage_v=voltage_v, current_a=current_a)
-        return True
-
-    def _is_time_sync_request(self, packet: Packet) -> bool:
-        return (
-            packet.src == 0x35
-            and packet.cmdSet == 0x01
-            and packet.cmdId == Packet.NET_BLE_COMMAND_CMD_SET_RET_TIME
-        )
-
     async def data_parse(self, packet: Packet) -> bool:
+        processed = False
         self.reset_updated()
-        processed = self._parse_status_packet(packet)
 
-        if not processed and self._is_time_sync_request(packet):
-            if len(packet.payload) == 0:
-                self._time_commands.async_send_all()
-            processed = True
+        match packet.src, packet.cmdSet, packet.cmdId:
+            case (0x02, 0x02, 0x21):
+                self.update_from_bytes(cp307_iot_pb2.HeartBeat, packet.payload)
+                processed = True
+            case (0x35, 0x01, Packet.NET_BLE_COMMAND_CMD_SET_RET_TIME):
+                if len(packet.payload) == 0:
+                    self._time_commands.async_send_all()
+                processed = True
 
         for field_name in self.updated_fields:
             self.update_callback(field_name)

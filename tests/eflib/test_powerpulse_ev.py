@@ -1,10 +1,22 @@
-import struct
-
 import pytest
 from pytest_mock import MockerFixture
 
 from custom_components.ef_ble.eflib.devices.powerpulse_ev import AcPlugState, Device
-from custom_components.ef_ble.eflib.packet import Packet
+
+
+@pytest.fixture
+def packet_sequence():
+    """
+    Raw packet sequence captured from a PowerPulse 9.6 kW EV charger (C101)
+
+    Heartbeat packets are src=0x02, cmdSet=0x02, cmdId=0x21 (HeartBeat).
+    The charger is idle/unplugged (system_state=1) with line voltage ~239 V.
+    """
+    return [
+        "aa13c400c52dcef301000163022101010221c6cfdccacecececee64e4ecaf4e9c6cedeceebcecececef3cececece8bcececece83cececece9bcececece93cecececeabcececece8cdbc6cfde3a2dcbebcecececef3c532a08d9b32099ef2863a2dcb4ecfcc46cf62cc5ecf5ecd76cfca0bcfcece8e8f06cfaa2bcfcececece24cfcac532a08d3ccfca32099ef234cfccdcdf4ccccccece0ecc0e134700c806cc6fcf1eccbc16cc4c2dcb2ecc3a2dcb26ccce3eccce36ccbc24cdc6c6cedeced6ceeece34cdc4c6cfd4ceeecde6cffefe66c8ce7ec8cecb21",
+        "aa13c400c52dd0f301000163022101010221d8d1c2d4d0d0d0d0f85050d4eaf7d8d0c0d0f5d0d0d0d0edd0d0d0d095d0d0d0d09dd0d0d0d085d0d0d0d08dd0d0d0d0b5d0d0d0d092c5d8d1c02433d5f5d0d0d0d0edd2cdbf9385121e81ec982433d550d1d258d17cd240d140d368d1d415d1d0d0909118d1b435d1d0d0d0d03ad1d4d2cdbf9322d1d4121e81ec2ad1d2c2c152d2d2d0d010d2100d591ed618d271d100d2a208d25233d530d22433d538d2d020d2d028d2a23ad3d8d8d0c0d0c8d0f0d02ad3dad8d1cad0f0d3f8d1e0e078d6d060d6d0142c",
+        "aa13c400c52dd2f301000163022101010221dad3c0d6d2d2d2d2fa5252d6e8f5dad2c2d2f7d2d2d2d2efd2d2d2d297d2d2d2d29fd2d2d2d287d2d2d2d28fd2d2d2d2b7d2d2d2d290c7dad3c22631d7f7d2d2d2d2ef80d7bd9187101c83ee9a2631d752d3d05ad37ed042d342d16ad3d617d3d2d292931ad3b637d3d2d2d2d238d3d680d7bd9120d3d6101c83ee28d3d0c0c350d0d0d2d212d0120f5b1cd41ad073d302d0a00ad05031d732d02631d73ad0d222d0d22ad0a038d1dadad2c2d2cad2f2d228d1d8dad3c8d2f2d1fad3e2e27ad4d262d4d2d2dd",
+    ]
 
 
 @pytest.fixture
@@ -17,291 +29,83 @@ def device(mocker: MockerFixture):
     return device
 
 
-def test_powerpulse_ev_check_only_c101():
-    assert Device.check(b"C101XXXX") is True
-    assert Device.check(b"C371XXXX") is False
-    assert Device.check(b"AC71XXXX") is False
+async def test_powerpulse_ev_parses_all_packets_successfully(device, packet_sequence):
+    for i, hex_packet in enumerate(packet_sequence):
+        packet = await device.packet_parse(bytes.fromhex(hex_packet))
+
+        assert packet is not None, f"Packet {i} failed to parse"
+        assert packet.src == 0x02, f"Packet {i} has unexpected src: {packet.src:#04x}"
+        assert packet.cmdSet == 0x02, (
+            f"Packet {i} has unexpected cmdSet: {packet.cmdSet:#04x}"
+        )
+        assert packet.cmdId == 0x21, (
+            f"Packet {i} has unexpected cmdId: {packet.cmdId:#04x}"
+        )
 
 
-def test_powerpulse_ev_device_name_for_c101(device: Device):
-    assert "9.6 kW" in device.device
-
-
-async def test_powerpulse_ev_ignores_other_packet_sources(device: Device):
-    packet = Packet(
-        src=0x14,
-        dst=0x20,
-        cmd_set=0x02,
-        cmd_id=0x21,
-        payload=b"",
-    )
-    processed = await device.data_parse(packet)
-    assert processed is False
-
-
-async def test_powerpulse_ev_cmdset2_status_packet_defaults_unknown_values_to_zero(
-    device: Device,
+async def test_powerpulse_ev_processes_all_packets_successfully(
+    device, packet_sequence
 ):
-    packet = Packet(
-        src=0x02,
-        dst=0x20,
-        cmd_set=0x02,
-        cmd_id=0x21,
-        payload=b"",
-    )
-    processed = await device.data_parse(packet)
-    assert processed is True
-    assert device.get_value(Device.ac_output_voltage) == 0.0
-    assert device.get_value(Device.ac_output_current) == 0.0
-    assert device.get_value(Device.output_power) == 0.0
-    assert device.get_value(Device.ac_plug_state) == AcPlugState.UNKNOWN
+    for i, hex_packet in enumerate(packet_sequence):
+        packet = await device.packet_parse(bytes.fromhex(hex_packet))
+        processed = await device.data_parse(packet)
+        assert processed is True, f"Packet {i} was not processed"
 
 
-def _encode_varint(value: int) -> bytes:
-    out = bytearray()
-    while True:
-        to_write = value & 0x7F
-        value >>= 7
-        if value:
-            out.append(to_write | 0x80)
-        else:
-            out.append(to_write)
-            return bytes(out)
+async def test_powerpulse_ev_updates_power_fields(device, packet_sequence):
+    packet = await device.packet_parse(bytes.fromhex(packet_sequence[0]))
+    await device.data_parse(packet)
+
+    power_fields = [
+        Device.output_power,
+        Device.ac_output_voltage,
+        Device.ac_output_current,
+    ]
+
+    for field in power_fields:
+        value = device.get_value(field)
+        assert isinstance(value, (int, float)), (
+            f"Power field {field.public_name} has wrong type: {type(value)}"
+        )
 
 
-def _wire_float_field(field_number: int, value: float) -> bytes:
-    key = (field_number << 3) | 5
-    return _encode_varint(key) + struct.pack("<f", value)
+async def test_powerpulse_ev_field_types_are_consistent(device, packet_sequence):
+    for hex_packet in packet_sequence:
+        packet = await device.packet_parse(bytes.fromhex(hex_packet))
+        await device.data_parse(packet)
+
+    numeric_fields = [
+        Device.output_power,
+        Device.ac_output_voltage,
+        Device.ac_output_current,
+        Device.total_energy,
+    ]
+
+    for field in numeric_fields:
+        value = device.get_value(field)
+        if value is not None:
+            assert isinstance(value, (int, float)), (
+                f"Field {field.public_name} has wrong type: {type(value)}"
+            )
+
+    assert isinstance(device.get_value(Device.ac_plug_state), AcPlugState)
 
 
-def _cmd_2_2_33_payload(
-    power_w: float,
-    voltage_v: float,
-    current_a: float,
-    *,
-    state: int = 2,
-) -> bytes:
-    nested = (
-        _wire_float_field(4, power_w)
-        + _wire_float_field(7, voltage_v)
-        + _wire_float_field(10, current_a)
-    )
-    # top-level field #1 (varint) tracks charger state on C101 logs
-    # 1=unplugged, 2=plugged idle, 3=charging, 6=charge complete.
-    state_field = _encode_varint((1 << 3) | 0) + _encode_varint(state)
-    top_key = _encode_varint((8 << 3) | 2)
-    return state_field + top_key + _encode_varint(len(nested)) + nested
+async def test_powerpulse_ev_exact_values_from_known_packets(device, packet_sequence):
+    for hex_packet in packet_sequence:
+        packet = await device.packet_parse(bytes.fromhex(hex_packet))
+        await device.data_parse(packet)
 
+    expected = {
+        Device.ac_plug_state: AcPlugState.UNPLUGGED,
+        Device.output_power: 0.0,
+        Device.ac_output_voltage: 239.0,
+        Device.ac_output_current: 0.01,
+        Device.total_energy: 94708,
+    }
 
-async def test_powerpulse_ev_cmdset2_status_packet_parses_nested_metrics(
-    device: Device,
-):
-    packet = Packet(
-        src=0x02,
-        dst=0x20,
-        cmd_set=0x02,
-        cmd_id=0x21,
-        payload=_cmd_2_2_33_payload(
-            power_w=4320.7,
-            voltage_v=238.9,
-            current_a=18.53,
-            state=3,
-        ),
-    )
-    processed = await device.data_parse(packet)
-    assert processed is True
-    assert device.get_value(Device.ac_output_voltage) == 238.9
-    assert device.get_value(Device.ac_output_current) == 18.53
-    assert device.get_value(Device.output_power) == 4320.7
-    assert device.get_value(Device.ac_plug_state) == AcPlugState.CHARGING
-
-
-@pytest.mark.parametrize(
-    (
-        "power_w",
-        "voltage_v",
-        "current_a",
-        "expected_voltage",
-        "expected_current",
-        "expected_power",
-    ),
-    [
-        # Car plugged in but not charging: voltage present, current/power are near zero.
-        (0.0, 239.2, 0.0, 239.2, 0.0, 0.0),
-        # Transition phase observed in logs: roughly 1.28 kW and ~6 A.
-        (1283.6, 239.1, 5.80, 239.1, 5.8, 1283.6),
-        # Higher load observed in logs: roughly 4.33 kW and ~18.5 A.
-        (4330.2, 238.8, 18.52, 238.8, 18.52, 4330.2),
-    ],
-)
-async def test_powerpulse_ev_cmdset2_status_packet_maps_representative_log_values(
-    device: Device,
-    power_w: float,
-    voltage_v: float,
-    current_a: float,
-    expected_voltage: float,
-    expected_current: float,
-    expected_power: float,
-):
-    packet = Packet(
-        src=0x02,
-        dst=0x20,
-        cmd_set=0x02,
-        cmd_id=0x21,
-        payload=_cmd_2_2_33_payload(
-            power_w=power_w,
-            voltage_v=voltage_v,
-            current_a=current_a,
-        ),
-    )
-    processed = await device.data_parse(packet)
-    assert processed is True
-
-    # Expected voltage from nested field 7, rounded to 0.1V.
-    assert device.get_value(Device.ac_output_voltage) == expected_voltage
-    # Expected current from nested field 10, rounded to 0.01A.
-    assert device.get_value(Device.ac_output_current) == expected_current
-    # Expected charging power from nested field 4, rounded to 0.1W.
-    assert device.get_value(Device.output_power) == expected_power
-
-
-async def test_powerpulse_ev_cmdset2_status_packet_clamps_idle_noise_to_zero(
-    device: Device,
-):
-    packet = Packet(
-        src=0x02,
-        dst=0x20,
-        cmd_set=0x02,
-        cmd_id=0x21,
-        payload=_cmd_2_2_33_payload(power_w=0.2, voltage_v=239.2, current_a=0.0125),
-    )
-    processed = await device.data_parse(packet)
-    assert processed is True
-    # Voltage should still report line voltage while idle.
-    assert device.get_value(Device.ac_output_voltage) == 239.2
-    # Near-zero telemetry noise is clamped to 0 for user-facing idle state.
-    assert device.get_value(Device.ac_output_current) == 0.0
-    assert device.get_value(Device.output_power) == 0.0
-    assert device.get_value(Device.ac_plug_state) == AcPlugState.PLUGGED_IN
-
-
-async def test_powerpulse_ev_handles_time_sync_request(
-    device: Device, mocker: MockerFixture
-):
-    mocker.patch.object(device._time_commands, "async_send_all")
-    packet = Packet(
-        src=0x35,
-        dst=0x20,
-        cmd_set=0x01,
-        cmd_id=Packet.NET_BLE_COMMAND_CMD_SET_RET_TIME,
-        payload=b"",
-    )
-    processed = await device.data_parse(packet)
-    assert processed is True
-    device._time_commands.async_send_all.assert_called_once()
-
-
-@pytest.mark.parametrize(
-    ("state", "expected"),
-    [
-        # Logged after charge-complete transition when cable is unplugged.
-        (1, AcPlugState.UNPLUGGED),
-        # Logged as plugged in but not charging.
-        (2, AcPlugState.PLUGGED_IN),
-        # Logged during active charging.
-        (3, AcPlugState.CHARGING),
-        # Logged after charging session ended with cable still connected.
-        (6, AcPlugState.CHARGE_COMPLETE),
-    ],
-)
-async def test_powerpulse_ev_cmdset2_status_packet_sets_plugged_in_state(
-    device: Device, state: int, expected: AcPlugState
-):
-    packet = Packet(
-        src=0x02,
-        dst=0x20,
-        cmd_set=0x02,
-        cmd_id=0x21,
-        payload=_cmd_2_2_33_payload(
-            power_w=0.0,
-            voltage_v=239.0,
-            current_a=0.0,
-            state=state,
-        ),
-    )
-    processed = await device.data_parse(packet)
-    assert processed is True
-    assert device.get_value(Device.ac_plug_state) == expected
-
-
-async def test_powerpulse_ev_cmdset2_status_packet_charge_complete_maps_from_logs(
-    device: Device,
-):
-    # Representative post-charge-complete frame from logs:
-    # top-level state=6, AC voltage present, current near zero.
-    packet = Packet(
-        src=0x02,
-        dst=0x20,
-        cmd_set=0x02,
-        cmd_id=0x21,
-        payload=_cmd_2_2_33_payload(
-            power_w=0.0,
-            voltage_v=239.0,
-            current_a=0.0125,
-            state=6,
-        ),
-    )
-    processed = await device.data_parse(packet)
-    assert processed is True
-    assert device.get_value(Device.ac_plug_state) == AcPlugState.CHARGE_COMPLETE
-    # Near-zero current and power are clamped for idle/complete state readability.
-    assert device.get_value(Device.ac_output_current) == 0.0
-
-
-async def test_powerpulse_ev_cmdset2_status_packet_unplugged_maps_from_logs(
-    device: Device,
-):
-    # Representative unplugged frame from logs:
-    # top-level state transitions to 1 after charge-complete period.
-    packet = Packet(
-        src=0x02,
-        dst=0x20,
-        cmd_set=0x02,
-        cmd_id=0x21,
-        payload=_cmd_2_2_33_payload(
-            power_w=0.0,
-            voltage_v=239.0,
-            current_a=0.0,
-            state=1,
-        ),
-    )
-    processed = await device.data_parse(packet)
-    assert processed is True
-    assert device.get_value(Device.ac_plug_state) == AcPlugState.UNPLUGGED
-
-
-async def test_powerpulse_ev_packet_parse_roundtrip_xor(device: Device):
-    payload = _cmd_2_2_33_payload(
-        power_w=500.0,
-        voltage_v=238.5,
-        current_a=2.1,
-        state=3,
-    )
-    inner = Packet(
-        src=0x02,
-        dst=0x20,
-        cmd_set=0x02,
-        cmd_id=0x21,
-        payload=payload,
-        seq=b"\x00\x00\x00\x00",
-    )
-    raw = inner.toBytes()
-    parsed = await device.packet_parse(raw)
-    assert not Packet.is_invalid(parsed)
-    assert parsed.src == 0x02
-    assert parsed.cmdSet == 0x02
-    assert parsed.cmdId == 0x21
-    processed = await device.data_parse(parsed)
-    assert processed is True
-    assert device.get_value(Device.ac_plug_state) == AcPlugState.CHARGING
-    assert device.get_value(Device.output_power) == 500.0
+    for field, expected_value in expected.items():
+        actual = device.get_value(field)
+        assert actual == expected_value, (
+            f"{field.public_name}: expected {expected_value}, got {actual}"
+        )

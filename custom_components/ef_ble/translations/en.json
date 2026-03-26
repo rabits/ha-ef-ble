@@ -390,8 +390,14 @@
           "unplugged": "Unplugged",
           "plugged_in": "Plugged In",
           "charging": "Charging",
-          "charge_complete": "Charge Complete"
+          "paused": "Paused",
+          "charge_complete": "Charge Complete",
+          "standby": "Standby",
+          "updating": "Updating"
         }
+      },
+      "total_energy": {
+        "name": "Total Energy"
       },
       "grid_power": {
         "name": "Grid Power"

@@ -1,0 +1,105 @@
+syntax = "proto3";
+
+package cp307_sys;
+
+
+enum Cmd_Set {
+  NONE = 0;
+  BASIC = 1;
+  EMS = 2;
+  IOT = 53;
+  EV = 209;
+  OCPP = 224;
+  EDEV = 241;
+  EEBUS = 242;
+  GENERAL = 254;
+}
+
+message EnergyFlowHistory {
+  optional uint32 time_stamp = 1;
+  optional float evcharging_power = 2;
+  optional float meter_power = 3;
+  optional uint32 order_id = 4;
+  optional float from_grid_power = 5;
+  optional float from_pv_power = 6;
+  optional float from_bp_power = 7;
+}
+
+message EnergyStatistics {
+  optional uint32 time_stamp = 1;
+  optional uint32 watth_type = 2;
+  repeated uint32 watth = 3;
+  optional uint32 order_id = 4;
+  repeated uint32 charging_time = 5;
+}
+
+message TimerTask {
+  optional uint32 is_cfg = 1;
+  optional uint32 task_index = 2;
+  optional bool is_enable = 3;
+  optional bool is_effect = 4;
+  optional uint32 type = 5;
+  optional uint32 param = 6;
+  optional uint32 time_mode = 7;
+  optional uint32 time_param = 8;
+  repeated uint32 time_table = 9;
+  repeated uint32 current_table = 10;
+  optional bool delay_start = 11;
+}
+
+message FaultHistroy {
+  optional fixed32 fault_time = 1;
+  optional fixed32 recover_time = 2;
+  optional uint32 fault_code = 3;
+  optional float fault_value = 4;
+}
+
+message MeterValueItem {
+  optional uint32 alive = 1;
+  optional uint32 active_energy = 2;
+  optional uint32 reactive_energy = 3;
+  optional float active_power = 4;
+  optional float reactive_power = 5;
+  optional uint32 frequency = 6;
+  optional float volt_l1 = 7;
+  optional float volt_l2 = 8;
+  optional float volt_l3 = 9;
+  optional float curr_l1 = 10;
+  optional float curr_l2 = 11;
+  optional float curr_l3 = 12;
+  optional float pf_t = 13;
+  optional float pf_l1 = 14;
+  optional float pf_l2 = 15;
+  optional float pf_l3 = 16;
+}
+
+message CardWhiteListItem {
+  optional uint32 is_enable = 1;
+  optional string physical_card_id = 2;
+  optional string card_id = 3;
+  optional fixed32 life_time = 4;
+  optional string card_name = 5;
+  optional uint32 card_type = 6;
+}
+
+message SmartModeParameter {
+  optional uint32 time_to_use_car = 1;
+  optional uint32 target_type = 2;
+  optional uint32 charge_target = 3;
+  optional uint32 distance_target = 4;
+  optional uint32 keep_effective = 5;
+}
+
+message SolarModeParameter {
+  optional uint32 keep_charging_en = 1;
+  optional uint32 keep_charging_current = 2;
+}
+
+message POLinkageParameter {
+  optional bool bind_state = 1;
+  optional bool online_state = 2;
+  optional string po_sn = 3;
+  optional uint32 work_mode = 4;
+  optional uint32 ctrl_mode = 5;
+  optional uint32 master_product_type = 6;
+}

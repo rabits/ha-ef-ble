@@ -1,0 +1,495 @@
+syntax = "proto3";
+
+package cp307_iot;
+
+import "cp307_sys.proto";
+
+
+enum EMS_CmdID {
+  NONE_FOR_EMS = 0;
+  ENERGY_FLOW_CTRL = 1;
+  ENERGY_FLOW = 2;
+  HEART_BEAT = 33;
+  PARAM_REPORT = 34;
+  SAMPLE_PARAM_REPORT = 35;
+  TIMER_TASK_REPORT = 36;
+  CARD_WHITE_LIST_REPORT = 37;
+  MODULE_INFO_REPORT = 39;
+  FAULT_INFO_REPORT = 40;
+  IOT_STATE_REPORT = 41;
+  EEBUS_14A_STATE_REPORT = 42;
+  PARAM_GET = 65;
+  PARAM_SET = 66;
+  TIMER_TASK_GET = 67;
+  TIMER_TASK_SET = 68;
+  CARD_WHITE_LIST_GET = 69;
+  CARD_WHITE_LIST_SET = 70;
+  CARD_READER_PARAM_GET = 71;
+  CARD_READER_PARAM_SET = 72;
+  POWER_OCEAN_BIND = 75;
+  EEBUS_STATUS_SET = 76;
+  CHARGE_CTRL = 81;
+  GUN_LOCK_CTRL = 83;
+  RESET_DEVICE = 128;
+  ENERGY_FLOW_HISTORY_REPORT = 129;
+  ENERGY_STATICTICS_REPORT = 130;
+  FAULT_HISTORY_REPORT = 131;
+  CHARGED_RECORD = 133;
+  OPERATION_LOG = 134;
+  REQUEST_TIME_INFO = 145;
+  DATA_SYNC = 146;
+  IOT_CTRL_FUNC = 147;
+  IOT_NETWORK_SELFTEST = 161;
+  IOT_EEBUS_FUNC = 162;
+  EEBUS_GATEWAY_INFO_GET = 163;
+}
+
+enum IoT_CmdID {
+  NONE_FOR_IOT = 0;
+  BLE_NAME_BROADCAST_CFG = 53;
+  GET_IOT_RTC_TIME = 82;
+  GET_NETWORK_STATE = 112;
+  MODULES_INFO_REPORT = 113;
+  UPGRADE_CONFIRM = 121;
+  RESET_NETWORK_CONFIG = 135;
+}
+
+message EnergyFlowCtrl {
+  optional uint32 ctrl_switch = 1;
+  optional uint32 report_immdiately = 2;
+}
+
+message EnergyFlowReport {
+  optional float evcharging_power = 1;
+  optional float meter_power = 2;
+  repeated float charge_current = 3;
+  repeated float charge_voltage = 4;
+  optional float from_grid_power = 5;
+  optional float from_pv_power = 6;
+  optional float from_bp_power = 7;
+}
+
+message HeartBeat {
+  optional uint32 system_state = 1;
+  repeated uint32 error_code = 2;
+  optional uint32 ctrl_byte = 3;
+  optional uint32 feedback_byte = 4;
+  optional cp307_sys.MeterValueItem meter = 7;
+  optional cp307_sys.MeterValueItem mid_meter = 8;
+  optional uint32 energy_value = 9;
+  repeated uint32 day_from_pv = 13;
+  repeated uint32 day_from_grid = 14;
+  repeated uint32 day_from_bp = 15;
+  optional uint32 current_work_mode = 16;
+  optional uint32 charge_current_set = 17;
+  optional uint32 current_limit = 18;
+  optional uint32 input_phase = 20;
+  optional uint32 phase_ctrl = 21;
+  optional float cc_volt = 22;
+  optional uint32 cc_type = 23;
+  optional float cp_volt = 24;
+  optional uint32 cp_pwm_duty = 25;
+  optional uint32 cp_pwm_catch_duty = 26;
+  optional uint32 obc_type = 27;
+  optional float charge_power = 28;
+  repeated float phase_volt = 29;
+  repeated float phase_curr = 30;
+  repeated uint32 temp_of_relay = 31;
+  repeated uint32 temp_of_point = 32;
+  repeated uint32 temp_of_gun_seat = 33;
+  optional uint32 start_time = 40;
+  optional uint32 charge_time = 41;
+  optional uint32 charge_energy = 42;
+  optional uint32 start_energy = 43;
+  optional uint32 end_energy = 44;
+  optional uint32 energy_from_pv = 45;
+  optional uint32 energy_from_grid = 46;
+  optional uint32 energy_from_bp = 47;
+  optional cp307_sys.SmartModeParameter smart_mode_param = 61;
+  optional cp307_sys.SolarModeParameter solar_mode_param = 62;
+  optional cp307_sys.POLinkageParameter po_linkage_param = 63;
+  optional uint32 device_state = 101;
+  optional uint32 suspend_reason = 102;
+}
+
+message ParamReport {
+  optional uint32 product_sku = 1;
+  optional uint32 plug_and_play_en = 2;
+  optional uint32 start_charging_current = 3;
+  optional uint32 rcd_current_limit_en = 4;
+  optional uint32 rcd_max_current = 5;
+  optional uint32 offline_keep_charging = 6;
+  optional string default_vehicle_id = 7;
+  optional string current_vehicle_id = 8;
+  optional uint32 output_current_limit = 9;
+  optional uint32 delay_start_en = 10;
+  optional uint32 phase_ctrl_type = 11;
+  optional uint32 weak_light_keep_charging_en = 12;
+  optional uint32 led_on_off = 13;
+  optional uint32 led_brightness = 14;
+  optional uint32 screen_on_off = 15;
+  optional uint32 screen_brightness = 16;
+  optional uint32 default_vehicle_comsumption = 17;
+  optional uint32 current_vehicle_comsumption = 18;
+  optional uint32 gun_lock_keep_locking_en = 19;
+  optional uint32 screen_off_delay = 20;
+  optional uint32 start_charging_delay = 30;
+  optional uint32 suspend_charging_delay = 31;
+  optional uint32 restart_charging_delay = 32;
+  optional uint32 phase_change_delay = 33;
+}
+
+message SampleParamReport {
+  optional float volt_phase_1_adc_k = 1;
+  optional float volt_phase_1_adc_b = 2;
+  optional float volt_phase_2_adc_k = 3;
+  optional float volt_phase_2_adc_b = 4;
+  optional float volt_phase_3_adc_k = 5;
+  optional float volt_phase_3_adc_b = 6;
+  optional float curr_phase_1_adc_k = 7;
+  optional float curr_phase_1_adc_b = 8;
+  optional float curr_phase_2_adc_k = 9;
+  optional float curr_phase_2_adc_b = 10;
+  optional float curr_phase_3_adc_k = 11;
+  optional float curr_phase_3_adc_b = 12;
+  optional float temp_point_1_adc_k = 13;
+  optional float temp_point_1_adc_b = 14;
+  optional float temp_point_2_adc_k = 15;
+  optional float temp_point_2_adc_b = 16;
+  optional float temp_relay_1_adc_k = 17;
+  optional float temp_relay_1_adc_b = 18;
+  optional float temp_relay_2_adc_k = 19;
+  optional float temp_relay_2_adc_b = 20;
+  optional float temp_gun_seat_1_adc_k = 21;
+  optional float temp_gun_seat_1_adc_b = 22;
+  optional float temp_gun_seat_2_adc_k = 23;
+  optional float temp_gun_seat_2_adc_b = 24;
+  optional float volt_cp_adc_k = 25;
+  optional float volt_cp_adc_b = 26;
+  optional float volt_cc_adc_k = 27;
+  optional float volt_cc_adc_b = 28;
+  optional float volt_hw_adc_k = 29;
+  optional float volt_hw_adc_b = 30;
+  optional float volt_3v_adc_k = 31;
+  optional float volt_3v_adc_b = 32;
+}
+
+message TimeTaskReport {
+  repeated cp307_sys.TimerTask list = 1;
+}
+
+message CardWhiteListReport {
+  repeated cp307_sys.CardWhiteListItem list = 1;
+}
+
+message ModuleInfoReport {
+  optional string module_sn = 1;
+  optional uint32 module_product_info = 2;
+  optional uint32 module_program_sta = 3;
+  optional uint32 module_apl_sw_ver = 4;
+  optional uint32 module_loader_sw_ver = 5;
+}
+
+message FaultInfoReport {
+  repeated uint32 error_code = 1;
+}
+
+message IotStateReport {
+  optional uint32 ble_state = 1;
+  optional uint32 wifi_state = 2;
+  optional uint32 module_4g_state = 3;
+  optional uint32 ef_cloud_state = 4;
+  optional uint32 ocpp_cloud_state = 5;
+  optional uint32 current_netif = 6;
+  optional int32 signal_strength = 7;
+  optional uint32 error_code = 8;
+}
+
+message EmsEEBus14aStateReport {
+  optional bool enable = 1;
+  optional uint32 type = 2;
+  optional uint32 ctrl_type = 3;
+  optional uint32 power_limit = 4;
+  optional uint32 duration = 5;
+  optional uint32 end_timestamp = 6;
+}
+
+message ParamGet {
+  optional bool has_product_sku = 1;
+  optional bool has_plug_and_play_en = 2;
+  optional bool has_start_charging_current = 3;
+  optional bool has_rcd_current_limit_en = 4;
+  optional bool has_rcd_max_current = 5;
+  optional bool has_offline_keep_charging = 6;
+  optional bool has_default_vehicle_id = 7;
+  optional bool has_current_vehicle_id = 8;
+  optional bool has_output_current_limit = 9;
+  optional bool has_delay_start_en = 10;
+  optional bool has_phase_ctrl_type = 11;
+  optional bool has_weak_light_keep_charging_en = 12;
+  optional bool has_led_on_off = 13;
+  optional bool has_led_brightness = 14;
+  optional bool has_screen_on_off = 15;
+  optional bool has_screen_brightness = 16;
+  optional bool has_default_vehicle_comsumption = 17;
+  optional bool has_current_vehicle_comsumption = 18;
+  optional bool has_gun_lock_keep_locking_en = 19;
+  optional bool has_screen_off_delay = 20;
+  optional bool has_start_charging_delay = 30;
+  optional bool has_suspend_charging_delay = 31;
+  optional bool has_restart_charging_delay = 32;
+  optional bool has_phase_change_delay = 33;
+}
+
+message ParamGetAck {
+  optional uint32 product_sku = 1;
+  optional uint32 plug_and_play_en = 2;
+  optional uint32 start_charging_current = 3;
+  optional uint32 rcd_current_limit_en = 4;
+  optional uint32 rcd_max_current = 5;
+  optional uint32 offline_keep_charging = 6;
+  optional string default_vehicle_id = 7;
+  optional string current_vehicle_id = 8;
+  optional uint32 output_current_limit = 9;
+  optional uint32 delay_start_en = 10;
+  optional uint32 phase_ctrl_type = 11;
+  optional uint32 weak_light_keep_charging_en = 12;
+  optional uint32 led_on_off = 13;
+  optional uint32 led_brightness = 14;
+  optional uint32 screen_on_off = 15;
+  optional uint32 screen_brightness = 16;
+  optional uint32 default_vehicle_comsumption = 17;
+  optional uint32 current_vehicle_comsumption = 18;
+  optional uint32 gun_lock_keep_locking_en = 19;
+  optional uint32 screen_off_delay = 20;
+  optional uint32 start_charging_delay = 30;
+  optional uint32 suspend_charging_delay = 31;
+  optional uint32 restart_charging_delay = 32;
+  optional uint32 phase_change_delay = 33;
+}
+
+message ParamSet {
+  optional uint32 product_sku = 1;
+  optional uint32 plug_and_play_en = 2;
+  optional uint32 start_charging_current = 3;
+  optional uint32 rcd_current_limit_en = 4;
+  optional uint32 rcd_max_current = 5;
+  optional uint32 offline_keep_charging = 6;
+  optional string default_vehicle_id = 7;
+  optional string current_vehicle_id = 8;
+  optional uint32 output_current_limit = 9;
+  optional uint32 delay_start_en = 10;
+  optional uint32 phase_ctrl_type = 11;
+  optional uint32 weak_light_keep_charging_en = 12;
+  optional uint32 led_on_off = 13;
+  optional uint32 led_brightness = 14;
+  optional uint32 screen_on_off = 15;
+  optional uint32 screen_brightness = 16;
+  optional uint32 default_vehicle_comsumption = 17;
+  optional uint32 current_vehicle_comsumption = 18;
+  optional uint32 gun_lock_keep_locking_en = 19;
+  optional uint32 screen_off_delay = 20;
+  optional uint32 start_charging_delay = 30;
+  optional uint32 suspend_charging_delay = 31;
+  optional uint32 restart_charging_delay = 32;
+  optional uint32 phase_change_delay = 33;
+}
+
+message ParamSetAck {
+  optional uint32 result = 1;
+}
+
+message TimeTaskGet {
+}
+
+message TimeTaskSet {
+  optional cp307_sys.TimerTask item = 1;
+}
+
+message TimeTaskSetAck {
+  optional uint32 result = 1;
+}
+
+message CardWhiteListGet {
+}
+
+message CardWhiteListGetAck {
+  repeated cp307_sys.CardWhiteListItem list = 1;
+}
+
+message CardWhiteListSet {
+  optional uint32 is_cfg = 1;
+  optional cp307_sys.CardWhiteListItem item = 2;
+}
+
+message CardWhiteListSetAck {
+  optional uint32 is_cfg = 1;
+  optional uint32 result = 2;
+  optional uint32 error = 3;
+}
+
+message CardReaderParamGet {
+  optional bool has_key_a = 1;
+  optional bool has_key_b = 2;
+}
+
+message CardReaderParamGetAck {
+  optional string key_a = 1;
+  optional string key_b = 2;
+}
+
+message CardReaderParamSet {
+  optional string key_a = 1;
+  optional string key_b = 2;
+}
+
+message CardReaderParamSetAck {
+  optional uint32 result = 1;
+}
+
+message PowerOceanBind {
+  optional bool bind_flag = 1;
+  optional string po_sn = 2;
+}
+
+message PowerOceanBindAck {
+  optional uint32 result = 1;
+}
+
+message ChargerCtrl {
+  optional string card_id = 1;
+  optional string user_id = 2;
+  optional uint32 ctrl_type = 3;
+  optional uint32 charge_ctrl = 4;
+  optional uint32 current_ctrl = 5;
+  optional uint32 phase_ctrl = 6;
+  optional uint32 work_mode = 7;
+  optional cp307_sys.SmartModeParameter smart_mode = 31;
+  optional cp307_sys.SolarModeParameter solar_mode = 32;
+}
+
+message ChargerCtrlAck {
+  optional uint32 result = 1;
+}
+
+message GunLockCtrl {
+  optional uint32 gun_lock_ctrl = 1;
+}
+
+message GunLockCtrlAck {
+  optional uint32 result = 1;
+}
+
+message ResetDevice {
+  optional uint32 type = 1;
+  optional uint32 result = 2;
+}
+
+message EnergyFlowHistoryReport {
+  repeated cp307_sys.EnergyFlowHistory item = 1;
+}
+
+message EnergyStatisticsReport {
+  repeated cp307_sys.EnergyStatistics item = 1;
+}
+
+message FaultHistoryReport {
+  repeated cp307_sys.FaultHistroy item = 1;
+}
+
+message EVChargingRecord {
+  optional uint32 order_id = 1;
+  optional string card_id = 2;
+  optional string user_id = 3;
+  optional string vehicle_id = 4;
+  optional uint32 start_type = 5;
+  optional uint32 stop_reason = 6;
+  optional fixed32 start_time = 7;
+  optional fixed32 end_time = 8;
+  optional uint32 charged_energy = 9;
+  repeated uint32 watth = 10;
+  optional uint32 start_meter_energy = 11;
+  optional uint32 end_meter_energy = 12;
+  optional uint32 work_mode = 13;
+  optional uint32 charging_time = 14;
+}
+
+message OperationLog {
+  optional uint32 operate_type = 1;
+  optional uint32 operate_detail = 2;
+  optional uint32 value_before_operate = 3;
+  optional uint32 value_after_operate = 4;
+  optional fixed32 operate_time = 5;
+  optional uint32 operate_result = 6;
+  optional uint32 operate_source = 7;
+}
+
+message UpdateTimeReq {
+  optional uint32 req = 1;
+  optional uint32 unix_time = 2;
+  optional sint32 time_zone = 3;
+  optional sint32 decimal_zone = 4;
+}
+
+message EmsToIoTDataSync {
+  optional uint32 product_sku = 1;
+  optional uint32 system_state = 2;
+  optional uint32 is_gun_pluged_in = 3;
+  optional uint32 is_need_alarm = 4;
+  optional uint32 current_work_mode = 5;
+  optional string meter_sn = 6;
+  optional uint32 meter_type = 7;
+  optional uint32 srceen_state = 8;
+  optional uint32 vcc_5p8_en = 9;
+}
+
+message IoTToEmsDataSync {
+  optional uint32 ble_state = 1;
+  optional uint32 wifi_state = 2;
+  optional uint32 module_4g_state = 3;
+  optional uint32 ef_cloud_state = 4;
+  optional uint32 ocpp_cloud_state = 5;
+  optional uint32 current_netif = 6;
+  optional int32 signal_strength = 7;
+  optional uint32 error_code = 8;
+  optional int32 chip_temp = 9;
+  optional uint32 rfid_card = 10;
+  optional uint32 light_up_srceen = 11;
+  optional int32 internal_temp = 12;
+  optional uint32 fct_mode_state = 255;
+}
+
+message IoTNetworkSelfTest {
+}
+
+message IoTNetworkSelfTestAck {
+  optional uint32 mqtt_state = 1;
+  optional uint32 current_netif = 2;
+  optional uint32 ocpp_state = 3;
+  optional uint32 wifi_state = 4;
+  optional string wifi_ssid = 5;
+  optional int32 wifi_rssi = 6;
+  optional uint32 wifi_err = 7;
+  optional uint32 module_4g_state = 8;
+  optional string network_sopr = 9;
+  optional int32 module_4g_rssi = 10;
+  optional uint32 module_4g_err = 11;
+  optional uint32 module_4g_ip_addr = 12;
+  optional uint32 wifi_ip_addr = 13;
+}
+
+message ModuleInfo {
+  optional uint32 product_type = 1;
+  optional uint32 product_detail = 2;
+  optional string module_sn = 3;
+  optional string cpuid = 4;
+  optional uint32 running_sta = 5;
+  optional uint32 addr = 6;
+  optional uint32 d_addr = 7;
+  optional uint32 app_ver = 8;
+  optional uint32 loader_ver = 9;
+}
+
+message ModuleClusterInfo {
+  repeated ModuleInfo modules = 1;
+}

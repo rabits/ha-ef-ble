@@ -425,27 +425,16 @@ first charging task</sup>
 </details>
 
 <details>
-<summary><b>PowerPulse EV Charger</b> <i>(9.6 kW US)</i></summary>
+<summary><b>PowerPulse EV Charger</b> <i>(7-22 kW)</i></summary>
 
 <br>
 
-[PowerPulse EV Charger 9.6 kW](https://us.ecoflow.com/products/powerpulse-ev-charger).
-Other PowerPulse models are not implemented in this integration yet.
-
-| *Sensors*                         |
-|-----------------------------------|
-| Output Power                      |
-| AC Output Voltage (disabled)      |
-| AC Output Current (disabled)      |
-| AC Plug State                     |
-
-> **📝 Note:** Power sensors use **watts** (Home Assistant’s standard `power` device class).
-> For kilowatts, use the entity’s display precision, a template sensor, or an Energy
-> dashboard helper. **AC Output Voltage** and **AC Output Current** are off by default—enable
-> them under the entity settings if you need them.
-
-> **📝 Note:** **AC Plug State** exposes charger connection status as:
-> **Plugged In**, **Charging**, **Charge Complete**, **Unplugged**, or **Unknown**
+| *Sensors*                    |
+|------------------------------|
+| Output Power                 |
+| AC Output Voltage (disabled) |
+| AC Output Current (disabled) |
+| AC Plug State                |
 
 </details>
 

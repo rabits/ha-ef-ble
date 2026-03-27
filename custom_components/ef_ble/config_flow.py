@@ -36,6 +36,8 @@ from homeassistant.helpers.storage import Store
 
 from . import eflib
 from .const import (
+    CONF_ADVANCED_CONNECTION_OPTIONS,
+    CONF_BLUEZ_START_NOTIFY,
     CONF_COLLECT_PACKETS,
     CONF_COLLECT_PACKETS_AMOUNT,
     CONF_CONNECTION_TIMEOUT,
@@ -55,7 +57,7 @@ from .const import (
     DOMAIN,
     LINK_WIKI_SUPPORTING_NEW_DEVICES,
 )
-from .eflib.connection import ConnectionState
+from .eflib.connection import Connection, ConnectionState
 from .eflib.device_mappings import battery_name_from_device
 from .eflib.exceptions import AuthErrors
 from .eflib.logging_util import LogOptions
@@ -159,8 +161,8 @@ class EFBLEConfigFlow(ConfigFlow, domain=DOMAIN):
                 .login(self._collapsed)
                 .required(CONF_ADDRESS, vol.In([full_name]))
                 .update_period()
-                .timeout()
                 .conf_log(self._log_options)
+                .advanced_connection_options()
                 .build()
             ),
         )
@@ -262,8 +264,8 @@ class EFBLEConfigFlow(ConfigFlow, domain=DOMAIN):
                 .user_id(self._user_id)
                 .login(self._collapsed)
                 .update_period()
-                .timeout()
                 .conf_log(self._log_options)
+                .advanced_connection_options()
                 .build()
             ),
         )
@@ -307,8 +309,8 @@ class EFBLEConfigFlow(ConfigFlow, domain=DOMAIN):
                     default=PacketVersion.from_str(f"v{device.packet_version}"),
                 )
                 .login(self._collapsed)
-                .timeout()
                 .conf_log(self._log_options)
+                .advanced_connection_options()
                 .build()
             ),
         )
@@ -406,7 +408,8 @@ class EFBLEConfigFlow(ConfigFlow, domain=DOMAIN):
         password = user_input.get("login", {}).get(CONF_PASSWORD, "")
         region = user_input.get("login", {}).get(CONF_REGION, "")
         user_id = user_input.get(CONF_USER_ID, "").strip()
-        timeout = user_input.get(CONF_CONNECTION_TIMEOUT, DEFAULT_CONNECTION_TIMEOUT)
+        advanced = user_input.get(CONF_ADVANCED_CONNECTION_OPTIONS, {})
+        timeout = advanced.get(CONF_CONNECTION_TIMEOUT, DEFAULT_CONNECTION_TIMEOUT)
         packet_version = PacketVersion.from_str(user_input.get(CONF_PACKET_VERSION))
 
         self._collapsed = False
@@ -428,7 +431,9 @@ class EFBLEConfigFlow(ConfigFlow, domain=DOMAIN):
 
         device.with_logging_options(
             ConfLogOptions.from_config(user_input)
-        ).with_packet_version(packet_version.to_num())
+        ).with_packet_version(packet_version.to_num()).with_connection_options(
+            Connection.Options(timeout=timeout)
+        )
 
         await device.connect(self._user_id)
         exc = None
@@ -579,6 +584,7 @@ class OptionsFlowHandler(OptionsFlow):
                         ),
                     )
                     .update(ConfLogOptions.schema(merged_entry, collapsed=False))
+                    .advanced_connection_options(merged_entry)
                     .build()
                 ),
                 options,
@@ -682,15 +688,36 @@ class _SchemaBuilder:
             condition=condition,
         )
 
-    def timeout(self, default: int = DEFAULT_CONNECTION_TIMEOUT):
-        return self.optional(
-            key=CONF_CONNECTION_TIMEOUT,
-            selector=vol.All(int, vol.Range(min=0)),
-            default=default,
-        )
-
     def conf_log(self, options: LogOptions):
         return self.update(ConfLogOptions.schema(ConfLogOptions.to_config(options)))
+
+    def advanced_connection_options(
+        self, defaults_dict: Mapping[str, Any] | None = None, collapsed: bool = True
+    ):
+        if defaults_dict is None:
+            defaults_dict = {}
+        advanced = defaults_dict.get(CONF_ADVANCED_CONNECTION_OPTIONS, defaults_dict)
+        return self.update(
+            {
+                vol.Required(CONF_ADVANCED_CONNECTION_OPTIONS): section(
+                    vol.Schema(
+                        {
+                            vol.Optional(
+                                CONF_CONNECTION_TIMEOUT,
+                                default=advanced.get(
+                                    CONF_CONNECTION_TIMEOUT, DEFAULT_CONNECTION_TIMEOUT
+                                ),
+                            ): vol.All(int, vol.Range(min=0)),
+                            vol.Optional(
+                                CONF_BLUEZ_START_NOTIFY,
+                                default=advanced.get(CONF_BLUEZ_START_NOTIFY, False),
+                            ): bool,
+                        }
+                    ),
+                    {"collapsed": collapsed},
+                ),
+            }
+        )
 
     def build(self):
         return vol.Schema(self._schema)

@@ -18,6 +18,8 @@ from homeassistant.helpers import entity_registry as er
 from . import eflib
 from .config_flow import CONF_COLLECT_PACKETS, ConfLogOptions, LogOptions, PacketVersion
 from .const import (
+    CONF_ADVANCED_CONNECTION_OPTIONS,
+    CONF_BLUEZ_START_NOTIFY,
     CONF_COLLECT_PACKETS_AMOUNT,
     CONF_CONNECTION_TIMEOUT,
     CONF_PACKET_VERSION,
@@ -29,6 +31,7 @@ from .const import (
 )
 from .eflib.connection import (
     BleakError,
+    Connection,
     ConnectionTimeout,
     MaxConnectionAttemptsReached,
 )
@@ -59,7 +62,6 @@ async def async_setup_entry(hass: HomeAssistant, entry: DeviceConfigEntry) -> bo
     user_id = entry.data.get(CONF_USER_ID)
     merged_options = entry.data | entry.options
     update_period = merged_options.get(CONF_UPDATE_PERIOD, DEFAULT_UPDATE_PERIOD)
-    timeout = merged_options.get(CONF_CONNECTION_TIMEOUT, DEFAULT_CONNECTION_TIMEOUT)
     packet_version = PacketVersion.from_str(
         entry.data.get(CONF_PACKET_VERSION, PacketVersion.V3)
     )
@@ -85,6 +87,13 @@ async def async_setup_entry(hass: HomeAssistant, entry: DeviceConfigEntry) -> bo
     packet_collection_enabled = merged_options.get(
         CONF_COLLECT_PACKETS, eflib.is_unsupported(device)
     )
+
+    advanced = merged_options.get(CONF_ADVANCED_CONNECTION_OPTIONS, {})
+    timeout = advanced.get(CONF_CONNECTION_TIMEOUT, DEFAULT_CONNECTION_TIMEOUT)
+    options = Connection.Options(
+        timeout=timeout,
+        bluez_start_notify=advanced.get(CONF_BLUEZ_START_NOTIFY, False),
+    )
     issue_id = f"{entry.entry_id}_max_connection_attempts"
 
     try:
@@ -94,9 +103,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: DeviceConfigEntry) -> bo
             .with_disabled_reconnect()
             .with_packet_version(packet_version.to_num())
             .with_enabled_packet_diagnostics(packet_collection_enabled)
+            .with_connection_options(options)
             .connect(
                 user_id=user_id,
-                timeout=timeout,
                 max_attempts=0 if eflib.is_solar_only(device) else None,
             )
         )
@@ -213,6 +222,11 @@ async def _update_listener(hass: HomeAssistant, entry: DeviceConfigEntry):
         CONF_COLLECT_PACKETS, eflib.is_unsupported(device)
     )
     diagnostics_buffer_size = merged_options.get(CONF_COLLECT_PACKETS_AMOUNT, 100)
+    advanced = merged_options.get(CONF_ADVANCED_CONNECTION_OPTIONS, {})
+    options = Connection.Options(
+        timeout=advanced.get(CONF_CONNECTION_TIMEOUT, DEFAULT_CONNECTION_TIMEOUT),
+        bluez_start_notify=advanced.get(CONF_BLUEZ_START_NOTIFY, False),
+    )
 
     (
         device.with_update_period(period=update_period)
@@ -221,4 +235,5 @@ async def _update_listener(hass: HomeAssistant, entry: DeviceConfigEntry):
             enabled=packet_collection,
             buffer_size=diagnostics_buffer_size,
         )
+        .with_connection_options(options)
     )

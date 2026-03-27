@@ -33,12 +33,10 @@
         "data": {
           "user_id": "EcoFlow User ID",
           "address": "BLE Device",
-          "update_period": "Update Period",
-          "connection_timeout": "Connection Timeout"
+          "update_period": "Update Period"
         },
         "data_description": {
-          "update_period": "Number of seconds to wait before processing the next device update. Value of 0 means all updates are processed immediately (will result in a high number of database writes).",
-          "connection_timeout": "Number of seconds to wait for the device to connect and authenticate."
+          "update_period": "Number of seconds to wait before processing the next device update. Value of 0 means all updates are processed immediately (will result in a high number of database writes)."
         },
         "sections": {
           "login": {
@@ -64,6 +62,18 @@
               "log_encrypted_payloads": "Log encrypted payloads",
               "log_payloads": "Log decrypted payloads",
               "log_bleak": "Enable bleak debug log level (not masked and not filtered to this device)"
+            }
+          },
+          "advanced_connection_options": {
+            "name": "Advanced connection options",
+            "description": "These options affect the Bluetooth connection behavior. Only change them if you are experiencing connectivity issues.",
+            "data": {
+              "connection_timeout": "Connection timeout",
+              "bluez_start_notify": "Use BlueZ start notify"
+            },
+            "data_description": {
+              "connection_timeout": "Number of seconds to wait for the device to connect and authenticate.",
+              "bluez_start_notify": "Try enabling this if you experience frequent disconnects when multiple BLE devices are connected, or if you see `AcquireNotify: Read error` / `Unexpected EOF on notification file handle` in your logs."
             }
           }
         }
@@ -80,12 +90,10 @@
         "data": {
           "user_id": "EcoFlow User ID",
           "address": "BLE Device",
-          "update_period": "Update Period",
-          "connection_timeout": "Connection Timeout"
+          "update_period": "Update Period"
         },
         "data_description": {
-          "update_period": "Number of seconds to wait before processing the next device update. Value of 0 means all updates are processed immediately (will result in a high number of DB writes).",
-          "connection_timeout": "Number of seconds to wait for the device to connect and authenticate."
+          "update_period": "Number of seconds to wait before processing the next device update. Value of 0 means all updates are processed immediately (will result in a high number of DB writes)."
         },
         "sections": {
           "login": {
@@ -112,6 +120,18 @@
               "log_payloads": "Log decrypted payloads",
               "log_bleak": "Enable bleak debug log level (not masked and not filtered to this device)"
             }
+          },
+          "advanced_connection_options": {
+            "name": "Advanced connection options",
+            "description": "These options affect the Bluetooth connection behavior. Only change them if you are experiencing connectivity issues.",
+            "data": {
+              "connection_timeout": "Connection timeout",
+              "bluez_start_notify": "Use BlueZ start notify"
+            },
+            "data_description": {
+              "connection_timeout": "Number of seconds to wait for the device to connect and authenticate.",
+              "bluez_start_notify": "Try enabling this if you experience frequent disconnects when multiple BLE devices are connected, or if you see `AcquireNotify: Read error` / `Unexpected EOF on notification file handle` in your logs."
+            }
           }
         }
       },
@@ -121,13 +141,11 @@
         "data": {
           "user_id": "EcoFlow User ID",
           "update_period": "Update Period",
-          "packet_version": "Packet Version",
-          "connection_timeout": "Connection Timeout"
+          "packet_version": "Packet Version"
         },
         "data_description": {
           "update_period": "Number of seconds to wait before processing the next device update. A default value of 0 means all updates are processed immediately (may result in a high number of DB writes).",
-          "packet_version": "Version of packets to use - depends on the generation and firmware of this device. Try different version if connection/authentication fails.\nNote that some devices may use packet version that is not yet supported by this integration.",
-          "connection_timeout": "Number of seconds to wait for the device to connect and authenticate."
+          "packet_version": "Version of packets to use - depends on the generation and firmware of this device. Try different version if connection/authentication fails.\nNote that some devices may use packet version that is not yet supported by this integration."
         },
         "sections": {
           "login": {
@@ -153,6 +171,18 @@
               "log_encrypted_payloads": "Log encrypted payloads",
               "log_payloads": "Log decrypted payloads",
               "log_bleak": "Enable bleak debug log level (not masked and not filtered to this device)"
+            }
+          },
+          "advanced_connection_options": {
+            "name": "Advanced connection options",
+            "description": "These options affect the Bluetooth connection behavior. Only change them if you are experiencing connectivity issues.",
+            "data": {
+              "connection_timeout": "Connection timeout",
+              "bluez_start_notify": "Use BlueZ start notify"
+            },
+            "data_description": {
+              "connection_timeout": "Number of seconds to wait for the device to connect and authenticate.",
+              "bluez_start_notify": "Try enabling this if you experience frequent disconnects when multiple BLE devices are connected, or if you see `AcquireNotify: Read error` / `Unexpected EOF on notification file handle` in your logs."
             }
           }
         }
@@ -198,6 +228,18 @@
               "log_encrypted_payloads": "Log encrypted payloads",
               "log_payloads": "Log decrypted payloads",
               "log_bleak": "Enable bleak debug log level (not masked and not filtered to this device)"
+            }
+          },
+          "advanced_connection_options": {
+            "name": "Advanced connection options",
+            "description": "These options affect the Bluetooth connection behavior. Only change them if you are experiencing connectivity issues.",
+            "data": {
+              "connection_timeout": "Connection timeout",
+              "bluez_start_notify": "Use BlueZ start notify"
+            },
+            "data_description": {
+              "connection_timeout": "Number of seconds to wait for the device to connect and authenticate.",
+              "bluez_start_notify": "Try enabling this if you experience frequent disconnects when multiple BLE devices are connected, or if you see `AcquireNotify: Read error` / `Unexpected EOF on notification file handle` in your logs."
             }
           }
         }

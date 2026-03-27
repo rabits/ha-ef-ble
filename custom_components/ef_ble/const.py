@@ -11,6 +11,9 @@ CONF_COLLECT_PACKETS = "collect_packets"
 CONF_COLLECT_PACKETS_AMOUNT = "collect_packets_amount"
 CONF_EXTRA_BATTERY = "extra_battery"
 
+CONF_ADVANCED_CONNECTION_OPTIONS = "advanced_connection_options"
+CONF_BLUEZ_START_NOTIFY = "bluez_start_notify"
+
 CONF_LOG_MASKED = "log_masked"
 CONF_LOG_PACKETS = "log_packets"
 CONF_LOG_ENCRYPTED_PAYLOADS = "log_encrypted_payloads"

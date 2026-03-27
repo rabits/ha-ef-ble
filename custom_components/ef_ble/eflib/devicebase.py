@@ -87,6 +87,7 @@ class DeviceBase(abc.ABC):
         self._packet_version = 0x03
 
         self._reconnect_disabled = False
+        self._options = Connection.Options()
         self._diagnostics = DeviceDiagnosticsCollector(self)
 
         self._manufacturer_data = adv_data.manufacturer_data[self.MANUFACTURER_KEY]
@@ -167,6 +168,13 @@ class DeviceBase(abc.ABC):
             self._conn.with_disabled_reconnect(is_disabled)
         return self
 
+    def with_connection_options(self, options: Connection.Options):
+        """Set connection options."""
+        self._options = options
+        if self._conn is not None:
+            self._conn.with_options(options)
+        return self
+
     def with_packet_version(self, packet_version: int | None = None):
         self._packet_version = (
             packet_version if packet_version is not None else self._packet_version
@@ -204,7 +212,6 @@ class DeviceBase(abc.ABC):
         self,
         user_id: str | None = None,
         max_attempts: int | None = None,
-        timeout: int = 20,
     ):
         if self._conn is None:
             self._conn = (
@@ -220,6 +227,7 @@ class DeviceBase(abc.ABC):
                 )
                 .with_logging_options(self._logger.options)
                 .with_disabled_reconnect(self._reconnect_disabled)
+                .with_options(self._options)
             )
             self._connection_event.set()
 
@@ -236,7 +244,7 @@ class DeviceBase(abc.ABC):
         elif self._conn._user_id != user_id:
             self._conn._user_id = user_id
 
-        await self._conn.connect(max_attempts=max_attempts, timeout=timeout)
+        await self._conn.connect(max_attempts=max_attempts)
 
     async def disconnect(self):
         if self._conn is None:

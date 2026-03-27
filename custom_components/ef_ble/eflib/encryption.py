@@ -31,8 +31,17 @@ class Type7Encryption(EncryptionStrategy):
         return cipher.encrypt(plaintext=pad(plaintext, AES.block_size))
 
     async def decrypt(self, ciphertext: bytes) -> bytes:
+        # native firmware decrypts only full AES blocks and discards any trailing bytes
+        # that don't fill a complete block
+        aligned = len(ciphertext) - len(ciphertext) % AES.block_size
+        if aligned == 0:
+            return ciphertext
         cipher = AES.new(self.session_key, AES.MODE_CBC, self.iv)
-        return unpad(cipher.decrypt(ciphertext), AES.block_size)
+        decrypted = cipher.decrypt(ciphertext[:aligned])
+        try:
+            return unpad(decrypted, AES.block_size)
+        except ValueError:
+            return decrypted
 
 
 class Type1Encryption(EncryptionStrategy):

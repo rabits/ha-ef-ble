@@ -1,5 +1,5 @@
-from functools import partialmethod
-
+from ..entity import controls
+from ..entity.base import dynamic
 from ..pb import pd335_sys_pb2
 from ..props import Field, pb_field
 from . import delta3
@@ -31,6 +31,8 @@ class Device(delta3.Device):
             else 0
         )
 
-    set_dc_charging_amps_max_2 = partialmethod(
-        delta3.Device.set_dc_charging_amps_max, plug_index=pd335_sys_pb2.PV_PLUG_INDEX_2
-    )
+    @controls.current(dc_charging_max_amps_2, max=dynamic(dc_charging_current_max_2))
+    async def set_dc_charging_amps_max_2(self, value: float) -> bool:
+        return await self.set_dc_charging_amps_max(
+            value, plug_index=pd335_sys_pb2.PV_PLUG_INDEX_2
+        )

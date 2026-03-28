@@ -242,11 +242,23 @@
                     "off": "mdi:power-plug-off"
                 }
             },
-            "ac_ports": {
-                "default": "mdi:power-plug",
+            "usb_ports": {
+                "default": "mdi:usb",
                 "state": {
-                    "off": "mdi:power-plug-off-outline"
+                    "off": "mdi:usb-off"
                 }
+            },
+            "disable_grid_bypass": {
+                "default": "mdi:transmission-tower-off"
+            },
+            "energy_strategy_self_powered": {
+                "default": "mdi:solar-power"
+            },
+            "energy_strategy_scheduled": {
+                "default": "mdi:calendar-clock"
+            },
+            "energy_strategy_tou": {
+                "default": "mdi:clock-time-eight"
             }
         },
         "select": {
@@ -283,6 +295,9 @@
                 "default": "mdi:lightning-bolt"
             },
             "dc_charging_max_amps": {
+                "default": "mdi:current-dc"
+            },
+            "dc_charging_max_amps_2": {
                 "default": "mdi:current-dc"
             },
             "backup_charge_limit": {

@@ -1,3 +1,4 @@
+from ..entity import controls
 from ..pb import pr705_pb2
 from ..props import pb_field
 from ..props.enums import IntFieldValue
@@ -20,6 +21,7 @@ class Device(river3.Device):
 
     led_mode = pb_field(river3.pb.led_mode, LedMode.from_value)
 
+    @controls.select(led_mode, options=LedMode)
     async def set_led_mode(self, state: LedMode):
         await self._send_config_packet(pr705_pb2.ConfigWrite(cfg_led_mode=state.value))
 

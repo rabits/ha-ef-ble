@@ -1,10 +1,9 @@
 from bleak.backends.device import BLEDevice
 from bleak.backends.scanner import AdvertisementData
 
-from custom_components.ef_ble.eflib.entity import controls
-
 from ..commands import TimeCommands
 from ..devicebase import DeviceBase
+from ..entity import controls
 from ..entity.base import dynamic
 from ..packet import Packet
 from ..pb import pr705_pb2

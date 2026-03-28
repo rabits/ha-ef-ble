@@ -2,6 +2,7 @@ from collections.abc import Sequence
 
 from custom_components.ef_ble.eflib.pb import pd335_sys_pb2
 
+from ..entity import controls
 from ..props import pb_field, repeated_pb_field_type
 from . import delta3, delta3_ultra
 from ._delta3_base import flow_is_on, out_power
@@ -33,6 +34,7 @@ class Device(delta3_ultra.Device):
     usbc3_output_power = pb_field(pb.pow_get_typec3, out_power)
     max_ac_charging_power = pb_field(pb.plug_in_info_ac_in_chg_hal_pow_max)
 
+    @controls.outlet(ac_ports_2)
     async def enable_ac_ports_2(self, enabled: bool):
         await self._send_config_packet(
             pd335_sys_pb2.ConfigWrite(cfg_ac2_out_open=enabled)

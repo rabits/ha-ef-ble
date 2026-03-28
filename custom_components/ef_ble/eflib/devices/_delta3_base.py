@@ -6,6 +6,8 @@ from google.protobuf.message import Message
 
 from ..commands import TimeCommands
 from ..devicebase import DeviceBase
+from ..entity import controls
+from ..entity.base import dynamic
 from ..packet import Packet
 from ..pb import pd335_bms_bp_pb2, pd335_sys_pb2
 from ..props import (
@@ -169,32 +171,40 @@ class Delta3Base(DeviceBase, ProtobufProps):
         packet = Packet(0x20, 0x02, 0xFE, 0x11, payload, 0x01, 0x01, 0x13)
         await self._conn.sendPacket(packet)
 
+    @controls.outlet(ac_ports)
     async def enable_ac_ports(self, enabled: bool):
         await self._send_config_packet(
             pd335_sys_pb2.ConfigWrite(cfg_ac_out_open=enabled)
         )
 
-    async def set_battery_charge_limit_min(self, limit: int):
+    @controls.battery(battery_charge_limit_min, max=dynamic(battery_charge_limit_max))
+    async def set_battery_charge_limit_min(self, limit: float):
         if (
             self.battery_charge_limit_max is not None
             and limit > self.battery_charge_limit_max
         ):
             return False
 
-        await self._send_config_packet(pd335_sys_pb2.ConfigWrite(cfg_min_dsg_soc=limit))
+        await self._send_config_packet(
+            pd335_sys_pb2.ConfigWrite(cfg_min_dsg_soc=int(limit))
+        )
         return True
 
-    async def set_battery_charge_limit_max(self, limit: int):
+    @controls.battery(battery_charge_limit_max, min=dynamic(battery_charge_limit_min))
+    async def set_battery_charge_limit_max(self, limit: float):
         if (
             self.battery_charge_limit_min is not None
             and limit < self.battery_charge_limit_min
         ):
             return False
 
-        await self._send_config_packet(pd335_sys_pb2.ConfigWrite(cfg_max_chg_soc=limit))
+        await self._send_config_packet(
+            pd335_sys_pb2.ConfigWrite(cfg_max_chg_soc=int(limit))
+        )
         return True
 
-    async def set_ac_charging_speed(self, value: int):
+    @controls.power(ac_charging_speed, max=dynamic(max_ac_charging_power))
+    async def set_ac_charging_speed(self, value: float):
         if (
             self.max_ac_charging_power is None
             or value > self.max_ac_charging_power
@@ -205,14 +215,15 @@ class Delta3Base(DeviceBase, ProtobufProps):
         await self._send_config_packet(
             pd335_sys_pb2.ConfigWrite(
                 cfg_ac_in_chg_mode=pd335_sys_pb2.AC_IN_CHG_MODE_SELF_DEF_POW,
-                cfg_plug_in_info_ac_in_chg_pow_max=value,
+                cfg_plug_in_info_ac_in_chg_pow_max=int(value),
             )
         )
         return True
 
+    @controls.current(dc_charging_max_amps, max=dynamic(dc_charging_current_max))
     async def set_dc_charging_amps_max(
         self,
-        value: int,
+        value: float,
         plug_index: pd335_sys_pb2.PV_PLUG_INDEX = pd335_sys_pb2.PV_PLUG_INDEX_1,
     ) -> bool:
         if (
@@ -225,7 +236,7 @@ class Delta3Base(DeviceBase, ProtobufProps):
         config = pd335_sys_pb2.ConfigWrite()
         config.cfg_pv_dc_chg_setting.pv_plug_index = plug_index
         config.cfg_pv_dc_chg_setting.pv_chg_vol_spec = pd335_sys_pb2.PV_CHG_VOL_SPEC_12V
-        config.cfg_pv_dc_chg_setting.pv_chg_amp_limit = value
+        config.cfg_pv_dc_chg_setting.pv_chg_amp_limit = int(value)
 
         await self._send_config_packet(config)
         return True

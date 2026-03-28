@@ -174,10 +174,10 @@ def for_each(
     def decorator(func: "Callable") -> "Callable":
         avail_iter = iter(availability) if availability is not None else None
         for i, field in enumerate(fields):
-            circuit_id = i + 1
+            idx = i + 1
             avail = next(avail_iter) if avail_iter is not None else None
             placeholders = (
-                translation_placeholders(circuit_id)
+                translation_placeholders(idx)
                 if translation_placeholders is not None
                 else None
             )
@@ -191,9 +191,9 @@ def for_each(
             async def _enable(
                 device: "DeviceBase",
                 enabled: bool,
-                _cid: int = circuit_id,
+                _id: int = idx,
             ) -> None:
-                await func(device, _cid, enabled)
+                await func(device, _id, enabled)
 
             ctrl.enable_func = _enable
             field.sensor(ctrl)

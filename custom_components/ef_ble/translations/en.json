@@ -941,6 +941,15 @@
       },
       "ac_5p8_charging_power": {
         "name": "AC 5P8 Charging Power"
+      },
+      "energy_backup_battery_level": {
+        "name": "Backup Reserve"
+      },
+      "dc_charging_max_amps": {
+        "name": "DC Charging Max Amps"
+      },
+      "dc_charging_max_amps_2": {
+        "name": "DC (2) Charging Max Amps"
       }
     },
     "switch": {
@@ -967,6 +976,24 @@
       },
       "energy_backup": {
         "name": "Backup Reserve"
+      },
+      "usb_ports": {
+        "name": "USB Ports"
+      },
+      "ac_ports_2": {
+        "name": "AC Ports (2)"
+      },
+      "disable_grid_bypass": {
+        "name": "Disable Grid Bypass"
+      },
+      "energy_strategy_self_powered": {
+        "name": "Self-Powered Mode"
+      },
+      "energy_strategy_scheduled": {
+        "name": "Scheduled Mode"
+      },
+      "energy_strategy_tou": {
+        "name": "Time-of-Use Mode"
       }
     }
   }

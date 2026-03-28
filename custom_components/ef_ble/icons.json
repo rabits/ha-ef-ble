@@ -229,6 +229,24 @@
                 "state": {
                     "on": "mdi:electric-switch-closed"
                 }
+            },
+            "energy_backup": {
+                "default": "mdi:battery-sync",
+                "state": {
+                    "off": "mdi:battery-sync-outline"
+                }
+            },
+            "dc_12v_port": {
+                "default": "mdi:power-plug",
+                "state": {
+                    "off": "mdi:power-plug-off"
+                }
+            },
+            "ac_ports": {
+                "default": "mdi:power-plug",
+                "state": {
+                    "off": "mdi:power-plug-off-outline"
+                }
             }
         },
         "select": {
@@ -243,11 +261,29 @@
                     "self_powered": "mdi:solar-power-variant",
                     "scheduled": "mdi:battery-clock"
                 }
+            },
+            "dc_charging_type": {
+                "default": "mdi:lightning-bolt-circle"
             }
         },
         "number": {
             "liquefied_gas_value": {
                 "default": "mdi:storage-tank"
+            },
+            "energy_backup_battery_level": {
+                "default": "mdi:battery-sync"
+            },
+            "battery_charge_limit_min": {
+                "default": "mdi:battery-arrow-down-outline"
+            },
+            "battery_charge_limit_max": {
+                "default": "mdi:battery-arrow-up"
+            },
+            "ac_charging_speed": {
+                "default": "mdi:lightning-bolt"
+            },
+            "dc_charging_max_amps": {
+                "default": "mdi:current-dc"
             },
             "backup_charge_limit": {
                 "default": "mdi:battery-arrow-up"

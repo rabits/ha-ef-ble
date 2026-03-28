@@ -31,8 +31,8 @@ class ControlType(EntityType):
 class toggle(ControlType):
     type SwitchFunc[D: "DeviceBase"] = Callable[[D, bool], Awaitable[None]]
 
-    enable_func: SwitchFunc | None = dataclasses.field(
-        default=None,
+    enable_func: SwitchFunc = dataclasses.field(
+        default=cast("SwitchFunc", None),
         repr=False,
         init=False,
     )
@@ -145,13 +145,13 @@ class select[E: IntFieldValue](ControlType):
 
         value_type = self._value_type
 
-        async def _func(device: D, value: E | str) -> None:  # type: ignore[assignment]
+        async def _func(device: D, value: E | str) -> None:
             if isinstance(value, str) and value_type is not None:
                 value = value_type[value.upper()]
 
-            await func(device, value)  # type: ignore[arg-type]
+            await func(device, value)  # pyright: ignore[reportArgumentType]
 
-        self.set_value_func = _func
+        self.set_value_func = _func  # pyright: ignore[reportAttributeAccessIssue]
         self._field.sensor(self)
         return _func
 
@@ -165,7 +165,7 @@ def for_each(
     translation_placeholders: "Callable[[int], dict[str, str]] | None" = None,
 ) -> "Callable[[Callable], Callable]":
     """
-    Decorator that registers a toggle control for each field in the list.
+    Decorator that registers a toggle control for each field in the list
 
     The decorated function must accept (self, index: int, enabled: bool) where
     index is 1-based (i.e. 1 for the first field, 2 for the second, etc.).

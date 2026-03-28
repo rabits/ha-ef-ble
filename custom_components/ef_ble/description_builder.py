@@ -134,41 +134,6 @@ class EcoflowSelectEntityDescription[T: DeviceBase](SelectEntityDescription):
     availability_prop: str | None = None
 
 
-class SelectSensorBuilder(EntityDescriptionBuilder):
-    def __init__(self):
-        self._options = None
-        self._async_set_native_value = None
-        self._availability_prop = None
-
-    def options(self, options: list[str]):
-        self._options = options
-        return self
-
-    def async_set_native_value(
-        self, func: Callable[[DeviceBase, Any], Awaitable[None]]
-    ):
-        self._async_set_native_value = func
-        return self
-
-    def set_state(self, func: Callable[[DeviceBase, Any], Awaitable[None]]):
-        self._async_set_native_value = func
-        return self
-
-    def build(self):
-        if self._field is None:
-            raise ValueError("Cannot build select entity without field")
-        return EcoflowSelectEntityDescription(
-            key=self._entity_key,
-            name=self._entity_name,
-            options=self._options,
-            set_state=self._async_set_native_value,
-            translation_key=self._entity_translation_key,
-            entity_registry_enabled_default=self._entity_registry_enabled_default,
-            availability_prop=self._availability_prop,
-            icon=self._icon,
-        )
-
-
 _UNIT_CONVERSION = {
     units.Power.WATT: UnitOfPower.WATT,
     units.Temperature.C: UnitOfTemperature.CELSIUS,

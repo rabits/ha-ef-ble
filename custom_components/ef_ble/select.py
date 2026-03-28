@@ -1,3 +1,4 @@
+import dataclasses
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 
@@ -6,7 +7,8 @@ from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from . import DeviceConfigEntry
-from .eflib import DeviceBase
+from .description_builder import SelectSensorBuilder
+from .eflib import DeviceBase, controls, get_controls
 from .eflib.devices import (
     alternator_charger,
     dpu,
@@ -168,22 +170,55 @@ SELECT_TYPES: list[EcoflowSelectEntityDescription] = [
 ]
 
 
+@dataclasses.dataclass
+class _Builder[E: controls.select]:
+    builder: Callable[[E, SelectSensorBuilder], SelectSensorBuilder]
+
+
+_BUILDERS = {
+    controls.select: _Builder[controls.select](lambda select, builder: builder),
+}
+
+
+def _build_control_selects(
+    device: DeviceBase,
+) -> list[EcoflowSelectEntityDescription]:
+    return [
+        (
+            _BUILDERS[select.__class__]
+            .builder(select, SelectSensorBuilder.from_entity(select))
+            .set_state(select.set_value_func)
+            .availability_prop(select.availability_prop)
+            .options(select.options_str)
+            .build()
+        )
+        for select in get_controls(device, control_type=controls.select)
+        if select.__class__ in _BUILDERS and select.set_value_func is not None
+    ]
+
+
 async def async_setup_entry(
     hass: HomeAssistant,
     config_entry: DeviceConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
-    """Add binary sensors for passed config_entry in HA."""
+    """Add select entities for passed config_entry in HA."""
     device = config_entry.runtime_data
 
-    new_sensors = [
-        EcoflowSelect(device, description)
-        for description in SELECT_TYPES
-        if hasattr(device, description.key)
+    # New controls system (devices migrated to @controls decorators)
+    control_descs = _build_control_selects(device)
+    control_keys = {d.key for d in control_descs}
+
+    # Deprecated: old hardcoded list (for devices not yet migrated)
+    legacy_descs = [
+        desc
+        for desc in SELECT_TYPES
+        if desc.key not in control_keys and hasattr(device, desc.key)
     ]
 
-    if new_sensors:
-        async_add_entities(new_sensors)
+    entities = [EcoflowSelect(device, desc) for desc in [*control_descs, *legacy_descs]]
+    if entities:
+        async_add_entities(entities)
 
 
 class EcoflowSelect(EcoflowEntity, SelectEntity):

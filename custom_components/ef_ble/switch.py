@@ -1,3 +1,4 @@
+import dataclasses
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 from functools import partial
@@ -12,8 +13,10 @@ from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from . import DeviceConfigEntry
-from .eflib import DeviceBase
+from .description_builder import EntityDescriptionBuilder
+from .eflib import DeviceBase, get_controls
 from .eflib.devices import dpu, shp2
+from .eflib.entity import controls
 from .entity import EcoflowEntity
 
 
@@ -186,6 +189,65 @@ SWITCH_TYPES = [
 ]
 
 
+@dataclass(init=False)
+class SwitchBuilder(EntityDescriptionBuilder):
+    _device_class: SwitchDeviceClass | None = None
+    _enable_func: Callable[[DeviceBase, bool], Awaitable[None]] | None = None
+
+    def device_class(self, device_class: SwitchDeviceClass):
+        self._device_class = device_class
+        return self
+
+    def enable_func(self, func: Callable[[DeviceBase, bool], Awaitable[None]]):
+        self._enable_func = func
+        return self
+
+    def build(self):
+        if self._enable_func is None:
+            raise ValueError("Cannot build switch entity without enable func")
+        return EcoflowSwitchEntityDescription(
+            key=self._entity_key,
+            name=self._entity_name,
+            device_class=self._device_class,
+            entity_category=self._entity_category,
+            set_state=self._enable_func,
+            entity_registry_enabled_default=self._entity_registry_enabled_default,
+            translation_key=self._entity_translation_key,
+            translation_placeholders=self._translation_placeholders,
+            availability_prop=self._availability_prop,
+            icon=self._icon,
+        )
+
+
+@dataclasses.dataclass
+class _Builder[E: controls.ControlType]:
+    builder: Callable[[E, SwitchBuilder], SwitchBuilder]
+
+
+_BUILDERS: dict[type[controls.ControlType], _Builder] = {
+    controls.outlet: _Builder[controls.outlet](
+        lambda outlet, builder: builder.device_class(SwitchDeviceClass.OUTLET)
+    ),
+    controls.switch: _Builder[controls.switch](
+        lambda switch, builder: builder.device_class(SwitchDeviceClass.SWITCH)
+    ),
+    controls.toggle: _Builder[controls.toggle](lambda toggle, builder: builder),
+}
+
+
+def _build_control_switches(device: DeviceBase) -> list[SwitchEntityDescription]:
+    return [
+        (
+            _BUILDERS[switch.__class__]
+            .builder(switch, SwitchBuilder.from_entity(switch))
+            .enable_func(switch.enable_func)
+            .build()
+        )
+        for switch in get_controls(device, controls.toggle)
+        if switch.__class__ in _BUILDERS and switch.enable_func is not None
+    ]
+
+
 async def async_setup_entry(
     hass: HomeAssistant,
     entry: DeviceConfigEntry,
@@ -193,20 +255,29 @@ async def async_setup_entry(
 ):
     device = entry.runtime_data
 
-    switches = [
-        EcoflowSwitchEntity(device, switch_desc)
-        for switch_desc in SWITCH_TYPES
+    # New controls system (devices migrated to @controls decorators)
+    control_descs = _build_control_switches(device)
+    control_keys = {d.key for d in control_descs}
+
+    # Deprecated: old hardcoded list (for devices not yet migrated)
+    legacy_descs = [
+        desc
+        for desc in SWITCH_TYPES
         if (
-            hasattr(device, switch_desc.key)
+            desc.key not in control_keys
+            and hasattr(device, desc.key)
             and (
-                isinstance(switch_desc, EcoflowSwitchEntityDescription)
-                or hasattr(device, f"enable_{switch_desc.key}")
+                isinstance(desc, EcoflowSwitchEntityDescription)
+                or hasattr(device, f"enable_{desc.key}")
             )
         )
     ]
 
-    if switches:
-        async_add_entities(switches)
+    entities = [
+        EcoflowSwitchEntity(device, desc) for desc in [*control_descs, *legacy_descs]
+    ]
+    if entities:
+        async_add_entities(entities)
 
 
 class EcoflowSwitchEntity(EcoflowEntity, SwitchEntity):

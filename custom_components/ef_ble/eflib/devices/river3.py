@@ -1,8 +1,11 @@
 from bleak.backends.device import BLEDevice
 from bleak.backends.scanner import AdvertisementData
 
+from custom_components.ef_ble.eflib.entity import controls
+
 from ..commands import TimeCommands
 from ..devicebase import DeviceBase
+from ..entity.base import dynamic
 from ..packet import Packet
 from ..pb import pr705_pb2
 from ..props import (
@@ -99,7 +102,6 @@ class Device(DeviceBase, ProtobufProps):
 
     dc_charging_type = pb_field(pb.pv_chg_type, DcChargingType.from_value)
     dc_charging_max_amps = pb_field(pb.plug_in_info_pv_dc_amp_max)
-    dc_charging_current_max = Field[int]()
 
     remaining_time_charging = pb_field(pb.cms_chg_rem_time)
     remaining_time_discharging = pb_field(pb.cms_dsg_rem_time)
@@ -109,7 +111,6 @@ class Device(DeviceBase, ProtobufProps):
     ) -> None:
         super().__init__(ble_dev, adv_data, sn)
         self._time_commands = TimeCommands(self)
-        self.dc_charging_current_max = 8
 
     @classmethod
     def check(cls, sn):
@@ -177,41 +178,58 @@ class Device(DeviceBase, ProtobufProps):
         packet = Packet(0x20, 0x02, 0xFE, 0x11, payload, 0x01, 0x01, 0x13)
         await self._conn.sendPacket(packet)
 
-    async def set_energy_backup_battery_level(self, value: int):
+    @controls.battery(
+        energy_backup_battery_level,
+        min=dynamic(battery_charge_limit_min),
+        max=dynamic(battery_charge_limit_max),
+        availability=dynamic(energy_backup),
+    )
+    async def set_energy_backup_battery_level(self, value: float):
         config = pr705_pb2.ConfigWrite()
         config.cfg_energy_backup.energy_backup_en = True
-        config.cfg_energy_backup.energy_backup_start_soc = value
+        config.cfg_energy_backup.energy_backup_start_soc = int(value)
         await self._send_config_packet(config)
         return True
 
+    @controls.switch(energy_backup)
     async def enable_energy_backup(self, enabled: bool):
         config = pr705_pb2.ConfigWrite()
         config.cfg_energy_backup.energy_backup_en = enabled
-        if enabled and self.energy_backup_battery_level is not None:
-            config.cfg_energy_backup.energy_backup_start_soc = (
-                self.energy_backup_battery_level
-            )
+        soc = int(self.battery_level or 50)
+        config.cfg_energy_backup.energy_backup_start_soc = max(min(soc + 1, 100), 0)
         await self._send_config_packet(config)
 
+    @controls.switch(dc_12v_port)
     async def enable_dc_12v_port(self, enabled: bool):
         await self._send_config_packet(
             pr705_pb2.ConfigWrite(cfg_dc_12v_out_open=enabled)
         )
 
+    @controls.switch(ac_ports, enabled=False)
     async def enable_ac_ports(self, enabled: bool):
         await self._send_config_packet(pr705_pb2.ConfigWrite(cfg_ac_out_open=enabled))
 
-    async def set_battery_charge_limit_min(self, limit: int):
+    @controls.battery(
+        battery_charge_limit_min,
+        max=dynamic(battery_charge_limit_max),
+    )
+    async def set_battery_charge_limit_min(self, limit: float):
         if (
             self.battery_charge_limit_max is not None
             and limit > self.battery_charge_limit_max
         ):
             return False
 
-        await self._send_config_packet(pr705_pb2.ConfigWrite(cfg_min_dsg_soc=limit))
+        await self._send_config_packet(
+            pr705_pb2.ConfigWrite(cfg_min_dsg_soc=int(limit))
+        )
         return True
 
-    async def set_battery_charge_limit_max(self, limit: int):
+    @controls.battery(
+        battery_charge_limit_max,
+        min=dynamic(battery_charge_limit_min),
+    )
+    async def set_battery_charge_limit_max(self, limit: float):
         if (
             self.battery_charge_limit_min is not None
             and limit < self.battery_charge_limit_min
@@ -219,11 +237,17 @@ class Device(DeviceBase, ProtobufProps):
             return False
 
         await self._send_config_packet(
-            message=pr705_pb2.ConfigWrite(cfg_max_chg_soc=limit)
+            message=pr705_pb2.ConfigWrite(cfg_max_chg_soc=int(limit))
         )
         return True
 
-    async def set_ac_charging_speed(self, value: int):
+    @controls.power(
+        ac_charging_speed,
+        max=dynamic(max_ac_charging_power),
+    )
+    async def set_ac_charging_speed(self, value: float):
+        await self.set_battery_charge_limit_max(12)
+
         if (
             self.max_ac_charging_power is None
             or value > self.max_ac_charging_power
@@ -232,24 +256,19 @@ class Device(DeviceBase, ProtobufProps):
             return False
 
         await self._send_config_packet(
-            pr705_pb2.ConfigWrite(cfg_plug_in_info_ac_in_chg_pow_max=value)
+            pr705_pb2.ConfigWrite(cfg_plug_in_info_ac_in_chg_pow_max=int(value))
         )
         return True
 
+    @controls.select(dc_charging_type, options=DcChargingType)
     async def set_dc_charging_type(self, state: DcChargingType):
         await self._send_config_packet(
             pr705_pb2.ConfigWrite(cfg_pv_chg_type=state.value)
         )
 
-    async def set_dc_charging_amps_max(self, value: int):
-        if (
-            self.dc_charging_current_max is None
-            or value < 0
-            or value > self.dc_charging_current_max
-        ):
-            return False
-
+    @controls.current(dc_charging_max_amps, max=8)
+    async def set_dc_charging_amps_max(self, value: float):
         await self._send_config_packet(
-            pr705_pb2.ConfigWrite(cfg_plug_in_info_pv_dc_amp_max=value)
+            pr705_pb2.ConfigWrite(cfg_plug_in_info_pv_dc_amp_max=int(value))
         )
         return True

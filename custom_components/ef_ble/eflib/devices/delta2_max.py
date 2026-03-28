@@ -2,6 +2,7 @@ from bleak.backends.device import BLEDevice
 from bleak.backends.scanner import AdvertisementData
 
 from ..model import Mr350MpptHeart, Mr350PdHeartbeatDelta2Max
+from ..packet import Packet
 from ..props import dataclass_attr_mapper, raw_field
 from ._delta2_base import Delta2Base, pb_inv
 
@@ -41,3 +42,13 @@ class Device(Delta2Base):
     @property
     def ac_commands_dst(self):
         return 0x04
+
+    async def set_ac_charging_speed(self, value: int):
+        if self.max_ac_charging_power is None:
+            return False
+        value = max(1, min(value, self.max_ac_charging_power))
+        payload = bytes([0xFF, 0xFF]) + value.to_bytes(2, "little") + bytes([0xFF])
+        await self._conn.sendPacket(
+            Packet(0x20, 0x04, 0x20, 0x45, payload, version=0x02)
+        )
+        return True

@@ -11,7 +11,7 @@ from collections.abc import Awaitable, Callable, Collection, Coroutine, MutableS
 from dataclasses import dataclass
 from enum import StrEnum, auto
 from functools import cached_property
-from typing import Literal
+from typing import Literal, Self
 
 import ecdsa
 from bleak import BleakClient
@@ -135,6 +135,7 @@ class ConnectionState(StrEnum):
             CONNECTED,
             PUBLIC_KEY_EXCHANGE,
             PUBLIC_KEY_RECEIVED,
+            REQUESTING_SESSION_KEY,
             SESSION_KEY_RECEIVED,
             REQUESTING_AUTH_STATUS,
             AUTH_STATUS_RECEIVED,
@@ -489,6 +490,41 @@ class Connection:
         if self._state == ConnectionState.DISCONNECTING:
             self._set_state(ConnectionState.DISCONNECTED)
 
+    async def _disconnect_error(self, state: ConnectionState, exc: Exception):
+        self._set_state(state, exc)
+        if self._client is not None and self._client.is_connected:
+            try:
+                await self._client.disconnect()
+            except (EOFError, BleakError) as e:
+                self._logger.debug("Disconnect failed (already down): %s", e)
+        raise exc
+
+    @staticmethod
+    def _auth_handler(expected_state: "ConnectionState"):
+        def decorator(
+            fn: Callable[
+                ["Connection", BleakGATTCharacteristic, bytearray], Awaitable[None]
+            ],
+        ):
+            @functools.wraps(fn)
+            async def wrapper(
+                self: Self,
+                characteristic: BleakGATTCharacteristic,
+                recv_data: bytearray,
+            ):
+                if self._client is None or not self._client.is_connected:
+                    return
+                if self._state != expected_state:
+                    return
+                try:
+                    await fn(self, characteristic, recv_data)
+                except Exception as e:  # noqa: BLE001
+                    await self._disconnect_error(ConnectionState.ERROR_AUTH_FAILED, e)
+
+            return wrapper
+
+        return decorator
+
     async def wait_connected(self, timeout: int = 20):
         """Will release when connection is happened and authenticated"""
         last_state = self._state
@@ -836,12 +872,10 @@ class Connection:
         # response in handler
         await self.sendRequest(to_send, self.initBleSessionKeyHandler)
 
+    @_auth_handler(ConnectionState.PUBLIC_KEY_EXCHANGE)
     async def initBleSessionKeyHandler(
         self, characteristic: BleakGATTCharacteristic, recv_data: bytearray
     ):
-        if self._client is None or not self._client.is_connected:
-            return
-
         data = await self.parseSimple(bytes(recv_data))
         if data is None:
             return
@@ -884,12 +918,10 @@ class Connection:
 
         await self.sendRequest(to_send, self.getKeyInfoReqHandler)
 
+    @_auth_handler(ConnectionState.REQUESTING_SESSION_KEY)
     async def getKeyInfoReqHandler(
         self, characteristic: BleakGATTCharacteristic, recv_data: bytearray
     ):
-        if self._client is None or not self._client.is_connected:
-            return
-
         encrypted_data = await self.parseSimple(bytes(recv_data))
         if encrypted_data is None:
             return
@@ -898,14 +930,10 @@ class Connection:
         await self._client.stop_notify(self._notify_characteristic)
 
         if encrypted_data[0] != 0x02:
-            exc = AuthErrors.KeyInfoReqFailed(
+            raise AuthErrors.KeyInfoReqFailed(
                 "Received type of KeyInfo is != 0x02, need to dig into: "
                 f"{encrypted_data.hex()}"
             )
-            self._set_state(ConnectionState.ERROR_AUTH_FAILED, exc)
-            if self._client is not None and self._client.is_connected:
-                await self._client.disconnect()
-            raise exc
 
         assert self._encryption is not None
 
@@ -937,14 +965,13 @@ class Connection:
 
         await self.sendPacket(packet=packet, response_handler=self.getAuthStatusHandler)
 
+    @_auth_handler(ConnectionState.REQUESTING_AUTH_STATUS)
     async def getAuthStatusHandler(
         self, characteristic: BleakGATTCharacteristic, recv_data: bytearray
     ):
-        if self._client is None or not self._client.is_connected:
-            return
-
         self._set_state(ConnectionState.AUTH_STATUS_RECEIVED)
         await self._client.stop_notify(self._notify_characteristic)
+
         packets = await self.parseEncPackets(bytes(recv_data))
         if len(packets) < 1:
             raise PacketReceiveError

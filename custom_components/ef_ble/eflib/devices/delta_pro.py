@@ -124,7 +124,8 @@ class Device(DeviceBase, RawDataProps):
                 async with self._lock:
                     self._initialized = True
                 kit = self.update_from_bytes(AllKitDetailData, packet.payload)
-                self._update_extra_batteries(kit)
+                if kit is not None:
+                    self._update_extra_batteries(kit)
 
             case 0x03, 0x32, 0x05:
                 async with self._lock:

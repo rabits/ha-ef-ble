@@ -2,7 +2,7 @@ from collections import defaultdict
 from collections.abc import Callable
 from functools import cached_property
 
-from google.protobuf.message import Message
+from google.protobuf.message import DecodeError, Message
 
 from .. import devicebase
 from ..listeners import ListenerGroup, ListenerRegistry
@@ -124,9 +124,18 @@ class ProtobufProps(UpdatableProps):
         message_type: type[T_MSG],
         serialized_message: bytes,
         reset: bool = False,
-    ) -> T_MSG:
+    ) -> T_MSG | None:
         msg = message_type()
-        msg.ParseFromString(serialized_message)
+        try:
+            msg.ParseFromString(serialized_message)
+        except DecodeError:
+            if isinstance(self, devicebase.DeviceBase):
+                self._logger.warning(
+                    "Failed to decode %s (%d bytes)",
+                    message_type.DESCRIPTOR.full_name,
+                    len(serialized_message),
+                )
+            return None
         self.update_from_message(msg, reset=reset)
         self._log_message(msg)
         return msg

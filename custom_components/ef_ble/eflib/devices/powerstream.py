@@ -1,4 +1,4 @@
-from google.protobuf.message import DecodeError, Message
+from google.protobuf.message import Message
 
 from ..devicebase import DeviceBase
 from ..packet import Packet
@@ -83,27 +83,31 @@ class Device(DeviceBase, ProtobufProps):
     async def data_parse(self, packet: Packet) -> bool:
         self.reset_updated()
 
+        msg = None
         match packet.src, packet.cmdSet, packet.cmdId:
             case (0x35, 0x14, 0x01):
-                self.update_from_bytes(wn511_sys_pb2.inverter_heartbeat, packet.payload)
+                msg = self.update_from_bytes(
+                    wn511_sys_pb2.inverter_heartbeat, packet.payload
+                )
             case (0x35, 0x14, 0x04):
-                try:
-                    self.update_from_bytes(
-                        wn511_sys_pb2.inv_heartbeat_type2, packet.payload
-                    )
-                except DecodeError:
-                    return False
+                msg = self.update_from_bytes(
+                    wn511_sys_pb2.inv_heartbeat_type2, packet.payload
+                )
 
             case (0x35, 0x14, 0x88):
-                inv_power = self.update_from_bytes(
+                msg = self.update_from_bytes(
                     wn511_sys_pb2.inv_power_pack, packet.payload
                 )
-                await self._send_ble_packet(
-                    wn511_sys_pb2.inv_power_pack_ack(sys_seq=inv_power.sys_seq),
-                    cmd_id=0x88,
-                )
+                if msg is not None:
+                    await self._send_ble_packet(
+                        wn511_sys_pb2.inv_power_pack_ack(sys_seq=msg.sys_seq),
+                        cmd_id=0x88,
+                    )
             case _:
                 return False
+
+        if msg is None:
+            return False
 
         for field_name in self.updated_fields:
             self.update_callback(field_name)

@@ -480,7 +480,10 @@ class Connection:
 
         if self._client is not None and self._client.is_connected:
             self._set_state(ConnectionState.DISCONNECTING)
-            await self._client.disconnect()
+            try:
+                await self._client.disconnect()
+            except (EOFError, BleakError) as e:
+                self._logger.debug("Disconnect failed (already down): %s", e)
 
         self._client = None
         if self._state == ConnectionState.DISCONNECTING:
@@ -558,7 +561,10 @@ class Connection:
             self._set_state(ConnectionState.ERROR_TOO_MANY_ERRORS, exception)
             if self._client is not None and self._client.is_connected:
                 self._logger.warning("Client disconnected after encountering 5 errors")
-                await self._client.disconnect()
+                try:
+                    await self._client.disconnect()
+                except (EOFError, BleakError) as e:
+                    self._logger.debug("Disconnect failed (already down): %s", e)
 
     def _reset_error_counter(self):
         self._errors = 0

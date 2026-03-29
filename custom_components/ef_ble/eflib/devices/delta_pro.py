@@ -70,6 +70,10 @@ class Device(DeviceBase, RawDataProps):
     ac_input_current = raw_field(rd_inv.ac_in_amp, lambda x: round(x / 1000, 2))
     ac_ports = raw_field(rd_inv.cfg_ac_enabled, lambda x: x == 1)
 
+    dc_input_power = raw_field(rd_mppt.in_watts, lambda x: round(x / 10, 1))
+    dc_input_voltage = raw_field(rd_mppt.in_vol, lambda x: round(x / 10, 1))
+    dc_input_current = raw_field(rd_mppt.in_amp, lambda x: round(x / 100, 2))
+
     ac_charging_speed = raw_field(rd_inv.cfg_slow_chg_watts)
     max_ac_charging_power = Field[int]()
 

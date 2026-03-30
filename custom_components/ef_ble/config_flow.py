@@ -6,7 +6,7 @@ import asyncio
 import base64
 import enum
 import logging
-from collections.abc import Mapping
+from collections.abc import Iterable, Mapping
 from functools import cached_property
 from typing import Any, ClassVar, cast
 
@@ -88,7 +88,7 @@ class EFBLEConfigFlow(ConfigFlow, domain=DOMAIN):
     """EcoFlow BLE ConfigFlow"""
 
     VERSION = 1
-    MINOR_VERSION = 1
+    MINOR_VERSION = 2
 
     CONNECTION_CLASS = CONN_CLASS_LOCAL_PUSH
 
@@ -385,9 +385,14 @@ class EFBLEConfigFlow(ConfigFlow, domain=DOMAIN):
         entry_data["local_name"] = self._local_names.get(device.address, None)
         entry_data.pop("login", None)
 
+        if CONF_EXTRA_BATTERY not in entry_data:
+            entry_data[CONF_EXTRA_BATTERY] = _find_enabled_batteries(
+                device, range(1, 6)
+            )
+
         return self.async_create_entry(title=device.name, data=entry_data)
 
-    def _check_user_id(self, user_id: str):
+    def _check_user_id(self, user_id: str) -> dict[str, str] | None:
         try:
             int(user_id.strip())
         except ValueError:
@@ -758,11 +763,7 @@ class _SchemaBuilder:
         extra_batteries_default = (
             extra_battery_conf
             if extra_battery_conf is not None
-            else [
-                str(i)
-                for i in available_battery_slots
-                if getattr(device, f"battery_{i}_enabled", False)
-            ]
+            else _find_enabled_batteries(device, available_battery_slots)
         )
 
         extra_battery_labels = {
@@ -789,3 +790,7 @@ class _SchemaBuilder:
 
 def schema_builder():
     return _SchemaBuilder()
+
+
+def _find_enabled_batteries(device: eflib.DeviceBase, slots: Iterable[int]):
+    return [str(i) for i in slots if getattr(device, f"battery_{i}_enabled", False)]

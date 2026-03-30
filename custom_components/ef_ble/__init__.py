@@ -22,6 +22,7 @@ from .const import (
     CONF_BLUEZ_START_NOTIFY,
     CONF_COLLECT_PACKETS_AMOUNT,
     CONF_CONNECTION_TIMEOUT,
+    CONF_EXTRA_BATTERY,
     CONF_PACKET_VERSION,
     CONF_UPDATE_PERIOD,
     CONF_USER_ID,
@@ -188,8 +189,8 @@ async def async_migrate_entry(hass: HomeAssistant, config_entry: ConfigEntry) ->
         config_entry.minor_version,
     )
 
-    match config_entry.version, config_entry.minor_version:
-        case 1, 0:
+    if config_entry.version < 2:
+        if config_entry.minor_version < 1:
             address = config_entry.data.get(CONF_ADDRESS)
             device_reg = dr.async_get(hass)
             device_entry = device_reg.async_get_device(identifiers={(DOMAIN, address)})
@@ -211,6 +212,13 @@ async def async_migrate_entry(hass: HomeAssistant, config_entry: ConfigEntry) ->
                         )
 
             hass.config_entries.async_update_entry(config_entry, minor_version=1)
+
+        if config_entry.minor_version < 2:
+            data = {**config_entry.data}
+            data.setdefault(CONF_EXTRA_BATTERY, [])
+            hass.config_entries.async_update_entry(
+                config_entry, data=data, minor_version=2
+            )
 
     return True
 

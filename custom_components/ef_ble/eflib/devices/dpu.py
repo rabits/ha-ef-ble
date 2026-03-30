@@ -3,6 +3,8 @@ from functools import partial
 
 from ..commands import TimeCommands
 from ..devicebase import AdvertisementData, BLEDevice, DeviceBase
+from ..entity import controls
+from ..entity.base import dynamic
 from ..packet import Packet
 from ..pb import yj751_sys_pb2
 from ..props import (
@@ -72,8 +74,8 @@ class _BatteryTemperature(
         return item.bp_temp if item.bp_no == self.battery_no else None
 
 
-def _bracket(min_val, value, max_val):
-    return max(min_val, min(value, max_val))
+def _bracket(min_val: float, value: float, max_val: float) -> int:
+    return int(max(min_val, min(value, max_val)))
 
 
 class Device(DeviceBase, ProtobufProps):
@@ -261,27 +263,17 @@ class Device(DeviceBase, ProtobufProps):
     )
 
     backup_discharge_limit = pb_field(pb_app_para_heartbeat.dsg_min_soc)
-    backup_discharge_limit_min = 0
-    backup_discharge_limit_max = 30
 
     backup_charge_limit = pb_field(pb_app_para_heartbeat.chg_max_soc)
-    backup_charge_limit_min = 50
-    backup_charge_limit_max = 100
 
     backup_reserve_level = pb_field(pb_app_para_heartbeat.sys_backup_soc)
-    backup_reserve_level_min = 5
-    backup_reserve_level_max = 100
 
     operating_mode_select = pb_field(
         pb_app_para_heartbeat.sys_word_mode, OperatingMode.from_value
     )
 
-    ac_5p8_min_charging_power = 600
-    ac_5p8_max_charging_power = 7200
     ac_5p8_charging_power = pb_field(pb_app_para_heartbeat.chg_5p8_set_watts)
 
-    ac_c20_min_charging_power = 600
-    ac_c20_max_charging_power = 1800
     ac_c20_charging_power = pb_field(pb_app_para_heartbeat.chg_c20_set_watts)
     ac_c20_charging_power_availability = pb_field(
         # slow charging switch must be enabled
@@ -417,6 +409,7 @@ class Device(DeviceBase, ProtobufProps):
         )
         return True
 
+    @controls.outlet(dc_ports)
     async def enable_dc_ports(self, enable: bool):
         """Send command to enable/disable DC"""
         self._logger.debug("enable_dc_ports: %s", enable)
@@ -427,8 +420,8 @@ class Device(DeviceBase, ProtobufProps):
         await self._send_command_packet(
             dst=0x02, cmd_func=0x02, cmd_id=0x44, message=message
         )
-        return True
 
+    @controls.outlet(ac_ports, availability=dynamic(ac_ports_availability))
     async def enable_ac_ports(self, enable: bool):
         """Send command to enable/disable AC"""
         self._logger.debug("enable_ac_ports: %s", enable)
@@ -436,14 +429,13 @@ class Device(DeviceBase, ProtobufProps):
         # Current value from pb_heartbeat.show_flag bit 2
         if not self.ac_allowed:
             self._logger.warning("Cannot enable AC ports when AC is not allowed")
-            return False
+            return
 
         message = yj751_sys_pb2.ACDsgSet(enable=int(enable))
 
         await self._send_command_packet(
             dst=0x02, cmd_func=0x02, cmd_id=0x48, message=message
         )
-        return True
 
     async def enable_ac_xboost(self, enable: bool):
         """Send command to enable/disable AC XBoost"""
@@ -501,6 +493,7 @@ class Device(DeviceBase, ProtobufProps):
         )
         return True
 
+    @controls.select(operating_mode_select, options=OperatingMode)
     async def set_operating_mode(self, mode: OperatingMode):
         """Send command to set operating mode"""
         self._logger.debug("set_operating_mode: %s", mode)
@@ -515,82 +508,71 @@ class Device(DeviceBase, ProtobufProps):
         await self._send_command_packet(
             dst=0x02, cmd_func=0xFE, cmd_id=0x11, message=message
         )
-        return True
 
-    async def set_ac_c20_charging_power(self, watts: int):
+    @controls.power(
+        ac_c20_charging_power,
+        min=600,
+        max=1800,
+        availability=dynamic(ac_c20_charging_power_availability),
+    )
+    async def set_ac_c20_charging_power(self, watts: float):
         """Send command to set C20 charging power"""
         self._logger.debug("set_ac_c20_charging_power: %s", watts)
 
         # Current value from pb_app_para_heartbeat.chg_c20_set_watts
-        message = yj751_sys_pb2.ACChgSet(
-            chg_c20_watts=_bracket(
-                self.ac_c20_min_charging_power, watts, self.ac_c20_max_charging_power
-            )
-        )
+        message = yj751_sys_pb2.ACChgSet(chg_c20_watts=int(watts))
 
         await self._send_command_packet(
             dst=0x02, cmd_func=0x02, cmd_id=0x49, message=message
         )
         return True
 
-    async def set_ac_5p8_charging_power(self, watts: int):
+    @controls.power(ac_5p8_charging_power, min=600, max=7200)
+    async def set_ac_5p8_charging_power(self, watts: float):
         """Send command to set 5p8 port charging power"""
         self._logger.debug("set_ac_5p8_charging_power: %s", watts)
 
         # Current value from pb_app_para_heartbeat.chg_5p8_set_watts
-        message = yj751_sys_pb2.ACChgSet(
-            chg_5p8_watts=_bracket(
-                self.ac_5p8_min_charging_power, watts, self.ac_5p8_max_charging_power
-            )
-        )
+        message = yj751_sys_pb2.ACChgSet(chg_5p8_watts=int(watts))
 
         await self._send_command_packet(
             dst=0x02, cmd_func=0x02, cmd_id=0x49, message=message
         )
         return True
 
-    async def set_backup_discharge_limit(self, soc: int):
+    @controls.battery(backup_discharge_limit, min=0, max=30)
+    async def set_backup_discharge_limit(self, soc: float):
         """Send command to set backup discharge limit"""
         self._logger.debug("set_backup_discharge_limit: %s", soc)
 
         # Current value from pb_app_para_heartbeat.dsg_min_soc
-        message = yj751_sys_pb2.DsgSocMinSet(
-            min_dsg_soc=_bracket(
-                self.backup_discharge_limit_min, soc, self.backup_discharge_limit_max
-            )
-        )
+        message = yj751_sys_pb2.DsgSocMinSet(min_dsg_soc=int(soc))
 
         await self._send_command_packet(
             dst=0x02, cmd_func=0x02, cmd_id=0x58, message=message
         )
         return True
 
-    async def set_backup_charge_limit(self, soc: int):
+    @controls.battery(backup_charge_limit, min=50, max=100)
+    async def set_backup_charge_limit(self, soc: float):
         """Send command to set backup charge limit"""
         self._logger.debug("set_backup_charge_limit: %s", soc)
 
         # Current value from pb_app_para_heartbeat.chg_max_soc
-        message = yj751_sys_pb2.ChgSocMaxSet(
-            max_chg_soc=_bracket(
-                self.backup_charge_limit_min, soc, self.backup_charge_limit_max
-            )
-        )
+        message = yj751_sys_pb2.ChgSocMaxSet(max_chg_soc=int(soc))
 
         await self._send_command_packet(
             dst=0x02, cmd_func=0x02, cmd_id=0x57, message=message
         )
         return True
 
-    async def set_backup_reserve_level(self, soc: int):
+    @controls.battery(backup_reserve_level, min=5, max=100)
+    async def set_backup_reserve_level(self, soc: float):
         """Send command to set backup reserve level"""
         self._logger.debug("set_backup_reserve_level: %s", soc)
 
         # Current value from pb_app_para_heartbeat.sys_backup_soc
-        message = yj751_sys_pb2.ConfigWrite(
-            cfg_backup_reverse_soc=_bracket(
-                self.backup_reserve_level_min, soc, self.backup_reserve_level_max
-            )
-        )
+        message = yj751_sys_pb2.ConfigWrite(cfg_backup_reverse_soc=int(soc))
 
         await self._send_command_packet(
             dst=0x02, cmd_func=0xFE, cmd_id=0x11, message=message

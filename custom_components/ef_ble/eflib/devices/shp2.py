@@ -3,6 +3,8 @@ from enum import IntEnum
 
 from ..commands import TimeCommands
 from ..devicebase import AdvertisementData, BLEDevice, DeviceBase
+from ..entity import controls
+from ..entity.base import dynamic
 from ..packet import Packet
 from ..pb import pd303_pb2
 from ..props import (
@@ -300,6 +302,13 @@ class Device(DeviceBase, ProtobufProps):
         await self._send_config_packet(ppas)
         return True
 
+    @controls.for_each(
+        circuit,
+        control=controls.outlet,
+        availability=circuit_split_info_loaded,
+        translation_key="circuit_is_enabled",
+        translation_placeholders=lambda i: {"circuit": str(i)},
+    )
     async def set_circuit_power(self, circuit_id: int, enable: bool):
         """Send command to power on / off the specific circuit of the panel"""
         self._logger.debug("setCircuitPower for %d: %s", circuit_id, enable)
@@ -346,18 +355,32 @@ class Device(DeviceBase, ProtobufProps):
         await self._send_config_packet(ppas)
         return True
 
-    async def set_backup_reserve_level(self, value: int):
+    @controls.battery(
+        backup_reserve_level,
+        min=backup_reserve_level_min,
+        max=backup_reserve_level_max,
+        availability=dynamic(backup_reserve_level_availability),
+    )
+    async def set_backup_reserve_level(self, value: float):
         self._logger.debug("set_backup_reserve_level: %d", value)
 
         ppas = pd303_pb2.ProtoPushAndSet()
         value = min(
-            max(self.backup_reserve_level_min, value), self.backup_reserve_level_max
+            max(self.backup_reserve_level_min, int(value)),
+            self.backup_reserve_level_max,
         )
         ppas.backup_reserve_soc = value
 
         await self._send_config_packet(ppas)
         return True
 
+    @controls.for_each(
+        channel_is_enabled,
+        control=controls.switch,
+        availability=channel_is_connected,
+        translation_key="channel_is_enabled",
+        translation_placeholders=lambda i: {"channel": str(i)},
+    )
     async def set_channel_enable(self, channel_id: int, value: bool):
         self._logger.debug("set_channel_enable: %d %s", channel_id, value)
 
@@ -372,6 +395,13 @@ class Device(DeviceBase, ProtobufProps):
         await self._send_config_packet(ppas)
         return True
 
+    @controls.for_each(
+        ch_force_charge,
+        control=controls.switch,
+        availability=channel_is_connected,
+        translation_key="ch_force_charge",
+        translation_placeholders=lambda i: {"channel": str(i)},
+    )
     async def set_channel_force_charge(self, channel_id: int, value: bool):
         self._logger.debug("set_channel_force_charge: %d %s", channel_id, value)
 
@@ -389,6 +419,7 @@ class Device(DeviceBase, ProtobufProps):
         await self._send_config_packet(ppas)
         return True
 
+    @controls.select(smart_backup_mode, options=SmartBackupMode)
     async def set_smart_backup_mode(self, mode: SmartBackupMode):
         self._logger.debug("set_smart_backup_mode: %d", mode.value)
 
@@ -409,8 +440,8 @@ class Device(DeviceBase, ProtobufProps):
                     ch_info[channel_id].force_charge_sta = pd303_pb2.FORCE_CHARGE_OFF
 
         await self._send_config_packet(ppas)
-        return True
 
+    @controls.switch(eps_mode)
     async def set_eps_mode(self, value: bool):
         self._logger.debug("set_eps_mode: %d", value)
 
@@ -427,22 +458,34 @@ class Device(DeviceBase, ProtobufProps):
 
         ppas.eps_mode_info = value
         await self._send_config_packet(ppas)
-        return True
 
-    async def set_backup_charge_limit(self, value: int):
+    @controls.battery(
+        backup_charge_limit,
+        min=backup_charge_limit_min,
+        max=backup_charge_limit_max,
+        availability=dynamic(backup_charge_limit_availability),
+    )
+    async def set_backup_charge_limit(self, value: float):
         self._logger.debug("set_backup_charge_limit: %d", value)
 
         ppas = pd303_pb2.ProtoPushAndSet()
 
         value = min(
-            max(self.backup_charge_limit_min, value), self.backup_charge_limit_max
+            max(self.backup_charge_limit_min, int(value)),
+            self.backup_charge_limit_max,
         )
         ppas.foce_charge_hight = value  # key is misspelled by ecoflow
 
         await self._send_config_packet(ppas)
         return True
 
-    async def set_ac_charging_speed(self, value: int):
+    @controls.power(
+        ac_charging_speed,
+        min=min_ac_charging_power,
+        max=max_ac_charging_power,
+        step=ac_charging_speed_step,
+    )
+    async def set_ac_charging_speed(self, value: float):
         self._logger.debug("set_ac_charging_speed: %d", value)
 
         ppas = pd303_pb2.ProtoPushAndSet()

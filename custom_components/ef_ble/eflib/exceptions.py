@@ -54,22 +54,22 @@ class AuthErrors:
     class KeyInfoReqFailed(BaseAuthException):
         pass
 
-    class GeneralError(BaseAuthException):
+    class NeedRefreshToken(BaseAuthException):
         pass
 
-    class OTAUpgrade(BaseAuthException):
+    class DeviceInternalError(BaseAuthException):
         pass
 
-    class UserIdIncorrectLength(BaseAuthException):
+    class DeviceAlreadyBound(BaseAuthException):
         pass
 
-    class IOTStatusError(BaseAuthException):
+    class NeedBindInstallFirst(BaseAuthException):
         pass
 
-    class UserKeyReadError(BaseAuthException):
+    class AppSendDataError(BaseAuthException):
         pass
 
-    class IncorrectUserId(BaseAuthException):
+    class WrongKey(BaseAuthException):
         pass
 
     class MaximumDevicesError(BaseAuthException):
@@ -80,12 +80,12 @@ class AuthErrors:
 
     _PAYLOAD_TO_ERROR = {
         b"\x00": None,
-        b"\x01": GeneralError,
-        b"\x02": OTAUpgrade,
-        b"\x03": UserIdIncorrectLength,
-        b"\x04": IOTStatusError,
-        b"\x05": UserKeyReadError,
-        b"\x06": IncorrectUserId,
+        b"\x01": NeedRefreshToken,
+        b"\x02": DeviceInternalError,
+        b"\x03": DeviceAlreadyBound,
+        b"\x04": NeedBindInstallFirst,
+        b"\x05": AppSendDataError,
+        b"\x06": WrongKey,
         b"\x07": MaximumDevicesError,
     }
 

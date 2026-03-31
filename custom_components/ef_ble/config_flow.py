@@ -478,20 +478,20 @@ class EFBLEConfigFlow(ConfigFlow, domain=DOMAIN):
     def _get_auth_translation_from_exc(self, exc: Exception):
         error = None
         match exc:
-            case AuthErrors.IncorrectUserId():
-                error = "auth_failed_incorrect_user_id"
-            case AuthErrors.GeneralError():
-                error = "auth_failed_general_error"
-            case AuthErrors.OTAUpgrade():
-                error = "auth_failed_ota_upgrade"
-            case AuthErrors.UserIdIncorrectLength():
-                error = "auth_failed_user_id_incorrect_length"
-            case AuthErrors.UserKeyReadError():
-                error = "auth_failed_user_key_read"
+            case AuthErrors.NeedRefreshToken():
+                error = "auth_failed_need_refresh_token"
+            case AuthErrors.DeviceInternalError():
+                error = "auth_failed_device_internal_error"
+            case AuthErrors.DeviceAlreadyBound():
+                error = "auth_failed_device_already_bound"
+            case AuthErrors.NeedBindInstallFirst():
+                error = "auth_failed_need_bind_install_first"
+            case AuthErrors.AppSendDataError():
+                error = "auth_failed_app_send_data_error"
+            case AuthErrors.WrongKey():
+                error = "auth_failed_wrong_key"
             case AuthErrors.UnknownError():
                 error = "auth_failed_unknown"
-            case AuthErrors.IOTStatusError():
-                error = "auth_failed_iot_status_error"
             case AuthErrors.KeyInfoReqFailed():
                 error = "auth_failed_key_info"
             case _:

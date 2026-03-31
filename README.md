@@ -671,6 +671,7 @@ first charging task</sup>
 ### Prerequisites
 
 - Home Assistant with Bluetooth support
+- Your device must be **bound to your account** through the EcoFlow app before setup
 - Your **User ID** from the EcoFlow app (can be retrieved via the config flow login form
   during setup)
 - [HACS](https://hacs.xyz/) installed (recommended method)

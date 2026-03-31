@@ -27,11 +27,6 @@ class Device(river3.Device):
     battery_1_cell_temperature = pb_field(pb.plug_in_info_dcp_resv, resv_temperature)
     battery_1_sn = pb_field(pb.plug_in_info_dcp_sn)
 
-    battery_2_enabled = pb_field(pb.plug_in_info_dcp2_in_flag)
-    battery_2_battery_level = pb_field(pb.plug_in_info_dcp2_resv, resv_soc)
-    battery_2_cell_temperature = pb_field(pb.plug_in_info_dcp2_resv, resv_temperature)
-    battery_2_sn = pb_field(pb.plug_in_info_dcp2_sn)
-
     led_mode = pb_field(river3.pb.led_mode, LedMode.from_value)
 
     @controls.select(led_mode, options=LedMode)

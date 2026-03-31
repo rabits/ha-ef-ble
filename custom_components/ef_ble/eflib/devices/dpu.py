@@ -513,6 +513,7 @@ class Device(DeviceBase, ProtobufProps):
         ac_c20_charging_power,
         min=600,
         max=1800,
+        step=100,
         availability=dynamic(ac_c20_charging_power_availability),
     )
     async def set_ac_c20_charging_power(self, watts: float):
@@ -527,7 +528,7 @@ class Device(DeviceBase, ProtobufProps):
         )
         return True
 
-    @controls.power(ac_5p8_charging_power, min=600, max=7200)
+    @controls.power(ac_5p8_charging_power, min=600, max=7200, step=100)
     async def set_ac_5p8_charging_power(self, watts: float):
         """Send command to set 5p8 port charging power"""
         self._logger.debug("set_ac_5p8_charging_power: %s", watts)

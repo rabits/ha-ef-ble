@@ -260,10 +260,6 @@ class Connection:
     def is_connected(self) -> bool:
         return self._client is not None and self._client.is_connected
 
-    @cached_property
-    def mtu_size(self):
-        return self._client.mtu_size
-
     def _add_listener(self, collection: MutableSequence[Callable], listener: Callable):
         collection.append(listener)
 
@@ -398,10 +394,6 @@ class Connection:
         self._errors = 0
         self._retry_on_disconnect = self._reconnect
 
-        if self._client._backend.__class__.__name__ == "BleakClientBlueZDBus":
-            await self._client._backend._acquire_mtu()
-
-        self._logger.log_filtered(LogOptions.CONNECTION_DEBUG, "MTU: %d", self.mtu_size)
         self._logger.info("Init completed, starting auth routine...")
 
         await self.initBleSessionKey()

@@ -4,7 +4,7 @@ dynamic = ["version"]
 dependencies = [
     "bluetooth_adapters",
     "ecdsa~=0.19",
-    "crc=~7.1",
+    "crc~=7.1",
     "PyCryptodome~=3.23",
     "protobuf~=6.33",
     "bleak",

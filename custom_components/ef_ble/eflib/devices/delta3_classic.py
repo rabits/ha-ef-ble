@@ -77,9 +77,7 @@ class Device(Delta3Base):
         config.cfg_energy_backup.energy_backup_en = enabled
         if enabled and self.energy_backup_battery_level is not None:
             config.cfg_energy_backup.energy_backup_start_soc = (
-                self.energy_backup_battery_level
-                if self.energy_backup_battery_level
-                else 50
+                self.energy_backup_battery_level or 50
             )
         await self._send_config_packet(config)
 

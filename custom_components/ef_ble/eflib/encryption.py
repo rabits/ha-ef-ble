@@ -1,3 +1,4 @@
+import functools
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import cast
@@ -56,13 +57,6 @@ class Type1Encryption(EncryptionStrategy):
         return cipher.decrypt(ciphertext)
 
 
-_PUBKEY = ECC.import_key(
-    "-----BEGIN PUBLIC KEY-----\n"
-    "MCowBQYDK2VuAyEAjyDKgWi1v2IO417ZsQC3VIa5U6bs8TzQQGxzlvCKWkM=\n"
-    "-----END PUBLIC KEY-----"
-)
-
-
 def _counter_nonce(base: bytes, counter: int) -> bytes:
     n = bytearray(base)
     cb = counter.to_bytes(12)
@@ -70,12 +64,25 @@ def _counter_nonce(base: bytes, counter: int) -> bytes:
 
 
 class Session:
+    @staticmethod
+    @functools.cache
+    def _developer_pubkey():
+        # NOTE(gnox): used for encrypting sensitive diagnostics data - only integration
+        # developers have access to the private key
+        return ECC.import_key(
+            "-----BEGIN PUBLIC KEY-----\n"
+            "MCowBQYDK2VuAyEAjyDKgWi1v2IO417ZsQC3VIa5U6bs8TzQQGxzlvCKWkM=\n"
+            "-----END PUBLIC KEY-----"
+        )
+
     def __init__(self) -> None:
         eph_priv = ECC.generate(curve="curve25519")
         eph_der = eph_priv.public_key().export_key(format="DER")
 
         shared = key_agreement(
-            static_priv=eph_priv, static_pub=_PUBKEY, kdf=lambda z: z
+            static_priv=eph_priv,
+            static_pub=Session._developer_pubkey(),
+            kdf=lambda z: z,
         )
         self._aes_key = cast(
             "bytes",

@@ -208,15 +208,25 @@
       "init": {
         "title": "Options for {device_name}",
         "data": {
-          "update_period": "Update Period",
-          "collect_packets": "Enable packet collection for diagnostics",
-          "collect_packets_amount": "Number of packets to store for diagnostics"
+          "update_period": "Update Period"
         },
         "data_description": {
-          "update_period": "Number of seconds to wait before processing the next device update. Value of 0 means all updates are processed immediately (will result in a high number of DB writes).",
-          "collect_packets": "Enabling this option will start storing packets for diagnostics info - wait a minute after you enable this option before downloading diagnostics info and don't forget to turn it off.\nSome devices may contain identifying information in their messages such as your exact location so be careful when sharing info with this option enabled."
+          "update_period": "Number of seconds to wait before processing the next device update. Value of 0 means all updates are processed immediately (will result in a high number of DB writes)."
         },
         "sections": {
+          "diagnostics_options": {
+            "name": "Diagnostics",
+            "description": "Configure diagnostics data collection and encryption.",
+            "data": {
+              "collect_packets": "Enable packet collection",
+              "collect_packets_amount": "Number of packets to store",
+              "diagnostics_encrypt": "Encrypt diagnostics data"
+            },
+            "data_description": {
+              "collect_packets": "Enabling this option will start storing packets for diagnostics info - wait a minute after you enable this option before downloading diagnostics info and don't forget to turn it off.\nSome devices may contain identifying information in their messages such as your exact location, make sure encryption is enabled before sharing.",
+              "diagnostics_encrypt": "When enabled, sensitive diagnostics data (packets, session keys, manufacturer data) is encrypted before being included in the diagnostics download. Disable only if you need raw data for local debugging."
+            }
+          },
           "log_options": {
             "name": "Logging Options",
             "description": "Detailed logging options. Most of these will flood your logs, so avoid leaving them enabled for long periods.",

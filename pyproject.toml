@@ -3,12 +3,13 @@ name = "ha-ef-ble"
 dynamic = ["version"]
 dependencies = [
     "bluetooth_adapters",
-    "ecdsa",
-    "crc",
-    "PyCryptodome",
-    "protobuf",
+    "ecdsa~=0.19",
+    "crc=~7.1",
+    "PyCryptodome~=3.23",
+    "protobuf~=6.33",
     "bleak",
     "bleak_retry_connector",
+
 ]
 requires-python = ">=3.13"
 

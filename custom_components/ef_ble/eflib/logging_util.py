@@ -271,20 +271,26 @@ class DeviceDiagnostics:
     iv: bytes
     session_key: bytes
 
-    def encrypt(self, session: Session):
+    def _encode_bytes(self, value: bytes, session: Session | None) -> str:
+        if session is not None:
+            return session.encrypt(value).hex()
+        return value.hex()
+
+    def serialize(self, session: Session | None = None):
         return dataclasses.replace(
             self,
             last_packets=[
-                (t, session.encrypt(v).hex()) for (t, v) in self.last_packets
+                (t, self._encode_bytes(v, session)) for (t, v) in self.last_packets
             ],
             raw_data_connection=[
-                (k, session.encrypt(v).hex()) for (k, v) in self.raw_data_connection
+                (k, self._encode_bytes(v, session))
+                for (k, v) in self.raw_data_connection
             ],
             raw_data_messages=[
-                (k, session.encrypt(v).hex()) for (k, v) in self.raw_data_messages
+                (k, self._encode_bytes(v, session)) for (k, v) in self.raw_data_messages
             ],
-            iv=session.encrypt(self.iv).hex(),
-            session_key=session.encrypt(self.session_key).hex(),
+            iv=self._encode_bytes(self.iv, session),
+            session_key=self._encode_bytes(self.session_key, session),
         )
 
     def as_dict(self):
@@ -312,9 +318,9 @@ class DeviceDiagnosticsCollector:
 
         self._start_time = time.time()
 
-    def as_dict(self, session: Session):
+    def as_dict(self, session: Session | None = None):
         """Get diagnostics data as dictionary"""
-        return self.diagnostics.encrypt(session).as_dict()
+        return self.diagnostics.serialize(session).as_dict()
 
     @property
     def diagnostics(self):

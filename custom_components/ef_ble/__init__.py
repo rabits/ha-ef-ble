@@ -22,6 +22,7 @@ from .const import (
     CONF_BLUEZ_START_NOTIFY,
     CONF_COLLECT_PACKETS_AMOUNT,
     CONF_CONNECTION_TIMEOUT,
+    CONF_DIAGNOSTICS_OPTIONS,
     CONF_EXTRA_BATTERY,
     CONF_PACKET_VERSION,
     CONF_UPDATE_PERIOD,
@@ -86,7 +87,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: DeviceConfigEntry) -> bo
 
         entry.runtime_data = device
 
-    packet_collection_enabled = merged_options.get(
+    diag_options = merged_options.get(CONF_DIAGNOSTICS_OPTIONS, {})
+    packet_collection_enabled = diag_options.get(
         CONF_COLLECT_PACKETS, eflib.is_unsupported(device)
     )
 
@@ -227,10 +229,11 @@ async def _update_listener(hass: HomeAssistant, entry: DeviceConfigEntry):
     device = entry.runtime_data
     merged_options = entry.data | entry.options
     update_period = merged_options.get(CONF_UPDATE_PERIOD, DEFAULT_UPDATE_PERIOD)
-    packet_collection = merged_options.get(
+    diag_options = merged_options.get(CONF_DIAGNOSTICS_OPTIONS, {})
+    packet_collection = diag_options.get(
         CONF_COLLECT_PACKETS, eflib.is_unsupported(device)
     )
-    diagnostics_buffer_size = merged_options.get(CONF_COLLECT_PACKETS_AMOUNT, 100)
+    diagnostics_buffer_size = diag_options.get(CONF_COLLECT_PACKETS_AMOUNT, 100)
     advanced = merged_options.get(CONF_ADVANCED_CONNECTION_OPTIONS, {})
     options = Connection.Options(
         timeout=advanced.get(CONF_CONNECTION_TIMEOUT, DEFAULT_CONNECTION_TIMEOUT),

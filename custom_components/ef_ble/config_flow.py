@@ -41,6 +41,8 @@ from .const import (
     CONF_COLLECT_PACKETS,
     CONF_COLLECT_PACKETS_AMOUNT,
     CONF_CONNECTION_TIMEOUT,
+    CONF_DIAGNOSTICS_ENCRYPT,
+    CONF_DIAGNOSTICS_OPTIONS,
     CONF_EXTRA_BATTERY,
     CONF_LOG_BLEAK,
     CONF_LOG_CONNECTION,
@@ -578,17 +580,14 @@ class OptionsFlowHandler(OptionsFlow):
                 (
                     schema_builder()
                     .update_period(condition=not eflib.is_unsupported(device))
-                    .optional(CONF_COLLECT_PACKETS, bool, eflib.is_unsupported(device))
-                    .optional(
-                        key=CONF_COLLECT_PACKETS_AMOUNT,
-                        selector=int,
-                        default=(
-                            device.diagnostics.packet_buffer_size
-                            if device is not None
-                            else 100
-                        ),
+                    .diagnostics_options(
+                        merged_entry,
+                        collect_default=eflib.is_unsupported(device),
+                        buffer_size=device.diagnostics.packet_buffer_size
+                        if device is not None
+                        else 100,
                     )
-                    .update(ConfLogOptions.schema(merged_entry, collapsed=False))
+                    .update(ConfLogOptions.schema(merged_entry))
                     .advanced_connection_options(merged_entry)
                     .build()
                 ),
@@ -696,6 +695,43 @@ class _SchemaBuilder:
     def conf_log(self, options: LogOptions):
         return self.update(ConfLogOptions.schema(ConfLogOptions.to_config(options)))
 
+    def diagnostics_options(
+        self,
+        defaults_dict: Mapping[str, Any] | None = None,
+        collapsed: bool = True,
+        collect_default: bool = False,
+        buffer_size: int = 100,
+    ):
+        if defaults_dict is None:
+            defaults_dict = {}
+        diag = defaults_dict.get(CONF_DIAGNOSTICS_OPTIONS, defaults_dict)
+        return self.update(
+            {
+                vol.Required(CONF_DIAGNOSTICS_OPTIONS): section(
+                    (
+                        schema_builder()
+                        .optional(
+                            CONF_COLLECT_PACKETS,
+                            bool,
+                            diag.get(CONF_COLLECT_PACKETS, collect_default),
+                        )
+                        .optional(
+                            CONF_COLLECT_PACKETS_AMOUNT,
+                            vol.All(int, vol.Range(min=0)),
+                            diag.get(CONF_COLLECT_PACKETS_AMOUNT, buffer_size),
+                        )
+                        .optional(
+                            CONF_DIAGNOSTICS_ENCRYPT,
+                            bool,
+                            diag.get(CONF_DIAGNOSTICS_ENCRYPT, True),
+                        )
+                        .build()
+                    ),
+                    {"collapsed": collapsed},
+                ),
+            }
+        )
+
     def advanced_connection_options(
         self, defaults_dict: Mapping[str, Any] | None = None, collapsed: bool = True
     ):
@@ -705,19 +741,21 @@ class _SchemaBuilder:
         return self.update(
             {
                 vol.Required(CONF_ADVANCED_CONNECTION_OPTIONS): section(
-                    vol.Schema(
-                        {
-                            vol.Optional(
-                                CONF_CONNECTION_TIMEOUT,
-                                default=advanced.get(
-                                    CONF_CONNECTION_TIMEOUT, DEFAULT_CONNECTION_TIMEOUT
-                                ),
-                            ): vol.All(int, vol.Range(min=0)),
-                            vol.Optional(
-                                CONF_BLUEZ_START_NOTIFY,
-                                default=advanced.get(CONF_BLUEZ_START_NOTIFY, False),
-                            ): bool,
-                        }
+                    (
+                        schema_builder()
+                        .optional(
+                            CONF_CONNECTION_TIMEOUT,
+                            vol.All(int, vol.Range(min=0)),
+                            advanced.get(
+                                CONF_CONNECTION_TIMEOUT, DEFAULT_CONNECTION_TIMEOUT
+                            ),
+                        )
+                        .optional(
+                            CONF_BLUEZ_START_NOTIFY,
+                            bool,
+                            advanced.get(CONF_BLUEZ_START_NOTIFY, False),
+                        )
+                        .build()
                     ),
                     {"collapsed": collapsed},
                 ),

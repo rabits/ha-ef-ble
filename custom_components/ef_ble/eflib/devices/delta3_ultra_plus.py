@@ -1,8 +1,7 @@
 from collections.abc import Sequence
 
-from custom_components.ef_ble.eflib.pb import pd335_sys_pb2
-
 from ..entity import controls
+from ..pb import pd335_sys_pb2
 from ..props import pb_field, repeated_pb_field_type
 from . import delta3, delta3_ultra
 from ._delta3_base import flow_is_on, out_power

@@ -6,7 +6,7 @@ dependencies = [
     "ecdsa~=0.19",
     "crc~=7.1",
     "PyCryptodome~=3.23",
-    "protobuf~=6.33",
+    "protobuf~=6.30",
     "bleak",
     "bleak_retry_connector",
 

@@ -337,6 +337,9 @@
       "grid_status": {
         "name": "Grid Status"
       },
+      "bms_run_state": {
+        "name": "BMS Run State"
+      },
       "backup_force_charge": {
         "name": "Channel {channel} Force Charge"
       },
@@ -565,6 +568,9 @@
       },
       "cell_temperature": {
         "name": "Cell Temperature"
+      },
+      "error_code": {
+        "name": "Error Code"
       },
       "dc_port_input_power": {
         "name": "DC Port Input Power"

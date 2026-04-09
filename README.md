@@ -302,6 +302,8 @@ Click on any device below to see available sensors, switches, and controls:
 | Cell Temperature (disabled)         |                |                      |
 | Charge Time Remaining (disabled)    |                |                      |
 | Discharge Time Remaining (disabled) |                |                      |
+| Error Code (disabled)               |                |                      |
+| BMS Run State (disabled)            |                |                      |
 
 <sup>¹ Per extra battery (up to 2)</sup>
 

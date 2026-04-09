@@ -18,6 +18,12 @@
         "state": {
           "off": "mdi:flash-alert-outline"
         }
+      },
+      "bms_run_state": {
+        "default": "mdi:battery-heart-variant",
+        "state": {
+          "off": "mdi:battery-off-outline"
+        }
       }
     },
     "sensor": {
@@ -122,6 +128,9 @@
       },
       "hv_solar_power": {
         "default": "mdi:solar-panel-large"
+      },
+      "error_code": {
+        "default": "mdi:alert-circle"
       },
       "generator_abnormal_state": {
         "default": "mdi:alert-circle"

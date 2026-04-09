@@ -477,6 +477,11 @@ _SENSORS: Final[dict[str, SensorEntityDescription]] = {
     "remaining_time_charging": duration(enabled=False),
     "remaining_time_discharging": duration(enabled=False),
     "total_energy": energy(),
+    "error_code": raw(
+        enabled=False,
+        state_class=SensorStateClass.MEASUREMENT,
+        entity_category=EntityCategory.DIAGNOSTIC,
+    ),
     # SHP2
     "grid_power": power(precision=1),
     "power_status": enum(options=shp2.PowerStatus),

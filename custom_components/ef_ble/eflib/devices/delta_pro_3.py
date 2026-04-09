@@ -4,6 +4,8 @@ from google.protobuf.message import Message
 
 from ..commands import TimeCommands
 from ..devicebase import DeviceBase
+from ..entity import controls
+from ..entity.base import dynamic
 from ..packet import Packet
 from ..pb import mr521_pb2
 from ..props import (
@@ -156,13 +158,20 @@ class Device(DeviceBase, ProtobufProps):
         packet = Packet(0x20, 0x02, 0xFE, 0x11, payload, 0x01, 0x01, 0x13)
         await self._conn.sendPacket(packet)
 
-    async def set_energy_backup_battery_level(self, value: int):
+    @controls.battery(
+        energy_backup_battery_level,
+        min=dynamic(battery_charge_limit_min),
+        max=dynamic(battery_charge_limit_max),
+        availability=dynamic(energy_backup),
+    )
+    async def set_energy_backup_battery_level(self, value: float):
         config = mr521_pb2.ConfigWrite()
         config.cfg_energy_backup.energy_backup_en = True
-        config.cfg_energy_backup.energy_backup_start_soc = value
+        config.cfg_energy_backup.energy_backup_start_soc = int(value)
         await self._send_config_packet(config)
         return True
 
+    @controls.switch(energy_backup)
     async def enable_energy_backup(self, enabled: bool):
         config = mr521_pb2.ConfigWrite()
         config.cfg_energy_backup.energy_backup_en = enabled
@@ -172,42 +181,58 @@ class Device(DeviceBase, ProtobufProps):
             )
         await self._send_config_packet(config)
 
+    @controls.switch(dc_12v_port)
     async def enable_dc_12v_port(self, enabled: bool):
         await self._send_config_packet(
             mr521_pb2.ConfigWrite(cfg_dc_12v_out_open=enabled)
         )
 
+    @controls.outlet(ac_hv_port)
     async def enable_ac_hv_port(self, enabled: bool):
         await self._send_config_packet(
             mr521_pb2.ConfigWrite(cfg_hv_ac_out_open=enabled)
         )
 
+    @controls.outlet(ac_lv_port)
     async def enable_ac_lv_port(self, enabled: bool):
         await self._send_config_packet(
             mr521_pb2.ConfigWrite(cfg_lv_ac_out_open=enabled)
         )
 
-    async def set_battery_charge_limit_min(self, limit: int):
+    @controls.battery(
+        battery_charge_limit_min,
+        max=dynamic(battery_charge_limit_max),
+    )
+    async def set_battery_charge_limit_min(self, limit: float):
         if (
             self.battery_charge_limit_max is not None
             and limit > self.battery_charge_limit_max
         ):
             return False
 
-        await self._send_config_packet(mr521_pb2.ConfigWrite(cfg_min_dsg_soc=limit))
+        await self._send_config_packet(
+            mr521_pb2.ConfigWrite(cfg_min_dsg_soc=int(limit))
+        )
         return True
 
-    async def set_battery_charge_limit_max(self, limit: int):
+    @controls.battery(
+        battery_charge_limit_max,
+        min=dynamic(battery_charge_limit_min),
+    )
+    async def set_battery_charge_limit_max(self, limit: float):
         if (
             self.battery_charge_limit_min is not None
             and limit < self.battery_charge_limit_min
         ):
             return False
 
-        await self._send_config_packet(mr521_pb2.ConfigWrite(cfg_max_chg_soc=limit))
+        await self._send_config_packet(
+            mr521_pb2.ConfigWrite(cfg_max_chg_soc=int(limit))
+        )
         return True
 
-    async def set_ac_charging_speed(self, value: int):
+    @controls.power(ac_charging_speed, max=dynamic(max_ac_charging_power))
+    async def set_ac_charging_speed(self, value: float):
         if (
             self.max_ac_charging_power is None
             or value > self.max_ac_charging_power
@@ -216,6 +241,6 @@ class Device(DeviceBase, ProtobufProps):
             return False
 
         await self._send_config_packet(
-            mr521_pb2.ConfigWrite(cfg_plug_in_info_ac_in_chg_pow_max=value)
+            mr521_pb2.ConfigWrite(cfg_plug_in_info_ac_in_chg_pow_max=int(value))
         )
         return True

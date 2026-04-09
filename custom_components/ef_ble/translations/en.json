@@ -997,6 +997,12 @@
       "ac_ports": {
         "name": "AC Ports"
       },
+      "ac_lv_port": {
+        "name": "AC LV Port"
+      },
+      "ac_hv_port": {
+        "name": "AC HV Port"
+      },
       "dc_12v_port": {
         "name": "DC 12V Port"
       },

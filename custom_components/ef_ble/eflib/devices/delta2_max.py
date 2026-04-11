@@ -1,11 +1,8 @@
-from bleak.backends.device import BLEDevice
-from bleak.backends.scanner import AdvertisementData
-
 from ..entity import controls
 from ..entity.base import dynamic
 from ..model import Mr350MpptHeart, Mr350PdHeartbeatDelta2Max
 from ..packet import Packet
-from ..props import dataclass_attr_mapper, raw_field
+from ..props import computed_field, dataclass_attr_mapper, raw_field
 from ._delta2_base import Delta2Base, pb_inv
 
 pb_pd = dataclass_attr_mapper(Mr350PdHeartbeatDelta2Max)
@@ -27,11 +24,9 @@ class Device(Delta2Base):
     xt60_1_input_power = raw_field(pb_pd.pv1_charge_watts)
     xt60_2_input_power = raw_field(pb_pd.pv2_charge_watts)
 
-    def __init__(
-        self, ble_dev: BLEDevice, adv_data: AdvertisementData, sn: str
-    ) -> None:
-        super().__init__(ble_dev, adv_data, sn)
-        self.max_ac_charging_power = 1800
+    @computed_field
+    def max_ac_charging_power(self) -> int:
+        return 1800
 
     @property
     def pd_heart_type(self):
@@ -75,10 +70,8 @@ class Device(Delta2Base):
             Packet(0x21, 0x02, 0x20, 0x5E, payload, version=0x02)
         )
 
-    @controls.power(ac_charging_speed, max=dynamic(Delta2Base.max_ac_charging_power))
+    @controls.power(ac_charging_speed, min=1, max=dynamic(max_ac_charging_power))
     async def set_ac_charging_speed(self, value: float):
-        if self.max_ac_charging_power is None or value < 1:
-            return False
         payload = bytes([0xFF, 0xFF]) + int(value).to_bytes(2, "little") + bytes([0xFF])
         await self._conn.sendPacket(
             Packet(0x20, 0x04, 0x20, 0x45, payload, version=0x02)

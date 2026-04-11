@@ -1,7 +1,3 @@
-from bleak.backends.device import BLEDevice
-from bleak.backends.scanner import AdvertisementData
-
-from ..commands import TimeCommands
 from ..entity import controls
 from ..entity.base import dynamic
 from ..pb import pd335_sys_pb2
@@ -36,16 +32,6 @@ class Device(Delta3Base):
         pb.energy_strategy_operate_mode,
         lambda x: x.operate_tou_mode_open if x else None,
     )
-
-    def __init__(
-        self, ble_dev: BLEDevice, adv_data: AdvertisementData, sn: str
-    ) -> None:
-        super().__init__(ble_dev, adv_data, sn)
-        self._time_commands = TimeCommands(self)
-        self.max_ac_charging_power = 1500
-
-    def _after_message_parsed(self):
-        pass
 
     @controls.switch(disable_grid_bypass, enabled=False)
     async def enable_disable_grid_bypass(self, enabled: bool):

@@ -25,6 +25,7 @@ class UpdatableProps:
     updated: bool = False
     _updated_fields: set[str] | None = None
     _fields: ClassVar[list["Field[Any]"]] = []
+    _computed_fields: ClassVar[list["_ComputedField[Any]"]] = []
 
     @property
     def updated_fields(self):
@@ -63,6 +64,16 @@ class UpdatableProps:
             f"  {f.public_name}: {getattr(self, f.public_name)!r}" for f in self._fields
         ]
         return f"{cls}:\n" + "\n".join(lines)
+
+    def _recompute(self):
+        for cf in self._computed_fields:
+            cf.recompute(self)
+
+    def _notify_updated(self):
+        self._recompute()
+        for field_name in self.updated_fields:
+            self.update_callback(field_name)  # type: ignore[attr-defined]
+            self.update_state(field_name, getattr(self, field_name))  # type: ignore[attr-defined]
 
     def _get_entities[E: "EntityType"](
         self,
@@ -194,6 +205,62 @@ class Field[T]:
             sensor.field = self
         self.sensor_type = sensor
         return self
+
+
+class _ComputedField[T](Field[T]):
+    _func: Callable[..., T]
+
+    def __call__(self, func: Callable[..., T]) -> Self:
+        self._func = func
+        return self
+
+    def __set_name__(self, owner: type[UpdatableProps], name: str):
+        super().__set_name__(owner, name)
+        existing = [cf for cf in owner._computed_fields if cf.public_name != name]
+        owner._computed_fields = [*existing, self]
+
+    @overload
+    def __get__(
+        self,
+        instance: None,
+        owner: type[UpdatableProps],
+    ) -> "_ComputedField[T]": ...
+
+    @overload
+    def __get__(
+        self,
+        instance: UpdatableProps,
+        owner: type[UpdatableProps],
+    ) -> T: ...
+
+    def __get__(
+        self,
+        instance: UpdatableProps | None,
+        owner: type[UpdatableProps],
+    ) -> "T | _ComputedField[T]":
+        if instance is None:
+            return self
+        # always compute live from current state. recompute() separately diffs against a
+        # cached value to track which fields changed
+        return self._func(instance)
+
+    def __set__(self, instance: UpdatableProps, value: Any):
+        raise AttributeError(f"cannot set computed field '{self.public_name}' directly")
+
+    def recompute(self, instance: UpdatableProps):
+        new_val = self._func(instance)
+        old_val = getattr(instance, self.private_name, None)
+        if new_val == old_val:
+            return
+        setattr(instance, self.private_name, new_val)
+        instance.updated = True
+        instance.updated_fields.add(self.public_name)
+
+
+def computed_field[T](func: Callable[..., T]) -> _ComputedField[T]:
+    cf = _ComputedField[T]()
+    cf(func)
+    return cf
 
 
 class FieldGroupView[T]:

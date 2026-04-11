@@ -15,6 +15,7 @@ from .updatable_props import (
     FieldGroup,
     FieldGroupView,
     UpdatableProps,
+    computed_field,
     field_group,
 )
 
@@ -25,6 +26,7 @@ __all__ = [
     "ProtobufProps",
     "RawDataProps",
     "UpdatableProps",
+    "computed_field",
     "dataclass_attr_mapper",
     "field_group",
     "pb_field",

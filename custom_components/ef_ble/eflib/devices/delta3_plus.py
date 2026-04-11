@@ -1,7 +1,7 @@
 from ..entity import controls
 from ..entity.base import dynamic
 from ..pb import pd335_sys_pb2
-from ..props import Field, pb_field
+from ..props import computed_field, pb_field
 from . import delta3
 from ._delta3_base import DCPortState, _DcAmpSettingField, _DcChargingMaxField, pb
 
@@ -19,17 +19,14 @@ class Device(delta3.Device):
     dc_port_2_input_power = pb_field(pb.pow_get_pv2, lambda value: round(value, 2))
     dc_port_2_state = pb_field(pb.plug_in_info_pv2_type, DCPortState.from_value)
 
-    solar_input_power_2 = Field[float]()
-
-    def _after_message_parsed(self):
-        self.solar_input_power_2 = (
-            round(self.dc_port_2_input_power, 2)
-            if (
-                self.dc_port_2_state is DCPortState.SOLAR
-                and self.dc_port_2_input_power is not None
-            )
-            else 0
-        )
+    @computed_field
+    def solar_input_power_2(self) -> float:
+        if (
+            self.dc_port_2_state is DCPortState.SOLAR
+            and self.dc_port_2_input_power is not None
+        ):
+            return round(self.dc_port_2_input_power, 2)
+        return 0
 
     @controls.current(dc_charging_max_amps_2, max=dynamic(dc_charging_current_max_2))
     async def set_dc_charging_amps_max_2(self, value: float) -> bool:

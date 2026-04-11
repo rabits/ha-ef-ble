@@ -37,8 +37,6 @@ pb_inv = dataclass_attr_mapper(DirectInvDeltaHeartbeatPack)
 
 
 class Delta2Base(DeviceBase, RawDataProps):
-    SN_PREFIX: tuple[bytes, ...]
-
     ac_output_power = raw_field(pb_inv.output_watts)
     ac_input_voltage = raw_field(pb_inv.ac_in_vol, lambda x: round(x / 1000, 2))
     ac_input_current = raw_field(pb_inv.ac_in_amp, lambda x: round(x / 1000, 2))
@@ -87,8 +85,6 @@ class Delta2Base(DeviceBase, RawDataProps):
     dc12v_output_voltage = raw_field(pb_mppt.car_out_vol, lambda x: round(x / 1000, 2))
     dc12v_output_current = raw_field(pb_mppt.car_out_amp, lambda x: round(x / 1000, 2))
 
-    max_ac_charging_power = Field[int]()
-
     @property
     def pd_heart_type(self):
         return BasePdHeart
@@ -115,9 +111,6 @@ class Delta2Base(DeviceBase, RawDataProps):
     @property
     def packet_version(self):
         return 2
-
-    def _after_message_parsed(self):
-        pass
 
     async def data_parse(self, packet: Packet) -> bool:
         """Process the incoming notifications from the device"""
@@ -150,11 +143,7 @@ class Delta2Base(DeviceBase, RawDataProps):
                 self.update_from_bytes(self.mppt_heart_type, packet.payload)
                 processed = True
 
-        self._after_message_parsed()
-
-        for field_name in self.updated_fields:
-            self.update_callback(field_name)
-            self.update_state(field_name, getattr(self, field_name))
+        self._notify_updated()
 
         return processed
 

@@ -5,6 +5,7 @@ from ..model import (
     Mr330PdHeartDelta2,
 )
 from ..packet import Packet
+from ..props import computed_field
 from ..props.raw_data_field import dataclass_attr_mapper, raw_field
 from ._delta2_base import Delta2Base
 
@@ -39,19 +40,15 @@ class Device(Delta2Base):
     def mppt_heart_type(self):
         return Mr330MpptHeart
 
+    @computed_field
+    def max_ac_charging_power(self) -> int:
+        if self.battery_1_enabled or self.battery_2_enabled:
+            return 1500
+        return 1200
+
     def __init__(self, ble_dev, adv_data, sn: str) -> None:
         super().__init__(ble_dev, adv_data, sn)
         self._product_type: int | None = None
-        self.max_ac_charging_power = 1200
-
-    def _after_message_parsed(self):
-        self._update_ac_chg_limits()
-
-    def _update_ac_chg_limits(self) -> None:
-        if self.battery_1_enabled or self.battery_2_enabled:
-            self.max_ac_charging_power = 1500
-        else:
-            self.max_ac_charging_power = 1200
 
     @controls.switch(energy_backup)
     async def enable_energy_backup(self, enabled: bool):
@@ -82,10 +79,8 @@ class Device(Delta2Base):
         packet = Packet(0x21, 0x02, 0x20, 0x5E, payload, version=0x02)
         await self._conn.sendPacket(packet)
 
-    @controls.power(ac_charging_speed, max=dynamic(Delta2Base.max_ac_charging_power))
+    @controls.power(ac_charging_speed, min=1, max=dynamic(max_ac_charging_power))
     async def set_ac_charging_speed(self, value: float):
-        if self.max_ac_charging_power is None or value < 1:
-            return False
         payload = int(value).to_bytes(2, "little") + bytes([0xFF])
         packet = Packet(0x21, self.ac_commands_dst, 0x20, 0x45, payload, version=0x02)
         await self._conn.sendPacket(packet)

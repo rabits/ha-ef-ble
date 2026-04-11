@@ -1,6 +1,4 @@
-from bleak.backends.device import BLEDevice
-from bleak.backends.scanner import AdvertisementData
-
+from ..props import computed_field
 from . import delta3
 
 
@@ -9,8 +7,6 @@ class Device(delta3.Device):
 
     SN_PREFIX = (b"D3N1",)
 
-    def __init__(
-        self, ble_dev: BLEDevice, adv_data: AdvertisementData, sn: str
-    ) -> None:
-        super().__init__(ble_dev, adv_data, sn)
-        self.max_ac_charging_power = 1800
+    @computed_field
+    def max_ac_charging_power(self) -> int:
+        return 1800

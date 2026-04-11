@@ -1,6 +1,4 @@
-from bleak.backends.device import BLEDevice
-from bleak.backends.scanner import AdvertisementData
-
+from ..props import computed_field
 from ._delta3_base import Delta3Base
 
 
@@ -10,11 +8,9 @@ class Device(Delta3Base):
     SN_PREFIX = (b"PR11", b"PR12", b"PR21")
     NAME_PREFIX = "EF-PR"
 
-    def __init__(
-        self, ble_dev: BLEDevice, adv_data: AdvertisementData, sn: str
-    ) -> None:
-        super().__init__(ble_dev, adv_data, sn)
-        self.max_ac_charging_power = 1000 if sn[:4] == "PR21" else 500
+    @computed_field
+    def max_ac_charging_power(self) -> int:
+        return 1000 if self._sn[:4] == "PR21" else 500
 
     @property
     def device(self):

@@ -46,6 +46,7 @@ class DeviceBase(abc.ABC):
     MANUFACTURER_KEY = 0xB5B5
 
     NAME_PREFIX: str
+    SN_PREFIX: tuple[bytes, ...]
 
     _listeners = _Listeners.create()
 

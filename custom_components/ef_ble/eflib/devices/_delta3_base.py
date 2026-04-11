@@ -1,5 +1,3 @@
-from collections.abc import Sequence
-
 from bleak.backends.device import BLEDevice
 from bleak.backends.scanner import AdvertisementData
 from google.protobuf.message import Message
@@ -11,8 +9,8 @@ from ..entity.base import dynamic
 from ..packet import Packet
 from ..pb import pd335_bms_bp_pb2, pd335_sys_pb2
 from ..props import (
-    Field,
     ProtobufProps,
+    computed_field,
     pb_field,
     proto_attr_mapper,
     repeated_pb_field_type,
@@ -74,8 +72,6 @@ class DCPortState(IntFieldValue):
 
 
 class Delta3Base(DeviceBase, ProtobufProps):
-    SN_PREFIX: Sequence[bytes]
-
     battery_level = pb_field(pb.cms_batt_soc, lambda value: round(value, 2))
     battery_level_main = pb_field(pb.bms_batt_soc, lambda value: round(value, 2))
 
@@ -103,13 +99,23 @@ class Delta3Base(DeviceBase, ProtobufProps):
     cell_temperature = pb_field(pb.bms_max_cell_temp)
     ac_ports = pb_field(pb.flow_info_ac_out, flow_is_on)
 
-    solar_input_power = Field[float]()
-
     remaining_time_charging = pb_field(pb.cms_chg_rem_time)
     remaining_time_discharging = pb_field(pb.cms_dsg_rem_time)
 
     ac_charging_speed = pb_field(pb.plug_in_info_ac_in_chg_pow_max)
-    max_ac_charging_power = Field[int]()
+
+    @computed_field
+    def max_ac_charging_power(self) -> int:
+        return 1500
+
+    @computed_field
+    def solar_input_power(self) -> float:
+        if (
+            self.dc_port_state is DCPortState.SOLAR
+            and self.dc_port_input_power is not None
+        ):
+            return round(self.dc_port_input_power, 2)
+        return 0
 
     dc_charging_max_amps = _DcAmpSettingField(
         pd335_sys_pb2.PV_CHG_VOL_SPEC_12V, pd335_sys_pb2.PV_PLUG_INDEX_1
@@ -121,7 +127,6 @@ class Delta3Base(DeviceBase, ProtobufProps):
     ) -> None:
         super().__init__(ble_dev, adv_data, sn)
         self._time_commands = TimeCommands(self)
-        self.max_ac_charging_power = 1500
 
     async def packet_parse(self, data: bytes):
         return Packet.fromBytes(data, xor_payload=True)
@@ -147,24 +152,9 @@ class Delta3Base(DeviceBase, ProtobufProps):
                 self._time_commands.async_send_all()
             processed = True
 
-        self.solar_input_power = (
-            round(self.dc_port_input_power, 2)
-            if (
-                self.dc_port_state is DCPortState.SOLAR
-                and self.dc_port_input_power is not None
-            )
-            else 0
-        )
-        self._after_message_parsed()
-
-        for field_name in self.updated_fields:
-            self.update_callback(field_name)
-            self.update_state(field_name, getattr(self, field_name))
+        self._notify_updated()
 
         return processed
-
-    def _after_message_parsed(self):
-        pass
 
     async def _send_config_packet(self, message: Message):
         payload = message.SerializeToString()
@@ -179,12 +169,6 @@ class Delta3Base(DeviceBase, ProtobufProps):
 
     @controls.battery(battery_charge_limit_min, max=dynamic(battery_charge_limit_max))
     async def set_battery_charge_limit_min(self, limit: float):
-        if (
-            self.battery_charge_limit_max is not None
-            and limit > self.battery_charge_limit_max
-        ):
-            return False
-
         await self._send_config_packet(
             pd335_sys_pb2.ConfigWrite(cfg_min_dsg_soc=int(limit))
         )
@@ -192,12 +176,6 @@ class Delta3Base(DeviceBase, ProtobufProps):
 
     @controls.battery(battery_charge_limit_max, min=dynamic(battery_charge_limit_min))
     async def set_battery_charge_limit_max(self, limit: float):
-        if (
-            self.battery_charge_limit_min is not None
-            and limit < self.battery_charge_limit_min
-        ):
-            return False
-
         await self._send_config_packet(
             pd335_sys_pb2.ConfigWrite(cfg_max_chg_soc=int(limit))
         )
@@ -205,13 +183,6 @@ class Delta3Base(DeviceBase, ProtobufProps):
 
     @controls.power(ac_charging_speed, max=dynamic(max_ac_charging_power))
     async def set_ac_charging_speed(self, value: float):
-        if (
-            self.max_ac_charging_power is None
-            or value > self.max_ac_charging_power
-            or value < 0
-        ):
-            return False
-
         await self._send_config_packet(
             pd335_sys_pb2.ConfigWrite(
                 cfg_ac_in_chg_mode=pd335_sys_pb2.AC_IN_CHG_MODE_SELF_DEF_POW,
@@ -226,13 +197,6 @@ class Delta3Base(DeviceBase, ProtobufProps):
         value: float,
         plug_index: pd335_sys_pb2.PV_PLUG_INDEX = pd335_sys_pb2.PV_PLUG_INDEX_1,
     ) -> bool:
-        if (
-            self.dc_charging_current_max is None
-            or value < 0
-            or value > self.dc_charging_current_max
-        ):
-            return False
-
         config = pd335_sys_pb2.ConfigWrite()
         config.cfg_pv_dc_chg_setting.pv_plug_index = plug_index
         config.cfg_pv_dc_chg_setting.pv_chg_vol_spec = pd335_sys_pb2.PV_CHG_VOL_SPEC_12V

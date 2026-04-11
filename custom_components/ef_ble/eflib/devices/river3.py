@@ -8,8 +8,8 @@ from ..entity.base import dynamic
 from ..packet import Packet
 from ..pb import pr705_pb2
 from ..props import (
-    Field,
     ProtobufProps,
+    computed_field,
     pb_field,
     proto_attr_mapper,
     repeated_pb_field_type,
@@ -65,10 +65,7 @@ class Device(DeviceBase, ProtobufProps):
     ac_output_energy = _StatField(pr705_pb2.STATISTICS_OBJECT_AC_OUT_ENERGY)
 
     input_power = pb_field(pb.pow_in_sum_w)
-    input_energy = Field[int]()
-
     output_power = pb_field(pb.pow_out_sum_w)
-    output_energy = Field[int]()
 
     dc_input_power = pb_field(pb.pow_get_pv)
     dc_input_energy = _StatField(pr705_pb2.STATISTICS_OBJECT_PV_IN_ENERGY)
@@ -104,6 +101,28 @@ class Device(DeviceBase, ProtobufProps):
 
     remaining_time_charging = pb_field(pb.cms_chg_rem_time)
     remaining_time_discharging = pb_field(pb.cms_dsg_rem_time)
+
+    @computed_field
+    def input_energy(self) -> int | None:
+        if self.ac_input_energy is not None and self.dc_input_energy is not None:
+            return self.ac_input_energy + self.dc_input_energy
+        return None
+
+    @computed_field
+    def output_energy(self) -> int | None:
+        if (
+            self.ac_output_energy is not None
+            and self.usba_output_energy is not None
+            and self.usbc_output_energy is not None
+            and self.dc12v_output_energy is not None
+        ):
+            return (
+                self.ac_output_energy
+                + self.usba_output_energy
+                + self.usbc_output_energy
+                + self.dc12v_output_energy
+            )
+        return None
 
     def __init__(
         self, ble_dev: BLEDevice, adv_data: AdvertisementData, sn: str
@@ -150,25 +169,7 @@ class Device(DeviceBase, ProtobufProps):
                 self._time_commands.async_send_all()
             processed = True
 
-        if self.ac_input_energy is not None and self.dc_input_energy is not None:
-            self.input_energy = self.ac_input_energy + self.dc_input_energy
-
-        if (
-            self.ac_output_energy is not None
-            and self.usba_output_energy is not None
-            and self.usbc_output_energy is not None
-            and self.dc12v_output_energy is not None
-        ):
-            self.output_energy = (
-                self.ac_output_energy
-                + self.usba_output_energy
-                + self.usbc_output_energy
-                + self.dc12v_output_energy
-            )
-
-        for field_name in self.updated_fields:
-            self.update_callback(field_name)
-            self.update_state(field_name, getattr(self, field_name))
+        self._notify_updated()
 
         return processed
 

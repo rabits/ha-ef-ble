@@ -88,6 +88,7 @@ class Device(DeviceBase, ProtobufProps):
 
     error_code = pb_field(pb.errcode)
     bms_run_state = pb_field(pb.cms_bms_run_state, bool)
+    error_occurred = Field[bool]()
 
     dc_12v_port = pb_field(pb.flow_info_12v, _flow_is_on)
     ac_lv_port = pb_field(pb.flow_info_ac_lv_out, _flow_is_on)
@@ -144,6 +145,7 @@ class Device(DeviceBase, ProtobufProps):
         self.solar_hv_power = self._get_solar_power(
             self.dc_hv_input_power, self.dc_hv_input_state
         )
+        self.error_occurred = bool(self.error_code)
 
         for field_name in self.updated_fields:
             self.update_callback(field_name)

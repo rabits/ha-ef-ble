@@ -302,10 +302,11 @@ Click on any device below to see available sensors, switches, and controls:
 | Cell Temperature (disabled)         |                |                      |
 | Charge Time Remaining (disabled)    |                |                      |
 | Discharge Time Remaining (disabled) |                |                      |
-| Error Code (disabled)               |                |                      |
+| Error Occurred (disabled) ²         |                |                      |
 | BMS Run State (disabled)            |                |                      |
 
 <sup>¹ Per extra battery (up to 2)</sup>
+<sup>² Includes error code as an extra attribute</sup>
 
 > **📝 Note:** Extra batteries are detected when the integration is set up. If you
 > connect or disconnect a battery, you can reconfigure the integration to update

@@ -340,6 +340,9 @@
       "bms_run_state": {
         "name": "BMS Run State"
       },
+      "error_occurred": {
+        "name": "Error Occurred"
+      },
       "backup_force_charge": {
         "name": "Channel {channel} Force Charge"
       },
@@ -568,9 +571,6 @@
       },
       "cell_temperature": {
         "name": "Cell Temperature"
-      },
-      "error_code": {
-        "name": "Error Code"
       },
       "dc_port_input_power": {
         "name": "DC Port Input Power"

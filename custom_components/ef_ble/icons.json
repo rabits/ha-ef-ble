@@ -24,6 +24,12 @@
         "state": {
           "off": "mdi:battery-off-outline"
         }
+      },
+      "error_occurred": {
+        "default": "mdi:alert-circle",
+        "state": {
+          "off": "mdi:alert-circle-outline"
+        }
       }
     },
     "sensor": {
@@ -128,9 +134,6 @@
       },
       "hv_solar_power": {
         "default": "mdi:solar-panel-large"
-      },
-      "error_code": {
-        "default": "mdi:alert-circle"
       },
       "generator_abnormal_state": {
         "default": "mdi:alert-circle"

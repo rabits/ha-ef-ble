@@ -1,8 +1,8 @@
 """EcoFlow BLE binary sensor"""
 
 from collections.abc import Callable
-from dataclasses import dataclass
-from typing import Final, TypedDict, Unpack
+from dataclasses import dataclass, field
+from typing import Any, Final, TypedDict, Unpack
 
 from homeassistant.components.binary_sensor import (
     BinarySensorDeviceClass,
@@ -26,6 +26,7 @@ class EcoflowBinarySensorEntityDescription(BinarySensorEntityDescription):
 
     update_state: Callable[[bool], None] | None = None
     indexed_range: range | None = None
+    state_attribute_fields: list[str] = field(default_factory=list)
 
 
 class _BinarySensorKwargs(TypedDict, total=False):
@@ -33,6 +34,7 @@ class _BinarySensorKwargs(TypedDict, total=False):
     translation_placeholders: dict[str, str]
     indexed_range: range
     entity_category: EntityCategory
+    state_attribute_fields: list[str]
 
 
 def _make_desc(
@@ -122,6 +124,11 @@ def shp2_channel(
 _BINARY_SENSORS: Final[dict[str, BinarySensorEntityDescription]] = {
     "error_happened": problem("error", entity_category=EntityCategory.DIAGNOSTIC),
     "plugged_in_ac": plug(),
+    "error_occurred": problem(
+        enabled=False,
+        entity_category=EntityCategory.DIAGNOSTIC,
+        state_attribute_fields=["error_code"],
+    ),
     "bms_run_state": power(enabled=False, entity_category=EntityCategory.DIAGNOSTIC),
     # SHP2 backup channel binary sensors
     "ch{n}_backup_is_ready": shp2_channel(
@@ -215,6 +222,20 @@ class EcoflowBinarySensor(EcoflowEntity, BinarySensorEntity):
         """Entity being removed from hass."""
         self._device.remove_state_update_callback(self.state_updated, self._prop_name)
         await super().async_will_remove_from_hass()
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any] | None:
+        """Return extra state attributes from configured attribute fields."""
+        if not isinstance(
+            self.entity_description, EcoflowBinarySensorEntityDescription
+        ):
+            return None
+
+        return {
+            field_name: getattr(self._device, field_name)
+            for field_name in self.entity_description.state_attribute_fields
+            if hasattr(self._device, field_name)
+        } or None
 
     @callback
     def state_updated(self, state: bool):

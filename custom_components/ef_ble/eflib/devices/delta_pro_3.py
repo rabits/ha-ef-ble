@@ -9,8 +9,8 @@ from ..entity.base import dynamic
 from ..packet import Packet
 from ..pb import mr521_pb2
 from ..props import (
-    Field,
     ProtobufProps,
+    computed_field,
     pb_field,
     proto_attr_mapper,
 )
@@ -88,14 +88,10 @@ class Device(DeviceBase, ProtobufProps):
 
     error_code = pb_field(pb.errcode)
     bms_run_state = pb_field(pb.cms_bms_run_state, bool)
-    error_occurred = Field[bool]()
 
     dc_12v_port = pb_field(pb.flow_info_12v, _flow_is_on)
     ac_lv_port = pb_field(pb.flow_info_ac_lv_out, _flow_is_on)
     ac_hv_port = pb_field(pb.flow_info_ac_hv_out, _flow_is_on)
-
-    solar_lv_power = Field[float]()
-    solar_hv_power = Field[float]()
 
     battery_1_enabled = pb_field(pb.plug_in_info_4p8_1_in_flag, bool)
     battery_1_battery_level = pb_field(pb.plug_in_info_4p8_1_resv, resv_soc)
@@ -139,19 +135,21 @@ class Device(DeviceBase, ProtobufProps):
                 self._time_commands.async_send_all()
             processed = True
 
-        self.solar_lv_power = self._get_solar_power(
-            self.dc_lv_input_power, self.dc_lv_input_state
-        )
-        self.solar_hv_power = self._get_solar_power(
-            self.dc_hv_input_power, self.dc_hv_input_state
-        )
-        self.error_occurred = bool(self.error_code)
-
-        for field_name in self.updated_fields:
-            self.update_callback(field_name)
-            self.update_state(field_name, getattr(self, field_name))
+        self._notify_updated()
 
         return processed
+
+    @computed_field
+    def solar_lv_power(self) -> float:
+        return self._get_solar_power(self.dc_lv_input_power, self.dc_lv_input_state)
+
+    @computed_field
+    def solar_hv_power(self) -> float:
+        return self._get_solar_power(self.dc_hv_input_power, self.dc_hv_input_state)
+
+    @computed_field
+    def error_occurred(self) -> bool:
+        return bool(self.error_code)
 
     def _get_solar_power(self, power: float | None, state: DCPortState | None):
         return (

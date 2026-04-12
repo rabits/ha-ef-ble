@@ -102,7 +102,13 @@ class Delta3Base(DeviceBase, ProtobufProps):
     remaining_time_charging = pb_field(pb.cms_chg_rem_time)
     remaining_time_discharging = pb_field(pb.cms_dsg_rem_time)
 
+    error_code = pb_field(pb.errcode)
+
     ac_charging_speed = pb_field(pb.plug_in_info_ac_in_chg_pow_max)
+
+    @computed_field
+    def error_occurred(self) -> bool:
+        return bool(self.error_code)
 
     @computed_field
     def max_ac_charging_power(self) -> int:

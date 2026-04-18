@@ -14,29 +14,13 @@ async def async_get_config_entry_diagnostics(
 
     session = Session() if encrypt else None
 
-    diagnostics = {
-        "local_name": entry.data.get("local_name", None),
-        "device": device.device,
-        "name": device.name,
-        "default_name": device._default_name,
-        "sn_prefix": device._sn[:4],
-        "connection_state": device.connection_state,
-        "connection_state_history": list(device.connection_log.history),
-        "manufacturer_data": (
-            session.encrypt(device._manufacturer_data).hex()
-            if session is not None
-            else device._manufacturer_data.hex()
-        ),
-    }
-
-    if session is not None:
-        diagnostics["session"] = session.header.hex()
+    diagnostics: dict = {"local_name": entry.data.get("local_name", None)}
+    diagnostics |= device.diagnostics.build_diagnostics_dict(session)
 
     if device.diagnostics.is_enabled:
         connection_setup = await hass.async_add_executor_job(
             device.connection_log.load_from_cache
         )
-        diagnostics |= device.diagnostics.as_dict(session)
         diagnostics |= {"connection_setup": connection_setup}
 
     return diagnostics

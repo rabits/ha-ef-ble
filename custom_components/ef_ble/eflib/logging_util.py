@@ -1,11 +1,14 @@
+import asyncio
 import dataclasses
 import json
 import logging
 import re
 import time
+import traceback
 from collections import deque
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
+from datetime import UTC, datetime
 from enum import Flag, auto
 from functools import cached_property
 from pathlib import Path
@@ -304,6 +307,7 @@ class DeviceDiagnosticsCollector:
     def __init__(self, device: "DeviceBase", buffer_size: int = 100):
         self._device = device
         self._enabled = False
+        self._save_on_exception = False
         self._buffer_size = buffer_size
 
         self._last_packets: deque[tuple[float, bytes]] = deque(maxlen=buffer_size)
@@ -318,13 +322,38 @@ class DeviceDiagnosticsCollector:
 
         self._start_time = time.time()
 
+        self._logger = logging.getLogger(__name__)
+
     def as_dict(self, session: Session | None = None):
         """Get diagnostics data as dictionary"""
         return self.diagnostics.serialize(session).as_dict()
 
+    def build_diagnostics_dict(self, session: Session | None = None) -> dict:
+        device = self._device
+        result: dict = {
+            "device": device.device,
+            "name": device.name,
+            "default_name": device._default_name,
+            "sn_prefix": device._sn[:4],
+            "connection_state": device.connection_state,
+            "connection_state_history": list(device.connection_log.history),
+            "manufacturer_data": (
+                session.encrypt(device._manufacturer_data).hex()
+                if session is not None
+                else device._manufacturer_data.hex()
+            ),
+        }
+        if session is not None:
+            result["session"] = session.header.hex()
+        if self.is_enabled:
+            result |= self.as_dict(session)
+        return result
+
     @property
     def diagnostics(self):
         """Get diagnostics data"""
+        conn = self._device._conn
+        encryption = getattr(conn, "_encryption", None) if conn is not None else None
         return DeviceDiagnostics(
             last_packets=list(self._last_packets),
             last_errors=list(self._last_errors),
@@ -332,8 +361,8 @@ class DeviceDiagnosticsCollector:
             disconnect_times=list(self._disconnect_times),
             raw_data_connection=self._raw_data_connection,
             raw_data_messages=list(self._raw_data_messages),
-            iv=self._device._conn._encryption.iv,
-            session_key=self._device._conn._encryption.session_key,
+            iv=encryption.iv if encryption is not None else b"",
+            session_key=encryption.session_key if encryption is not None else b"",
         )
 
     @property
@@ -447,6 +476,88 @@ class DeviceDiagnosticsCollector:
             buffer = self._raw_data_messages
 
         buffer.append(self._with_time(data))
+
+    def with_save_on_exception(self, enabled: bool = True):
+        """
+        Enable or disable automatic diagnostics save on connection error
+
+        When enabled, packet collection is force-enabled and a state change
+        listener is registered. On any error state, collected diagnostics
+        are saved to disk automatically.
+        """
+        if enabled == self._save_on_exception:
+            return self
+
+        self._save_on_exception = enabled
+
+        if enabled:
+            self.enabled(True)
+            self._unlisten_callbacks.append(
+                self._device.on_connection_state_change(self._on_state_change)
+            )
+
+        return self
+
+    def _on_state_change(self, state: "ConnectionState") -> None:
+        if not self._save_on_exception or not state.is_error:
+            return
+
+        conn = self._device._conn
+        exc = getattr(conn, "_last_exception", None) if conn is not None else None
+        try:
+            self._save_to_disk(state, exc)
+        except Exception:
+            self._device._logger.exception(
+                "Failed to save diagnostics-on-exception snapshot"
+            )
+
+    def _save_to_disk(
+        self,
+        state: "ConnectionState",
+        exc: Exception | type[Exception] | None = None,
+    ) -> None:
+        session = Session()
+
+        exc_message = None
+        exc_traceback = None
+        if exc is not None:
+            exc_message = session.encrypt(str(exc).encode()).hex()
+        if isinstance(exc, BaseException) and exc.__traceback__ is not None:
+            tb = "".join(traceback.format_tb(exc.__traceback__))
+            exc_traceback = session.encrypt(tb.encode()).hex()
+
+        data = {
+            "timestamp": datetime.now(UTC).isoformat(),
+            "exception": {
+                "type": type(exc).__name__ if exc is not None else None,
+                "message": exc_message,
+                "traceback": exc_traceback,
+                "state_on_error": state.name,
+            },
+            "data": self.build_diagnostics_dict(session),
+        }
+
+        sn_prefix = self._device._sn[:4]
+        ts = datetime.now(UTC).strftime("%Y%m%d_%H%M%S")
+        cache_dir = Path(__file__).parent.parent / ".diagnostics"
+        path = cache_dir / f"{sn_prefix}_exception_{ts}.json"
+        content = json.dumps(data, default=str, indent=2)
+
+        def _write() -> None:
+            cache_dir.mkdir(exist_ok=True)
+            path.write_text(content)
+
+        task = asyncio.get_running_loop().run_in_executor(None, _write)
+
+        def _log_result(future: asyncio.Future) -> None:
+            if (err := future.exception()) is not None:
+                self._device._logger.error(
+                    "Failed to save diagnostics to %s: %s", path, err
+                )
+            else:
+                self._device._logger.info("Diagnostics saved to %s", path)
+
+        task.add_done_callback(_log_result)
 
     def _clear_buffers(self):
         self._last_packets.clear()

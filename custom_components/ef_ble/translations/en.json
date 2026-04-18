@@ -218,11 +218,13 @@
             "name": "Diagnostics",
             "description": "Configure diagnostics data collection and encryption.",
             "data": {
+              "diagnostics_on_exception": "Save diagnostics on exception",
               "collect_packets": "Enable packet collection",
               "collect_packets_amount": "Number of packets to store",
               "diagnostics_encrypt": "Encrypt diagnostics data"
             },
             "data_description": {
+              "diagnostics_on_exception": "When enabled, packets are collected from the start of each connection attempt. If a connection error occurs, collected data is automatically saved to disk for debugging.",
               "collect_packets": "Enabling this option will start storing packets for diagnostics info - wait a minute after you enable this option before downloading diagnostics info and don't forget to turn it off.\nSome devices may contain identifying information in their messages such as your exact location, make sure encryption is enabled before sharing.",
               "diagnostics_encrypt": "When enabled, sensitive diagnostics data (packets, session keys, manufacturer data) is encrypted before being included in the diagnostics download. Disable only if you need raw data for local debugging."
             }

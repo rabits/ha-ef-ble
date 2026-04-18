@@ -631,6 +631,11 @@ class Connection:
         if state.is_error:
             self._notify_disconnect(exc)
 
+    def set_state(
+        self, state: ConnectionState, exc: Exception | type[Exception] | None = None
+    ) -> None:
+        self._set_state(state, exc)
+
     def _get_characteristics(self, char_type: Literal["write", "notify"]):
         assert self._client is not None
 

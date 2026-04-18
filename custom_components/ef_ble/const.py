@@ -16,6 +16,7 @@ CONF_BLUEZ_START_NOTIFY = "bluez_start_notify"
 
 CONF_DIAGNOSTICS_OPTIONS = "diagnostics_options"
 CONF_DIAGNOSTICS_ENCRYPT = "diagnostics_encrypt"
+CONF_DIAGNOSTICS_ON_EXCEPTION = "diagnostics_on_exception"
 
 CONF_LOG_MASKED = "log_masked"
 CONF_LOG_PACKETS = "log_packets"

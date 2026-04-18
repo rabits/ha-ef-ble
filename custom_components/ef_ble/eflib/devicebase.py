@@ -139,6 +139,15 @@ class DeviceBase(abc.ABC):
     def connection_state(self):
         return None if self._conn is None else self._conn._connection_state
 
+    def set_connection_state(
+        self,
+        state: ConnectionState,
+        exc: Exception | type[Exception] | None = None,
+    ) -> None:
+        if self._conn is None:
+            return
+        self._conn.set_state(state, exc)
+
     @property
     def diagnostics(self):
         return self._diagnostics
@@ -218,6 +227,11 @@ class DeviceBase(abc.ABC):
     ):
         self._diagnostics.enabled(enabled)
         self._diagnostics.with_buffer_size(buffer_size)
+        return self
+
+    def with_diagnostics_on_exception(self, enabled: bool = True):
+        """Enable automatic diagnostics save to disk on connection errors"""
+        self._diagnostics.with_save_on_exception(enabled)
         return self
 
     def with_name(self, name: str):

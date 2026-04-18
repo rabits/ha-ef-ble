@@ -29,6 +29,7 @@ from .const import (
     CONF_BLUEZ_START_NOTIFY,
     CONF_COLLECT_PACKETS_AMOUNT,
     CONF_CONNECTION_TIMEOUT,
+    CONF_DIAGNOSTICS_ON_EXCEPTION,
     CONF_DIAGNOSTICS_OPTIONS,
     CONF_EXTRA_BATTERY,
     CONF_PACKET_VERSION,
@@ -105,6 +106,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: DeviceConfigEntry) -> bo
     packet_collection_enabled = diag_options.get(
         CONF_COLLECT_PACKETS, eflib.is_unsupported(device)
     )
+    diagnostics_on_exception = diag_options.get(CONF_DIAGNOSTICS_ON_EXCEPTION, False)
 
     advanced = merged_options.get(CONF_ADVANCED_CONNECTION_OPTIONS, {})
     timeout = advanced.get(CONF_CONNECTION_TIMEOUT, DEFAULT_CONNECTION_TIMEOUT)
@@ -121,6 +123,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: DeviceConfigEntry) -> bo
             .with_disabled_reconnect()
             .with_packet_version(packet_version.to_num())
             .with_enabled_packet_diagnostics(packet_collection_enabled)
+            .with_diagnostics_on_exception(diagnostics_on_exception)
             .with_connection_options(options)
             .connect(
                 user_id=user_id,
@@ -285,6 +288,7 @@ async def _update_listener(hass: HomeAssistant, entry: DeviceConfigEntry):
         CONF_COLLECT_PACKETS, eflib.is_unsupported(device)
     )
     diagnostics_buffer_size = diag_options.get(CONF_COLLECT_PACKETS_AMOUNT, 100)
+    diagnostics_on_exception = diag_options.get(CONF_DIAGNOSTICS_ON_EXCEPTION, False)
     advanced = merged_options.get(CONF_ADVANCED_CONNECTION_OPTIONS, {})
     options = Connection.Options(
         timeout=advanced.get(CONF_CONNECTION_TIMEOUT, DEFAULT_CONNECTION_TIMEOUT),
@@ -298,5 +302,6 @@ async def _update_listener(hass: HomeAssistant, entry: DeviceConfigEntry):
             enabled=packet_collection,
             buffer_size=diagnostics_buffer_size,
         )
+        .with_diagnostics_on_exception(diagnostics_on_exception)
         .with_connection_options(options)
     )

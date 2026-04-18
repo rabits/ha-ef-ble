@@ -42,6 +42,7 @@ from .const import (
     CONF_COLLECT_PACKETS_AMOUNT,
     CONF_CONNECTION_TIMEOUT,
     CONF_DIAGNOSTICS_ENCRYPT,
+    CONF_DIAGNOSTICS_ON_EXCEPTION,
     CONF_DIAGNOSTICS_OPTIONS,
     CONF_EXTRA_BATTERY,
     CONF_LOG_BLEAK,
@@ -433,10 +434,11 @@ class EFBLEConfigFlow(ConfigFlow, domain=DOMAIN):
         if error := self._check_user_id(user_id):
             return error
 
-        device.with_logging_options(
-            ConfLogOptions.from_config(user_input)
-        ).with_packet_version(packet_version.to_num()).with_connection_options(
-            Connection.Options(timeout=timeout)
+        (
+            device.with_logging_options(ConfLogOptions.from_config(user_input))
+            .with_packet_version(packet_version.to_num())
+            .with_diagnostics_on_exception(True)
+            .with_connection_options(Connection.Options(timeout=timeout))
         )
 
         await device.connect(self._user_id)
@@ -445,7 +447,9 @@ class EFBLEConfigFlow(ConfigFlow, domain=DOMAIN):
             conn_state, exc = await asyncio.wait_for(
                 device.wait_until_authenticated_or_error(return_exc=True), timeout
             )
-        except TimeoutError:
+        except TimeoutError as e:
+            exc = e
+            device.set_connection_state(ConnectionState.ERROR_TIMEOUT, e)
             conn_state = device.connection_state
 
         await device.disconnect()
@@ -707,6 +711,11 @@ class _SchemaBuilder:
                 vol.Required(CONF_DIAGNOSTICS_OPTIONS): section(
                     (
                         schema_builder()
+                        .optional(
+                            CONF_DIAGNOSTICS_ON_EXCEPTION,
+                            bool,
+                            diag.get(CONF_DIAGNOSTICS_ON_EXCEPTION, False),
+                        )
                         .optional(
                             CONF_COLLECT_PACKETS,
                             bool,

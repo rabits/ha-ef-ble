@@ -271,8 +271,10 @@ class DeviceDiagnostics:
     disconnect_times: list[float]
     raw_data_connection: list[tuple[float, bytes]]
     raw_data_messages: list[tuple[float, bytes]]
+    raw_data_send: list[tuple[float, bytes]]
     iv: bytes
     session_key: bytes
+    initial_session_key: bytes
 
     def _encode_bytes(self, value: bytes, session: Session | None) -> str:
         if session is not None:
@@ -292,8 +294,12 @@ class DeviceDiagnostics:
             raw_data_messages=[
                 (k, self._encode_bytes(v, session)) for (k, v) in self.raw_data_messages
             ],
+            raw_data_send=[
+                (k, self._encode_bytes(v, session)) for (k, v) in self.raw_data_send
+            ],
             iv=self._encode_bytes(self.iv, session),
             session_key=self._encode_bytes(self.session_key, session),
+            initial_session_key=self._encode_bytes(self.initial_session_key, session),
         )
 
     def as_dict(self):
@@ -315,6 +321,7 @@ class DeviceDiagnosticsCollector:
         self._connect_times: deque[float] = deque(maxlen=buffer_size)
         self._raw_data_connection: list[tuple[float, bytes]] = []
         self._raw_data_messages: deque[tuple[float, bytes]] = deque(maxlen=1000)
+        self._raw_data_send: deque[tuple[float, bytes]] = deque(maxlen=1000)
 
         self._disconnect_times: deque[float] = deque(maxlen=buffer_size)
         self._skip_first_messages: int = 8
@@ -353,7 +360,8 @@ class DeviceDiagnosticsCollector:
     def diagnostics(self):
         """Get diagnostics data"""
         conn = self._device._conn
-        encryption = getattr(conn, "_encryption", None) if conn is not None else None
+        encryption = conn._encryption
+
         return DeviceDiagnostics(
             last_packets=list(self._last_packets),
             last_errors=list(self._last_errors),
@@ -361,8 +369,10 @@ class DeviceDiagnosticsCollector:
             disconnect_times=list(self._disconnect_times),
             raw_data_connection=self._raw_data_connection,
             raw_data_messages=list(self._raw_data_messages),
+            raw_data_send=list(self._raw_data_send),
             iv=encryption.iv if encryption is not None else b"",
             session_key=encryption.session_key if encryption is not None else b"",
+            initial_session_key=conn._initial_session_key,
         )
 
     @property
@@ -397,6 +407,7 @@ class DeviceDiagnosticsCollector:
                     self._device.on_packet_received(self._on_packet_received),
                     self._device.on_packet_parsed(self._on_packet_parsed),
                     self._device.on_data_received(self._on_data_received),
+                    self._device.on_data_send(self._on_data_send),
                 ]
             )
             return self
@@ -476,6 +487,9 @@ class DeviceDiagnosticsCollector:
             buffer = self._raw_data_messages
 
         buffer.append(self._with_time(data))
+
+    def _on_data_send(self, data: bytes):
+        self._raw_data_send.append(self._with_time(data))
 
     def with_save_on_exception(self, enabled: bool = True):
         """
@@ -564,6 +578,7 @@ class DeviceDiagnosticsCollector:
         self._last_errors.clear()
         self._connect_times.clear()
         self._disconnect_times.clear()
+        self._raw_data_send.clear()
 
 
 class _LazyHex:

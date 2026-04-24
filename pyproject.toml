@@ -34,8 +34,8 @@ hass = [
   "pyserial",
 ]
 lint = [
-  "pre-commit",
-  "ruff==0.15.10",
+  "prek",
+  "ruff~=0.15.12",
 ]
 
 [tool.setuptools]

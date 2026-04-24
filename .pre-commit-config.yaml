@@ -17,7 +17,7 @@ repos:
       - id: check-added-large-files
         args: ['--maxkb=500']
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.15.10
+    rev: v0.15.12
     hooks:
       - id: ruff
         args: ["--fix"]
@@ -30,11 +30,11 @@ repos:
         args: [--mapping, "2", --sequence, "4", --offset, "2", --preserve-quotes, "--implicit_start"]
         name: yaml formatting (yamlfmt)
   - repo: https://github.com/rvben/rumdl-pre-commit
-    rev: v0.1.69
+    rev: v0.1.80
     hooks:
       - id: rumdl
       - id: rumdl-fmt
   - repo: https://github.com/tox-dev/pyproject-fmt
-    rev: v2.21.0
+    rev: v2.21.1
     hooks:
       - id: pyproject-fmt

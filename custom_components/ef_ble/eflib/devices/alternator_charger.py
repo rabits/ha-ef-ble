@@ -10,6 +10,7 @@ from ..packet import Packet
 from ..pb import dc009_apl_comm_pb2
 from ..props import Field, ProtobufProps, pb_field, proto_attr_mapper
 from ..props.enums import IntFieldValue
+from ..props.transforms import pdiv, pround
 
 pb = proto_attr_mapper(dc009_apl_comm_pb2.DisplayPropertyUpload)
 
@@ -55,10 +56,8 @@ class Device(DeviceBase, ProtobufProps):
     battery_temperature = pb_field(pb.cms_batt_temp)
     dc_power = pb_field(pb.pow_get_dc_bidi)
 
-    car_battery_voltage = pb_field(pb.sp_charger_car_batt_vol, lambda x: round(x, 2))
-    start_voltage = pb_field(
-        pb.sp_charger_car_batt_vol_setting, lambda x: round(x / 10, 1)
-    )
+    car_battery_voltage = pb_field(pb.sp_charger_car_batt_vol, pround(2))
+    start_voltage = pb_field(pb.sp_charger_car_batt_vol_setting, pdiv(10, 1))
     start_voltage_min = Field[int]()
     start_voltage_max = Field[int]()
 

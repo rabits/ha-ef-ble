@@ -121,7 +121,8 @@ class Field[T]:
         self.private_name = (
             f"_{name}" if not hasattr(owner, f"_{name}") else f"__{name}"
         )
-        owner._fields = [*owner._fields, self]
+        existing = [f for f in owner._fields if f.public_name != name]
+        owner._fields = [*existing, self]
 
     def __set__(self, instance: UpdatableProps, value: Any):
         self._set_value(instance, value)

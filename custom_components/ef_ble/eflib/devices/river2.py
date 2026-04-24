@@ -14,6 +14,7 @@ from ..props import Field
 from ..props.enums import IntFieldValue
 from ..props.raw_data_field import dataclass_attr_mapper, raw_field
 from ..props.raw_data_props import RawDataProps
+from ..props.transforms import pdiv, pround
 
 pb_pd = dataclass_attr_mapper(DirectPdHeartbeatPack)
 pb_mppt = dataclass_attr_mapper(Mr330MpptHeart)
@@ -47,7 +48,7 @@ class Device(DeviceBase, RawDataProps):
     battery_charge_limit_min = raw_field(pb_ems.min_dsg_soc)
     battery_charge_limit_max = raw_field(pb_ems.max_charge_soc)
 
-    battery_level = raw_field(pb_bms.f32_show_soc, lambda x: round(x, 2))
+    battery_level = raw_field(pb_bms.f32_show_soc, pround(2))
     cell_temperature = raw_field(pb_bms.temp)
 
     input_power = raw_field(pb_pd.watts_in_sum)
@@ -67,7 +68,7 @@ class Device(DeviceBase, RawDataProps):
     usbc_output_power = raw_field(pb_pd.typec1_watts)
     usba_output_power = raw_field(pb_pd.usb1_watts)
 
-    dc_charging_max_amps = raw_field(pb_mppt.cfg_dc_chg_current, lambda x: x / 1000)
+    dc_charging_max_amps = raw_field(pb_mppt.cfg_dc_chg_current, pdiv(1000))
     dc_charging_current_max = Field[int]()
 
     ac_charging_speed = raw_field(pb_mppt.cfg_chg_watts)

@@ -5,6 +5,7 @@ from ..packet import Packet
 from ..pb import bk_series_pb2
 from ..props import ProtobufProps, pb_field, proto_attr_mapper
 from ..props.enums import IntFieldValue
+from ..props.transforms import pround
 
 pb = proto_attr_mapper(bk_series_pb2.DisplayPropertyUpload)
 
@@ -18,34 +19,27 @@ class GridStatus(IntFieldValue):
     FEED_GRID = 3
 
 
-def _round(precision: int = 2):
-    def _apply(value: float):
-        return round(value, precision)
-
-    return _apply
-
-
 class Device(DeviceBase, ProtobufProps):
     """STREAM Microinverter"""
 
     SN_PREFIX = (b"BK01", b"BK02", b"N011")
     NAME_PREFIX = "EF-BK"
 
-    pv_power_1 = pb_field(pb.pow_get_pv, _round())
-    pv_voltage_1 = pb_field(pb.plug_in_info_pv_vol, _round(1))
-    pv_current_1 = pb_field(pb.plug_in_info_pv_amp, _round())
+    pv_power_1 = pb_field(pb.pow_get_pv, pround(2))
+    pv_voltage_1 = pb_field(pb.plug_in_info_pv_vol, pround(1))
+    pv_current_1 = pb_field(pb.plug_in_info_pv_amp, pround(2))
 
-    pv_power_2 = pb_field(pb.pow_get_pv2, _round())
-    pv_voltage_2 = pb_field(pb.plug_in_info_pv2_vol, _round(1))
-    pv_current_2 = pb_field(pb.plug_in_info_pv2_amp, _round())
+    pv_power_2 = pb_field(pb.pow_get_pv2, pround(2))
+    pv_voltage_2 = pb_field(pb.plug_in_info_pv2_vol, pround(1))
+    pv_current_2 = pb_field(pb.plug_in_info_pv2_amp, pround(2))
 
     grid_power = pb_field(pb.grid_connection_power)
-    grid_voltage = pb_field(pb.grid_connection_vol, _round())
-    grid_current = pb_field(pb.grid_connection_amp, _round())
-    grid_frequency = pb_field(pb.grid_connection_freq, _round())
+    grid_voltage = pb_field(pb.grid_connection_vol, pround(2))
+    grid_current = pb_field(pb.grid_connection_amp, pround(2))
+    grid_frequency = pb_field(pb.grid_connection_freq, pround(2))
     grid_connection_status = pb_field(pb.grid_connection_sta, GridStatus.from_value)
 
-    wifi_rssi = pb_field(pb.module_wifi_rssi, _round(0))
+    wifi_rssi = pb_field(pb.module_wifi_rssi, pround(0))
     feed_grid_mode_power_limit = pb_field(pb.feed_grid_mode_pow_limit)
     feed_grid_mode_power_max = pb_field(pb.feed_grid_mode_pow_max)
 

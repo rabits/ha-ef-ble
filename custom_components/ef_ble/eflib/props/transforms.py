@@ -30,6 +30,20 @@ def pmultiply(x: int) -> Callable[[float | None], float | None]:
     return _multiply
 
 
+def pdiv(
+    divisor: float, precision: int | None = None
+) -> Callable[[float | None], float | None]:
+    """Return a transform that divides a float by divisor, optionally rounding"""
+
+    def _divide(value: float | None) -> float | None:
+        if value is None:
+            return None
+        result = value / divisor
+        return round(result, precision) if precision is not None else result
+
+    return _divide
+
+
 def prop_has_bit_on(bit_position: int) -> Callable[[int | None], bool]:
     """Return a transform that checks whether a specific bit is set"""
 

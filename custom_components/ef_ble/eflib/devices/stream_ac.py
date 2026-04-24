@@ -21,13 +21,10 @@ from ..props import (
 )
 from ..props.enums import IntFieldValue
 from ..props.protobuf_field import proto_has_attr
+from ..props.transforms import pround
 
 pb = proto_attr_mapper(bk_series_pb2.DisplayPropertyUpload)
 pb_time_task = proto_attr_mapper(bk_series_pb2.TimerTask)
-
-
-def _round(value: float):
-    return round(value, 2)
 
 
 class ResidentLoad(repeated_pb_field_type(pb.day_resident_load_list.load)):
@@ -144,16 +141,16 @@ class Device(DeviceBase, ProtobufProps):
     remaining_time_charging = pb_field(pb.cms_chg_rem_time)
     remaining_time_discharging = pb_field(pb.cms_dsg_rem_time)
 
-    grid_power = pb_field(pb.grid_connection_power)
-    grid_voltage = pb_field(pb.grid_connection_vol, _round)
-    grid_frequency = pb_field(pb.grid_connection_freq, _round)
+    grid_power = pb_field(pb.grid_connection_power, pround(2))
+    grid_voltage = pb_field(pb.grid_connection_vol, pround(2))
+    grid_frequency = pb_field(pb.grid_connection_freq, pround(2))
 
     battery_charge_limit_min = pb_field(pb.cms_min_dsg_soc)
     battery_charge_limit_max = pb_field(pb.cms_max_chg_soc)
 
-    battery_power = pb_field(pb.pow_get_bp_cms, _round)
-    load_from_battery = pb_field(pb.pow_get_sys_load_from_bp, _round)
-    load_from_grid = pb_field(pb.pow_get_sys_load_from_grid, _round)
+    battery_power = pb_field(pb.pow_get_bp_cms, pround(2))
+    load_from_battery = pb_field(pb.pow_get_sys_load_from_bp, pround(2))
+    load_from_grid = pb_field(pb.pow_get_sys_load_from_grid, pround(2))
 
     feed_grid = pb_field(pb.feed_grid_mode, lambda x: x == 2)
     feed_grid_pow_limit = pb_field(pb.feed_grid_mode_pow_limit)

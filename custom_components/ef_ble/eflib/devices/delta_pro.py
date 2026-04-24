@@ -17,6 +17,7 @@ from ..packet import Packet
 from ..props import Field
 from ..props.raw_data_field import dataclass_attr_mapper, raw_field
 from ..props.raw_data_props import RawDataProps
+from ..props.transforms import pdiv, pround
 
 rd_pd = dataclass_attr_mapper(DirectPdHeartbeatPack)
 rd_bms = dataclass_attr_mapper(DirectBmsMDeltaHeartbeatPack)
@@ -52,7 +53,7 @@ class Device(DeviceBase, RawDataProps):
     def auth_header_dst(self) -> int:
         return 0x32
 
-    battery_level = raw_field(rd_ems.f32_lcd_show_soc, lambda x: round(x, 2))
+    battery_level = raw_field(rd_ems.f32_lcd_show_soc, pround(2))
     battery_charge_limit_min = raw_field(rd_ems.min_dsg_soc)
     battery_charge_limit_max = raw_field(rd_ems.max_charge_soc)
 
@@ -66,13 +67,13 @@ class Device(DeviceBase, RawDataProps):
 
     ac_output_power = raw_field(rd_inv.output_watts)
     ac_input_power = raw_field(rd_inv.input_watts)
-    ac_input_voltage = raw_field(rd_inv.ac_in_vol, lambda x: round(x / 1000, 2))
-    ac_input_current = raw_field(rd_inv.ac_in_amp, lambda x: round(x / 1000, 2))
+    ac_input_voltage = raw_field(rd_inv.ac_in_vol, pdiv(1000, 2))
+    ac_input_current = raw_field(rd_inv.ac_in_amp, pdiv(1000, 2))
     ac_ports = raw_field(rd_inv.cfg_ac_enabled, lambda x: x == 1)
 
-    dc_input_power = raw_field(rd_mppt.in_watts, lambda x: round(x / 10, 1))
-    dc_input_voltage = raw_field(rd_mppt.in_vol, lambda x: round(x / 10, 1))
-    dc_input_current = raw_field(rd_mppt.in_amp, lambda x: round(x / 100, 2))
+    dc_input_power = raw_field(rd_mppt.in_watts, pdiv(10, 1))
+    dc_input_voltage = raw_field(rd_mppt.in_vol, pdiv(10, 1))
+    dc_input_current = raw_field(rd_mppt.in_amp, pdiv(100, 2))
 
     ac_charging_speed = raw_field(rd_inv.cfg_slow_chg_watts)
     max_ac_charging_power = Field[int]()

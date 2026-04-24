@@ -15,7 +15,7 @@ from ..props import (
     repeated_pb_field_type,
 )
 from ..props.enums import IntFieldValue
-from ..props.transforms import flow_is_on, out_power
+from ..props.transforms import flow_is_on, out_power, pround
 
 pb = proto_attr_mapper(pr705_pb2.DisplayPropertyUpload)
 
@@ -49,7 +49,7 @@ class Device(DeviceBase, ProtobufProps):
 
     battery_level = pb_field(pb.cms_batt_soc)
 
-    ac_input_power = pb_field(pb.pow_get_ac_in, lambda x: round(x, 2))
+    ac_input_power = pb_field(pb.pow_get_ac_in, pround(2))
     ac_input_energy = _StatField(pr705_pb2.STATISTICS_OBJECT_AC_IN_ENERGY)
 
     ac_output_power = pb_field(pb.pow_get_ac_out, out_power)

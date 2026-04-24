@@ -2,6 +2,7 @@ from ..entity import controls
 from ..entity.base import dynamic
 from ..pb import pd335_sys_pb2
 from ..props import computed_field, pb_field
+from ..props.transforms import pround
 from . import delta3
 from ._delta3_base import DCPortState, _DcAmpSettingField, _DcChargingMaxField, pb
 
@@ -16,7 +17,7 @@ class Device(delta3.Device):
     )
     dc_charging_current_max_2 = _DcChargingMaxField(pd335_sys_pb2.PV_CHG_VOL_SPEC_12V)
 
-    dc_port_2_input_power = pb_field(pb.pow_get_pv2, lambda value: round(value, 2))
+    dc_port_2_input_power = pb_field(pb.pow_get_pv2, pround(2))
     dc_port_2_state = pb_field(pb.plug_in_info_pv2_type, DCPortState.from_value)
 
     @computed_field

@@ -809,12 +809,14 @@ _SENSORS: Final[dict[str, SensorEntityDescription]] = {
         translation_key="port_current",
         translation_placeholders={"name": "PV ({n})"},
         indexed_range=range(1, 3),
+        enabled=False,
     ),
     "pv_voltage_{n}": voltage(
         precision=1,
         translation_key="port_voltage",
         translation_placeholders={"name": "PV ({n})"},
         indexed_range=range(1, 3),
+        enabled=False,
     ),
     # Wave 2
     "outlet_temperature": temperature(),

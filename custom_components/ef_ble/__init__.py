@@ -130,7 +130,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: DeviceConfigEntry) -> bo
     except (ConnectionTimeout, BleakError, TimeoutError) as e:
         raise ConfigEntryNotReady(
             translation_key="could_not_connect",
-            translation_placeholders={"time": str(timeout)},
+            translation_placeholders={"time": str(timeout), "error_msg": str(e)},
         ) from e
     except AuthErrors.BaseException as e:
         raise ConfigEntryNotReady(translation_key="authentication_failed") from e

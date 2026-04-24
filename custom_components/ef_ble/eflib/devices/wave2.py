@@ -5,6 +5,7 @@ from ..props import Field
 from ..props.enums import IntFieldValue
 from ..props.raw_data_field import dataclass_attr_mapper, raw_field
 from ..props.raw_data_props import RawDataProps
+from ..props.transforms import pround
 
 pb = dataclass_attr_mapper(KT210SAC)
 
@@ -64,8 +65,8 @@ class Device(DeviceBase, RawDataProps):
 
     battery_level = raw_field(pb.bat_soc)
 
-    ambient_temperature = raw_field(pb.env_temp, lambda v: round(v, 2))
-    outlet_temperature = raw_field(pb.outlet_temp, lambda v: round(v, 2))
+    ambient_temperature = raw_field(pb.env_temp, pround(2))
+    outlet_temperature = raw_field(pb.outlet_temp, pround(2))
 
     main_mode = raw_field(pb.mode, MainMode.from_value)
     sub_mode = raw_field(pb.sub_mode, SubMode.from_value)

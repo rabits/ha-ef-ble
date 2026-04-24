@@ -16,7 +16,7 @@ from ..props import (
     repeated_pb_field_type,
 )
 from ..props.enums import IntFieldValue
-from ..props.transforms import flow_is_on, out_power
+from ..props.transforms import flow_is_on, out_power, pround
 
 pb = proto_attr_mapper(pd335_sys_pb2.DisplayPropertyUpload)
 pb_bms = proto_attr_mapper(pd335_bms_bp_pb2.BMSHeartBeatReport)
@@ -63,8 +63,8 @@ class DCPortState(IntFieldValue):
 
 
 class Delta3Base(DeviceBase, ProtobufProps):
-    battery_level = pb_field(pb.cms_batt_soc, lambda value: round(value, 2))
-    battery_level_main = pb_field(pb.bms_batt_soc, lambda value: round(value, 2))
+    battery_level = pb_field(pb.cms_batt_soc, pround(2))
+    battery_level_main = pb_field(pb.bms_batt_soc, pround(2))
 
     ac_input_power = pb_field(pb.pow_get_ac_in)
     ac_output_power = pb_field(pb.pow_get_ac_out, out_power)
@@ -72,7 +72,7 @@ class Delta3Base(DeviceBase, ProtobufProps):
     input_power = pb_field(pb.pow_in_sum_w)
     output_power = pb_field(pb.pow_out_sum_w)
 
-    dc_port_input_power = pb_field(pb.pow_get_pv, lambda value: round(value, 2))
+    dc_port_input_power = pb_field(pb.pow_get_pv, pround(2))
     dc_port_state = pb_field(pb.plug_in_info_pv_type, DCPortState.from_value)
 
     usbc_output_power = pb_field(pb.pow_get_typec1, out_power)

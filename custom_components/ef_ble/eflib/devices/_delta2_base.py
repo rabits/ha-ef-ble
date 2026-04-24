@@ -13,6 +13,7 @@ from ..packet import Packet
 from ..props import Field
 from ..props.raw_data_field import dataclass_attr_mapper, raw_field
 from ..props.raw_data_props import RawDataProps
+from ..props.transforms import pdiv, pround
 
 
 class _BmsHeartbeatBatteryMain(DirectBmsMDeltaHeartbeatPack):
@@ -38,12 +39,12 @@ pb_inv = dataclass_attr_mapper(DirectInvDeltaHeartbeatPack)
 
 class Delta2Base(DeviceBase, RawDataProps):
     ac_output_power = raw_field(pb_inv.output_watts)
-    ac_input_voltage = raw_field(pb_inv.ac_in_vol, lambda x: round(x / 1000, 2))
-    ac_input_current = raw_field(pb_inv.ac_in_amp, lambda x: round(x / 1000, 2))
-    ac_output_voltage = raw_field(pb_inv.inv_out_vol, lambda x: round(x / 1000, 2))
-    ac_output_current = raw_field(pb_inv.inv_out_amp, lambda x: round(x / 1000, 2))
+    ac_input_voltage = raw_field(pb_inv.ac_in_vol, pdiv(1000, 2))
+    ac_input_current = raw_field(pb_inv.ac_in_amp, pdiv(1000, 2))
+    ac_output_voltage = raw_field(pb_inv.inv_out_vol, pdiv(1000, 2))
+    ac_output_current = raw_field(pb_inv.inv_out_amp, pdiv(1000, 2))
 
-    battery_level_main = raw_field(pb_bms.f32_show_soc, lambda x: round(x, 2))
+    battery_level_main = raw_field(pb_bms.f32_show_soc, pround(2))
 
     battery_1_enabled = Field[bool]()
     battery_1_battery_level = Field[float]()
@@ -55,7 +56,7 @@ class Delta2Base(DeviceBase, RawDataProps):
     battery_2_cell_temperature = raw_field(pb_bms_2.max_cell_temp)
     battery_2_sn = Field[str]()
 
-    battery_level = raw_field(pb_ems.f32_lcd_show_soc, lambda x: round(x, 2))
+    battery_level = raw_field(pb_ems.f32_lcd_show_soc, pround(2))
 
     input_power = raw_field(pb_pd.watts_in_sum)
     output_power = raw_field(pb_pd.watts_out_sum)
@@ -78,12 +79,12 @@ class Delta2Base(DeviceBase, RawDataProps):
 
     cell_temperature = raw_field(pb_bms.max_cell_temp)
 
-    dc_input_voltage = raw_field(pb_mppt.in_vol, lambda x: round(x / 1000, 2))
-    dc_input_current = raw_field(pb_mppt.in_amp, lambda x: round(x / 1000, 2))
+    dc_input_voltage = raw_field(pb_mppt.in_vol, pdiv(1000, 2))
+    dc_input_current = raw_field(pb_mppt.in_amp, pdiv(1000, 2))
 
     dc_12v_port = raw_field(pb_pd.car_state, lambda x: x == 1)
-    dc12v_output_voltage = raw_field(pb_mppt.car_out_vol, lambda x: round(x / 1000, 2))
-    dc12v_output_current = raw_field(pb_mppt.car_out_amp, lambda x: round(x / 1000, 2))
+    dc12v_output_voltage = raw_field(pb_mppt.car_out_vol, pdiv(1000, 2))
+    dc12v_output_current = raw_field(pb_mppt.car_out_amp, pdiv(1000, 2))
 
     @property
     def pd_heart_type(self):

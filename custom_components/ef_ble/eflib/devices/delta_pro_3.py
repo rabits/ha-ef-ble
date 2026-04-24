@@ -16,7 +16,7 @@ from ..props import (
 )
 from ..props.enums import IntFieldValue
 from ..props.resv_info_parser import resv_soc, resv_temperature
-from ..props.transforms import flow_is_on, out_power
+from ..props.transforms import flow_is_on, out_power, pround
 
 pb = proto_attr_mapper(mr521_pb2.DisplayPropertyUpload)
 
@@ -38,8 +38,8 @@ class Device(DeviceBase, ProtobufProps):
     SN_PREFIX = (b"MR51",)
     NAME_PREFIX = "EF-DP3"
 
-    battery_level = pb_field(pb.cms_batt_soc, lambda value: round(value, 2))
-    battery_level_main = pb_field(pb.bms_batt_soc, lambda value: round(value, 2))
+    battery_level = pb_field(pb.cms_batt_soc, pround(2))
+    battery_level_main = pb_field(pb.bms_batt_soc, pround(2))
 
     ac_input_power = pb_field(pb.pow_get_ac, out_power)
     ac_lv_output_power = pb_field(pb.pow_get_ac_lv_out, out_power)

@@ -267,7 +267,7 @@
       "message": "EcoFlow BLE device not present"
     },
     "could_not_connect": {
-      "message": "Could not connect to the device after {time} seconds, check the logs"
+      "message": "Could not connect to the device after {time} seconds, check the logs.\nError message: {error_msg}"
     },
     "error_after_connected": {
       "message": "Error occured before device could authenticate"

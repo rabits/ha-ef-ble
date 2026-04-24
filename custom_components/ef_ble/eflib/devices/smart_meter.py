@@ -9,6 +9,7 @@ from ..props import (
     proto_attr_mapper,
 )
 from ..props.enums import IntFieldValue
+from ..props.transforms import pround
 
 pb = proto_attr_mapper(bk622_common_pb2.DisplayPropertyUpload)
 
@@ -18,10 +19,6 @@ class GridState(IntFieldValue):
     GRID_IN = 1
     GRID_OFFLINE = 2
     FEED_GRID = 3
-
-
-def _round2(value: float):
-    return round(value, 2)
 
 
 class Device(DeviceBase, ProtobufProps):
@@ -37,21 +34,21 @@ class Device(DeviceBase, ProtobufProps):
     grid_energy = pb_field(pb.grid_connection_data_record.today_active)
 
     l1_active = pb_field(pb.grid_connection_flag_L1)
-    l1_power = pb_field(pb.grid_connection_power_L1, _round2)
-    l1_current = pb_field(pb.grid_connection_amp_L1, _round2)
-    l1_voltage = pb_field(pb.grid_connection_vol_L1, _round2)
+    l1_power = pb_field(pb.grid_connection_power_L1, pround(2))
+    l1_current = pb_field(pb.grid_connection_amp_L1, pround(2))
+    l1_voltage = pb_field(pb.grid_connection_vol_L1, pround(2))
     l1_grid_energy = pb_field(pb.grid_connection_data_record.today_active_L1)
 
     l2_active = pb_field(pb.grid_connection_flag_L2)
-    l2_power = pb_field(pb.grid_connection_power_L2, _round2)
-    l2_current = pb_field(pb.grid_connection_amp_L2, _round2)
-    l2_voltage = pb_field(pb.grid_connection_vol_L2, _round2)
+    l2_power = pb_field(pb.grid_connection_power_L2, pround(2))
+    l2_current = pb_field(pb.grid_connection_amp_L2, pround(2))
+    l2_voltage = pb_field(pb.grid_connection_vol_L2, pround(2))
     l2_grid_energy = pb_field(pb.grid_connection_data_record.today_active_L2)
 
     l3_active = pb_field(pb.grid_connection_flag_L3)
-    l3_power = pb_field(pb.grid_connection_power_L3, _round2)
-    l3_current = pb_field(pb.grid_connection_amp_L3, _round2)
-    l3_voltage = pb_field(pb.grid_connection_vol_L3, _round2)
+    l3_power = pb_field(pb.grid_connection_power_L3, pround(2))
+    l3_current = pb_field(pb.grid_connection_amp_L3, pround(2))
+    l3_voltage = pb_field(pb.grid_connection_vol_L3, pround(2))
     l3_grid_energy = pb_field(pb.grid_connection_data_record.today_active_L3)
 
     async def packet_parse(self, data: bytes):

@@ -5,13 +5,10 @@ from ..packet import Packet
 from ..pb import wn511_sys_pb2
 from ..props import Field, ProtobufProps, pb_field, proto_attr_mapper
 from ..props.enums import IntFieldValue
+from ..props.transforms import pdiv, pround
 
 pb = proto_attr_mapper(wn511_sys_pb2.inverter_heartbeat)
 pb_inv2 = proto_attr_mapper(wn511_sys_pb2.inv_heartbeat_type2)
-
-
-def _div10(value):
-    return round(value / 10, 1)
 
 
 class PowerSupplyPriority(IntFieldValue):
@@ -27,36 +24,34 @@ class Device(DeviceBase, ProtobufProps):
     SN_PREFIX = (b"HW51",)
     NAME_PREFIX = "EF-HW"
 
-    pv_power_1 = pb_field(pb.pv1_input_watts, _div10)
-    pv_voltage_1 = pb_field(pb.pv1_input_volt, _div10)
-    pv_current_1 = pb_field(pb.pv1_input_cur, _div10)
-    pv_temperature_1 = pb_field(pb.pv1_temp, _div10)
+    pv_power_1 = pb_field(pb.pv1_input_watts, pdiv(10, 1))
+    pv_voltage_1 = pb_field(pb.pv1_input_volt, pdiv(10, 1))
+    pv_current_1 = pb_field(pb.pv1_input_cur, pdiv(10, 1))
+    pv_temperature_1 = pb_field(pb.pv1_temp, pdiv(10, 1))
 
-    pv_power_2 = pb_field(pb.pv2_input_watts, _div10)
-    pv_voltage_2 = pb_field(pb.pv2_input_volt, _div10)
-    pv_current_2 = pb_field(pb.pv2_input_cur, _div10)
-    pv_temperature_2 = pb_field(pb.pv2_temp, _div10)
+    pv_power_2 = pb_field(pb.pv2_input_watts, pdiv(10, 1))
+    pv_voltage_2 = pb_field(pb.pv2_input_volt, pdiv(10, 1))
+    pv_current_2 = pb_field(pb.pv2_input_cur, pdiv(10, 1))
+    pv_temperature_2 = pb_field(pb.pv2_temp, pdiv(10, 1))
 
-    battery_level = pb_field(
-        pb_inv2.new_psdr_heartbeat.f32_show_soc, lambda x: round(x, 2)
-    )
-    battery_power = pb_field(pb.bat_input_watts, _div10)
-    battery_temperature = pb_field(pb.bat_temp, _div10)
+    battery_level = pb_field(pb_inv2.new_psdr_heartbeat.f32_show_soc, pround(2))
+    battery_power = pb_field(pb.bat_input_watts, pdiv(10, 1))
+    battery_temperature = pb_field(pb.bat_temp, pdiv(10, 1))
 
-    inverter_power = pb_field(pb.inv_output_watts, _div10)
-    inverter_voltage = pb_field(pb.inv_op_volt, _div10)
-    inverter_current = pb_field(pb.inv_output_cur, lambda x: round(x / 1000, 2))
-    inverter_frequency = pb_field(pb.inv_freq, _div10)
-    inverter_temperature = pb_field(pb.inv_temp, _div10)
+    inverter_power = pb_field(pb.inv_output_watts, pdiv(10, 1))
+    inverter_voltage = pb_field(pb.inv_op_volt, pdiv(10, 1))
+    inverter_current = pb_field(pb.inv_output_cur, pdiv(1000, 2))
+    inverter_frequency = pb_field(pb.inv_freq, pdiv(10, 1))
+    inverter_temperature = pb_field(pb.inv_temp, pdiv(10, 1))
 
     battery_charge_limit_max = pb_field(pb.upper_limit)
     battery_charge_limit_min = pb_field(pb.lower_limit)
     power_supply_priority = pb_field(pb.supply_priority, PowerSupplyPriority.from_value)
 
-    llc_temperature = pb_field(pb.llc_temp, _div10)
+    llc_temperature = pb_field(pb.llc_temp, pdiv(10, 1))
 
     load_power_max = Field[int]()
-    load_power = pb_field(pb.permanent_watts, _div10)
+    load_power = pb_field(pb.permanent_watts, pdiv(10, 1))
 
     @classmethod
     def check(cls, sn):
@@ -72,7 +67,6 @@ class Device(DeviceBase, ProtobufProps):
         super().__init__(ble_dev, adv_data, sn)
         self.add_timer_task(self._request_heartbeat, interval=self._HEARTBEAT_INTERVAL)
         self.load_power_max = 800
-        self._heartbeat2_last_reply_time = 0
 
     async def _request_heartbeat(self):
         await self._conn.send_auth_status_packet()

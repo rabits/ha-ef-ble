@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Usage question / general discussion
+    url: https://github.com/rabits/ha-ef-ble/discussions
+    about: For setup help, troubleshooting, and general questions please use Discussions - the issue tracker is for actionable bug reports and feature requests.
+  - name: Contributing guide
+    url: https://github.com/rabits/ha-ef-ble/blob/main/CONTRIBUTING.md
+    about: How to report bugs, request features, contribute code, and what to expect from review.

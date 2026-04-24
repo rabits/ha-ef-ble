@@ -1,0 +1,126 @@
+name: New device support
+description: Request support for an EcoFlow device that isn't listed as supported yet
+title: "[Device]: "
+labels: ["new device"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for helping expand device coverage! Please skim the wiki first:
+
+        - **[Requesting Support for New Devices](https://github.com/rabits/ha-ef-ble/wiki/Requesting-Support-for-New-Devices)**
+          - overall flow for getting a new device supported.
+        - **[Providing Diagnostics Data](https://github.com/rabits/ha-ef-ble/wiki/Providing-Diagnostics-Data-for-Debugging-or-Implementing-New-Sensors)**
+          - how to capture the diagnostics file we need. Diagnostics are safe to share
+          publicly - all potentially sensitive data is AES encrypted.
+
+        Since v0.6.0 you can add an unsupported device through the integration in
+        diagnostic-collection mode, exercise its features, and attach the resulting file
+        here. That's almost always the fastest path to getting the device supported.
+
+        If you've already built a draft PR (vibe-coded or otherwise), link it below - but
+        please read the
+        [AI-assisted contributions](https://github.com/rabits/ha-ef-ble/blob/main/CONTRIBUTING.md#ai-assisted-contributions)
+        section of the contributing guide first so you know what to expect.
+
+  - type: checkboxes
+    id: preflight
+    attributes:
+      label: Pre-submission checks
+      options:
+        - label: The device is not listed in the [Supported Devices](https://github.com/rabits/ha-ef-ble#supported-devices) section of the README
+          required: true
+        - label: I searched existing issues and there isn't already a request for this device
+          required: true
+        - label: I've read the [Requesting Support for New Devices](https://github.com/rabits/ha-ef-ble/wiki/Requesting-Support-for-New-Devices) wiki page
+          required: true
+
+  - type: input
+    id: device
+    attributes:
+      label: Device model
+      description: Full marketing name (e.g. "Delta 3 Pro", "Wave 3", "River 2 Max").
+      placeholder: "<device>"
+    validations:
+      required: true
+
+  - type: input
+    id: firmware
+    attributes:
+      label: Firmware version
+      description: |
+        Visible in the EcoFlow app under device settings / info. Leave blank if you
+        can't find it.
+
+  - type: input
+    id: sn-prefix
+    attributes:
+      label: Serial number prefix
+      description: |
+        **First 4 characters** of the device's serial number - the integration uses
+        this to recognise the device family. Please don't paste the full SN.
+      placeholder: "AB12"
+
+  - type: dropdown
+    id: bluetooth
+    attributes:
+      label: Bluetooth connection you tested with
+      multiple: false
+      options:
+        - Internal bluetooth adapter
+        - USB dongle
+        - ESPHome bluetooth proxy
+        - Haven't tried yet
+
+  - type: dropdown
+    id: diag-status
+    attributes:
+      label: Diagnostics collection status
+      multiple: false
+      options:
+        - "Attached a diagnostics dump"
+        - "Device connects but I haven't collected diagnostics yet"
+        - "Device won't connect / I can't collect diagnostics"
+    validations:
+      required: true
+
+  - type: textarea
+    id: diagnostics
+    attributes:
+      label: Diagnostics
+      description: |
+        Paste a note here (e.g. "attached as `diagnostics.json`") and drag-and-drop the
+        file into the main issue body after submitting.
+
+        For the most useful capture, exercise as many features as you can while collecting
+        - charge, discharge, toggle AC / DC ports, plug in solar, etc. - so the dump
+        contains as many populated fields as possible.
+
+  - type: textarea
+    id: features
+    attributes:
+      label: Features you care about
+      description: |
+        Which sensors and controls do you most want to see supported for this device?
+        This helps prioritise if the protobuf schema is large.
+      placeholder: |
+        - Battery level
+        - PV input power
+        - AC output toggle
+        - Backup reserve slider
+
+  - type: input
+    id: draft-pr
+    attributes:
+      label: Draft PR (optional)
+      description: Link to a draft / WIP pull request if you've started one.
+      placeholder: "https://github.com/rabits/ha-ef-ble/pull/..."
+
+  - type: textarea
+    id: extra
+    attributes:
+      label: Anything else?
+      description: |
+        Related links (Discord threads, forum posts, vendor docs), similar devices that
+        are already supported and might share a protocol, screenshots of the EcoFlow app,
+        etc.

@@ -1,61 +1,127 @@
-name: Bug Report
-description: File a bug report
+name: Bug report
+description: Something isn't working as it should (wrong values, crashes, disconnects, errors in the log)
 title: "[Bug]: "
 labels: ["bug"]
-assignees:
-  - octocat
 body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report a bug. Before submitting, please:
+
+        - Make sure you're running the [latest release](https://github.com/rabits/ha-ef-ble/releases)
+          and the bug still reproduces.
+        - Search [open issues](https://github.com/rabits/ha-ef-ble/issues) to avoid duplicates.
+          Prefer a 👍 reaction on an existing report over a new one.
+        - For **wrong, missing, or unexpected sensor values**, please use the
+          [New / missing / incorrect sensor](https://github.com/rabits/ha-ef-ble/issues/new?template=sensor_request.yaml) template instead.
+        - For **an EcoFlow device that isn't supported yet**, please use the
+          [New device support](https://github.com/rabits/ha-ef-ble/issues/new?template=device_request.yaml) template instead.
+
+  - type: checkboxes
+    id: preflight
+    attributes:
+      label: Pre-submission checks
+      options:
+        - label: I'm running the latest release and the bug still reproduces
+          required: true
+        - label: I searched existing issues and this isn't a duplicate
+          required: true
+
   - type: textarea
     id: what-happened
     attributes:
       label: What happened?
-      description: Also tell us, what did you expect to happen?
-      placeholder: Tell us what you see!
-      value: "An exception appeared"
+      description: |
+        Describe what you saw and what you expected to see. Include exact steps to reproduce
+        if the bug is triggered by a specific action.
+      placeholder: |
+        Steps to reproduce:
+        1. ...
+        2. ...
+
+        Expected: ...
+        Actual:   ...
     validations:
       required: true
-  - type: textarea
+
+  - type: input
     id: version
     attributes:
-      label: What version of our software are you running?
+      label: Integration version
+      description: e.g. `0.8.4` - find it in HACS or `custom_components/ef_ble/manifest.json`.
+      placeholder: "0.8.4"
     validations:
       required: true
-  - type: textarea
+
+  - type: input
+    id: ha-version
+    attributes:
+      label: Home Assistant version
+      description: e.g. `2026.2.0` - visible in Settings → About.
+      placeholder: "2026.2.0"
+    validations:
+      required: true
+
+  - type: input
     id: device
     attributes:
-      label: What device are you seeing the problem on?
+      label: Device model
+      description: |
+        The marketing name of the device (e.g. "Delta Pro 3", "STREAM Ultra X", "River 3")
+        and the firmware version if you know it.
+      placeholder: "Delta Pro 3, firmware 1.0.2.123"
     validations:
       required: true
+
   - type: dropdown
     id: bluetooth
     attributes:
-      label: What bluetooth connection are you using?
+      label: Bluetooth connection
       multiple: false
       options:
+        - Internal bluetooth adapter
         - USB dongle
         - ESPHome bluetooth proxy
-        - Internal bluetooth adapter
+        - Other (describe in "What happened?")
     validations:
       required: true
+
   - type: dropdown
     id: options-changed
     attributes:
       label: Have you changed the integration settings?
       multiple: false
       options:
-        - No
-        - Yes (Please write down the changed settings in the next step)
+        - "No"
+        - "Yes (please list them below)"
     validations:
       required: true
+
   - type: textarea
     id: options-details
     attributes:
-      label: Integration settings (if you changed them)
-      description: Please use one line per option
+      label: Changed integration settings
+      description: One line per option
       render: text
+
+  - type: textarea
+    id: diagnostics
+    attributes:
+      label: Diagnostics
+      description: |
+        For most bugs a diagnostics dump makes the report actionable - see
+        [Providing Diagnostics Data](https://github.com/rabits/ha-ef-ble/wiki/Providing-Diagnostics-Data-for-Debugging-or-Implementing-New-Sensors).
+
+        Paste a note here (e.g. "attached as `diagnostics.json`") and attach the file via
+        drag-and-drop in the main issue body after submitting. Diagnostics are safe to share
+        publicly - all potentially sensitive data is AES encrypted.
+
   - type: textarea
     id: logs
     attributes:
       label: Relevant log output
-      description: Please copy and paste any relevant log output. This will be automatically formatted into code, so no need for backticks.
+      description: |
+        Paste any relevant Home Assistant log lines here. Enable debug logging for
+        `custom_components.ef_ble` if the default log level doesn't show anything useful.
+        This field is rendered as a shell code block - no need for backticks.
       render: shell

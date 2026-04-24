@@ -722,13 +722,16 @@ Curious about how this integration was created? Check out the reverse engineerin
 
 ### Contributing
 
-Contributions are welcome! If you'd like to help improve this integration:
+Contributions are welcome! If you'd like to help improve this integration, please read
+**[CONTRIBUTING.md](CONTRIBUTING.md)** first - it covers development setup, running
+tests, code style, and the PR workflow.
 
-1. **Open an issue first** to discuss your proposed changes
+Short version:
+
+1. **Open an issue first** to discuss non-trivial changes
 2. Make sure your changes align with the integration's purpose
-3. Submit a pull request with clear descriptions
-
-This helps ensure your contributions can be successfully integrated.
+3. Submit a pull request with a clear description and, where applicable,
+   tests and README updates
 
 ### Requesting Support for New Devices
 

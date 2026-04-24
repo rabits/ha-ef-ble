@@ -1,0 +1,114 @@
+name: New / missing / incorrect sensor
+description: A sensor or control that should exist, is missing, or shows a wrong value
+title: "[Sensor]: "
+labels: ["sensor"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this template when:
+
+        - A sensor, switch, select, or number you expect is **missing** from the integration
+        - A sensor is **present but shows the wrong value** (compared to the EcoFlow app or
+          the device's own display)
+        - You'd like to see a **new sensor / control added** for a value the device exposes
+
+        For general bugs (disconnects, crashes, errors in the log) use the
+        [Bug report](https://github.com/rabits/ha-ef-ble/issues/new?template=bug_report.yaml)
+        template. For devices that aren't supported at all use the
+        [New device support](https://github.com/rabits/ha-ef-ble/issues/new?template=device_request.yaml)
+        template.
+
+  - type: checkboxes
+    id: preflight
+    attributes:
+      label: Pre-submission checks
+      options:
+        - label: I'm running the latest release and the issue still reproduces
+          required: true
+        - label: I searched existing issues and this isn't a duplicate
+          required: true
+
+  - type: dropdown
+    id: kind
+    attributes:
+      label: What kind of change are you asking for?
+      options:
+        - Missing sensor / control (never appeared)
+        - Wrong value (sensor exists but is incorrect)
+        - New sensor / control (value exists on the device but we don't expose it)
+    validations:
+      required: true
+
+  - type: input
+    id: device
+    attributes:
+      label: Device model
+      description: |
+        The marketing name of the device (e.g. "Delta Pro 3", "STREAM Ultra X")
+        and the firmware version if you know it.
+      placeholder: "STREAM Ultra X, firmware 1.0.2.123"
+    validations:
+      required: true
+
+  - type: input
+    id: sensor-name
+    attributes:
+      label: Sensor / control name
+      description: |
+        What is it called in Home Assistant (for existing sensors) or what would you
+        call it (for new ones)?
+      placeholder: "PV (2) Power"
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: What's wrong or what's needed?
+      description: |
+        For **missing** sensors: where do you expect it to appear, and when did you last
+        see it work (if ever)?
+
+        For **wrong values**: what does HA show, and what does the EcoFlow app / device
+        display show for the same value at the same time? Screenshots of both side-by-side
+        are very helpful.
+
+        For **new** sensors: what does the value represent, where can you see it in the
+        EcoFlow app, and why would it be useful in HA (automations, energy dashboard, etc)?
+    validations:
+      required: true
+
+  - type: input
+    id: integration-version
+    attributes:
+      label: Integration version
+      placeholder: "0.8.4"
+    validations:
+      required: true
+
+  - type: textarea
+    id: diagnostics
+    attributes:
+      label: Diagnostics
+      description: |
+        **Strongly recommended.** Sensor work almost always needs a diagnostics dump to
+        identify which protobuf field on the device holds the value.
+        See [Providing Diagnostics Data](https://github.com/rabits/ha-ef-ble/wiki/Providing-Diagnostics-Data-for-Debugging-or-Implementing-New-Sensors).
+
+        If possible, capture the dump while the value you care about is **non-zero** (e.g.
+        sun on the PV panels, load on the AC output, charger plugged in) so the relevant
+        field is populated. Diagnostics are safe to share publicly - all potentially
+        sensitive data is AES encrypted.
+
+        Paste a note here (e.g. "attached as `diagnostics.json`") and attach the file via
+        drag-and-drop in the main issue body after submitting.
+
+  - type: textarea
+    id: extra
+    attributes:
+      label: Anything else?
+      description: |
+        Screenshots of the EcoFlow app or the device display, relevant log lines, a link
+        to a Discord / forum thread discussing the same value, or a protobuf field name
+        if you already know which one maps to the sensor - all welcome.

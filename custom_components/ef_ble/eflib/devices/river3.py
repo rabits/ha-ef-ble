@@ -44,7 +44,7 @@ class _StatField(
 class Device(DeviceBase, ProtobufProps):
     """River 3"""
 
-    SN_PREFIX = (b"R651", b"R653", b"R654", b"R655")
+    SN_PREFIX = (b"R631", b"R651", b"R653", b"R654", b"R655")
     NAME_PREFIX = "EF-R3"
 
     battery_level = pb_field(pb.cms_batt_soc)
@@ -96,6 +96,33 @@ class Device(DeviceBase, ProtobufProps):
     error_code = pb_field(pb.errcode)
     _pcs_fan_level = pb_field(pb.pcs_fan_level)
 
+    # Battery health
+    battery_soh = pb_field(pb.cms_batt_soh)
+    battery_full_capacity = pb_field(pb.cms_batt_full_cap)
+    battery_design_capacity = pb_field(pb.cms_batt_design_cap)
+    battery_remaining_capacity = pb_field(pb.cms_batt_remain_cap)
+
+    # Component error codes
+    bms_error_code = pb_field(pb.bms_err_code)
+    inverter_error_code = pb_field(pb.inv_err_code)
+    pd_error_code = pb_field(pb.pd_err_code)
+    mppt_error_code = pb_field(pb.mppt_err_code)
+
+    # Settings readable from heartbeat
+    xboost_enabled = pb_field(pb.xboost_en)
+    beep_enabled = pb_field(pb.en_beep)
+    led_mode = pb_field(pb.led_mode)
+
+    # Add-on battery (DCP)
+    addon_battery_connected = pb_field(pb.plug_in_info_dcp_in_flag)
+    addon_battery_sn = pb_field(pb.plug_in_info_dcp_sn)
+    addon_battery_power = pb_field(pb.pow_get_dcp)
+
+    # Add-on battery 2 (DCP2)
+    addon_battery_2_connected = pb_field(pb.plug_in_info_dcp2_in_flag)
+    addon_battery_2_sn = pb_field(pb.plug_in_info_dcp2_sn)
+    addon_battery_2_power = pb_field(pb.pow_get_dcp2)
+
     @computed_field
     def error_occurred(self) -> bool:
         return bool(self.error_code)
@@ -142,6 +169,8 @@ class Device(DeviceBase, ProtobufProps):
     def device(self):
         model = ""
         match self._sn[:4]:
+            case "R631":
+                model = "Plus"
             case "R653":
                 model = "(230Wh)"
             case "R654":

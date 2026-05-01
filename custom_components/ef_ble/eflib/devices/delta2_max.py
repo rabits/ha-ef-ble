@@ -26,7 +26,7 @@ class Device(Delta2Base):
 
     @computed_field
     def max_ac_charging_power(self) -> int:
-        return 1800
+        return 2400
 
     @property
     def pd_heart_type(self):

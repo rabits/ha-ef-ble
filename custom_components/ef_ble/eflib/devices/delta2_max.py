@@ -17,6 +17,7 @@ class Device(Delta2Base):
 
     ac_input_power = raw_field(pb_inv.input_watts)
     ac_charging_speed = raw_field(pb_inv.cfg_slow_chg_watts)
+    ac_chg_rated_power = raw_field(pb_inv.ac_chg_rated_power)
     dc_output_power = raw_field(pb_pd.car_watts)
     energy_backup = raw_field(pb_pd.watthisconfig, lambda x: x == 1)
     energy_backup_battery_level = raw_field(pb_pd.bp_power_soc)
@@ -26,7 +27,7 @@ class Device(Delta2Base):
 
     @computed_field
     def max_ac_charging_power(self) -> int:
-        return 2400
+        return self.ac_chg_rated_power or 1800
 
     @property
     def pd_heart_type(self):

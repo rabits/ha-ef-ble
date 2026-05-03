@@ -62,15 +62,15 @@ def get_fixed_length_coding_device(device: DeviceBase | None) -> "RawDataProps |
     return device if isinstance(device, RawDataProps) else None
 
 
-def get_updatable_prop_device(device: "DeviceBase"):
+def get_updatable_prop_device(device: DeviceBase):
     if not isinstance(device, UpdatableProps):
         raise TypeError("Device has to be subclass of UpdatableProps")
 
     return device
 
 
-def get_controls[E: "controls.ControlType"](
-    device: "DeviceBase", control_type: type[E]
+def get_controls[E: controls.ControlType](
+    device: DeviceBase, control_type: type[E]
 ) -> list[E]:
     return get_updatable_prop_device(device).get_controls(control_type)
 

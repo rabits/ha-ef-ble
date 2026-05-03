@@ -88,7 +88,7 @@ class EntityDescriptionBuilder:
                 return None
 
     @property
-    def _field(self) -> "Field":
+    def _field(self) -> Field:
         return self.field  # pyright: ignore[reportAttributeAccessIssue]
 
     @property

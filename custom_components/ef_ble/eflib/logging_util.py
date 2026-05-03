@@ -435,7 +435,7 @@ class DeviceDiagnosticsCollector:
     def _on_packet_received(self, data: bytes):
         self._last_packets.append(self._with_time(data))
 
-    def _on_packet_parsed(self, packet: "Packet"):
+    def _on_packet_parsed(self, packet: Packet):
         if Packet.is_invalid(packet):
             self._last_errors.append(self._with_time(packet.error_message))
             return

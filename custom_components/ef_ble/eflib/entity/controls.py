@@ -22,9 +22,7 @@ class HvacMode(enum.StrEnum):
     FAN_ONLY = "fan_only"
 
 
-def _resolve(
-    value: "float | DynamicValue | None", device: "DeviceBase"
-) -> float | None:
+def _resolve(value: float | DynamicValue | None, device: "DeviceBase") -> float | None:
     if isinstance(value, DynamicValue):
         raw = getattr(device, value.field.public_name, None)  # pyright: ignore[reportAttributeAccessIssue]
         if raw is None:
@@ -168,11 +166,11 @@ class select[E: IntFieldValue](ControlType):
 def for_each(
     fields: "Iterable[updatable_props.Field]",
     *,
-    control: "type[toggle]",
+    control: type[toggle],
     availability: "Iterable[updatable_props.Field | None] | None" = None,
     translation_key: str | None = None,
-    translation_placeholders: "Callable[[int], dict[str, str]] | None" = None,
-) -> "Callable[[Callable], Callable]":
+    translation_placeholders: Callable[[int], dict[str, str]] | None = None,
+) -> Callable[[Callable], Callable]:
     """
     Decorate a function to register a toggle control for each field in the list
 
@@ -180,7 +178,7 @@ def for_each(
     index is 1-based (i.e. 1 for the first field, 2 for the second, etc.).
     """
 
-    def decorator(func: "Callable") -> "Callable":
+    def decorator(func: Callable) -> Callable:
         avail_iter = iter(availability) if availability is not None else None
         for i, field in enumerate(fields):
             idx = i + 1
@@ -310,8 +308,8 @@ class climate(ControlType):
     def __call__(self, func: Any) -> Any:
         return func
 
-    def power(self, field: Any = None, /) -> "_Decorator[_PowerSetter]":
-        def bind(f: "_PowerSetter") -> "_PowerSetter":
+    def power(self, field: Any = None, /) -> _Decorator[_PowerSetter]:
+        def bind(f: _PowerSetter) -> _PowerSetter:
             self.set_power = _virtual_dispatch(f, notify_fields=[field])
             if field is not None:
                 self.power_field = field
@@ -319,10 +317,10 @@ class climate(ControlType):
 
         return bind
 
-    def mode(self) -> "_Decorator[_ModeSetter]":
+    def mode(self) -> _Decorator[_ModeSetter]:
         base_field = self._field
 
-        def bind(f: "_ModeSetter") -> "_ModeSetter":
+        def bind(f: _ModeSetter) -> _ModeSetter:
             self.set_operating_mode = _virtual_dispatch(f, notify_fields=[base_field])
             return f
 
@@ -333,12 +331,12 @@ class climate(ControlType):
         field: Any = None,
         /,
         *,
-        modes: "Iterable[str] | None" = None,
+        modes: Iterable[str] | None = None,
         step: float | None = None,
         min: float | None = None,
         max: float | None = None,
-    ) -> "_Decorator[_TargetTempSetter]":
-        def bind(f: "_TargetTempSetter") -> "_TargetTempSetter":
+    ) -> _Decorator[_TargetTempSetter]:
+        def bind(f: _TargetTempSetter) -> _TargetTempSetter:
             self.set_target_temperature = _virtual_dispatch(f, notify_fields=[field])
             if field is not None:
                 self.target_temperature_field = field
@@ -360,12 +358,12 @@ class climate(ControlType):
         high: Any = None,
         /,
         *,
-        modes: "Iterable[str] | None" = None,
+        modes: Iterable[str] | None = None,
         step: float | None = None,
         min: float | None = None,
         max: float | None = None,
-    ) -> "_Decorator[_TargetTempRangeSetter]":
-        def bind(f: "_TargetTempRangeSetter") -> "_TargetTempRangeSetter":
+    ) -> _Decorator[_TargetTempRangeSetter]:
+        def bind(f: _TargetTempRangeSetter) -> _TargetTempRangeSetter:
             self.set_target_temperature_range = _virtual_dispatch(
                 f, notify_fields=[low, high]
             )
@@ -390,11 +388,11 @@ class climate(ControlType):
         field: Any = None,
         /,
         *,
-        modes: "Iterable[str] | None" = None,
+        modes: Iterable[str] | None = None,
         min: int | None = None,
         max: int | None = None,
-    ) -> "_Decorator[_HumiditySetter]":
-        def bind(f: "_HumiditySetter") -> "_HumiditySetter":
+    ) -> _Decorator[_HumiditySetter]:
+        def bind(f: _HumiditySetter) -> _HumiditySetter:
             self.set_target_humidity = _virtual_dispatch(f, notify_fields=[field])
             if field is not None:
                 self.target_humidity_field = field
@@ -413,9 +411,9 @@ class climate(ControlType):
         field: Any = None,
         /,
         *,
-        modes: "Iterable[str] | None" = None,
-    ) -> "_Decorator[_FanSpeedSetter]":
-        def bind(f: "_FanSpeedSetter") -> "_FanSpeedSetter":
+        modes: Iterable[str] | None = None,
+    ) -> _Decorator[_FanSpeedSetter]:
+        def bind(f: _FanSpeedSetter) -> _FanSpeedSetter:
             self.set_fan_speed = _virtual_dispatch(f, notify_fields=[field])
             if field is not None:
                 self.fan_speed_field = field
@@ -426,9 +424,7 @@ class climate(ControlType):
         return bind
 
 
-def _virtual_dispatch(
-    func: Any, *, notify_fields: "Iterable[Any] | None" = None
-) -> Any:
+def _virtual_dispatch(func: Any, *, notify_fields: Iterable[Any] | None = None) -> Any:
     name = func.__name__
     fields = tuple(notify_fields) if notify_fields is not None else ()
 

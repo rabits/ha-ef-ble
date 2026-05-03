@@ -747,6 +747,7 @@ _SENSORS: Final[dict[str, SensorEntityDescription]] = {
     "grid_voltage": voltage(precision=1),
     "grid_frequency": frequency(precision=2),
     "grid_current": current(precision=2),
+    "load_system": power(),
     "load_from_battery": power(),
     "load_from_grid": power(),
     "load_from_pv": power(),

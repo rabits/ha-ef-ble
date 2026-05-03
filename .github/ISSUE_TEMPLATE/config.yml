@@ -1,4 +1,4 @@
-blank_issues_enabled: false
+blank_issues_enabled: true
 contact_links:
   - name: Usage question / general discussion
     url: https://github.com/rabits/ha-ef-ble/discussions

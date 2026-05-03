@@ -679,6 +679,9 @@
       "dc_power": {
         "name": "DC Power"
       },
+      "load_system": {
+        "name": "System Load"
+      },
       "load_from_battery": {
         "name": "Load From Battery"
       },

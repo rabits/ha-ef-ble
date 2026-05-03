@@ -149,6 +149,7 @@ class Device(DeviceBase, ProtobufProps):
     battery_charge_limit_max = pb_field(pb.cms_max_chg_soc)
 
     battery_power = pb_field(pb.pow_get_bp_cms, pround(2))
+    load_system = pb_field(pb.pow_get_sys_load, pround(2))
     load_from_battery = pb_field(pb.pow_get_sys_load_from_bp, pround(2))
     load_from_grid = pb_field(pb.pow_get_sys_load_from_grid, pround(2))
 

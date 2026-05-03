@@ -73,12 +73,14 @@ class NumberType(ControlType):
 
         control = self
 
-        async def _check_limits(device: "DeviceBase", value: float) -> bool:
+        async def _check_limits(
+            device: "DeviceBase", value: float, *args, **kwargs
+        ) -> bool:
             if (low := _resolve(control.min, device)) is not None:
                 value = max(low, value)
             if (high := _resolve(control.max, device)) is not None:
                 value = min(high, value)
-            return await func(device, value)
+            return await func(device, value, *args, **kwargs)
 
         self.set_value_func = _check_limits
 

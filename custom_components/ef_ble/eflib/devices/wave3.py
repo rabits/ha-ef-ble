@@ -100,9 +100,6 @@ class Device(DeviceBase, ProtobufProps):
     pcs_fan_level = pb_field(pb_disp.pcs_fan_level)
     in_drainage = pb_field(pb_disp.in_drainage)
     drainage_mode = pb_field(pb_disp.drainage_mode)
-    # lcd_show_temp_type = pb_field(
-    #     pb_disp.lcd_show_temp_type, TemperatureDisplayType.from_value
-    # )
 
     input_power = pb_field(pb_disp.pow_in_sum_w, pround(1))
     output_power = pb_field(pb_disp.pow_out_sum_w, pround(1))
@@ -110,12 +107,6 @@ class Device(DeviceBase, ProtobufProps):
     battery_power = pb_field(pb_disp.pow_get_bms, pround(1))
 
     temp_indoor_supply_air = pb_field(pb_disp.temp_indoor_supply_air, pround(1))
-    # temp_indoor_return_air = pb_field(pb_run.temp_indoor_return_air, pround(1))
-    # temp_outdoor_ambient = pb_field(pb_run.temp_outdoor_ambient, pround(1))
-    # temp_condenser = pb_field(pb_run.temp_condenser, pround(1))
-    # temp_evaporator = pb_field(pb_run.temp_evaporator, pround(1))
-    # temp_compressor_discharge = pb_field(pb_run.temp_compressor_discharge, pround(1))
-
     temp_unit = pb_field(pb_disp.user_temp_unit, TemperatureUnit.from_mode)
 
     en_pet_care = pb_field(pb_disp.en_pet_care)

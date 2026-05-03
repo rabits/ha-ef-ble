@@ -385,7 +385,7 @@ class DeviceBase(abc.ABC):
         else:
             self._callbacks_map.get(propname, set()).discard(callback)
 
-    def update_callback(self, propname: "str | Field[Any]") -> None:
+    def update_callback(self, propname: str | Field[Any]) -> None:
         """Find the registered callbacks in the map and then calling the callbacks"""
         if isinstance(propname, Field):
             propname = propname.public_name
@@ -425,7 +425,7 @@ class DeviceBase(abc.ABC):
         """Remove previously registered state update callback"""
         self._state_update_callbacks[propname].discard(callback)
 
-    def update_state(self, propname: "str | Field[Any]", value: Any):
+    def update_state(self, propname: str | Field[Any], value: Any):
         """Run callback for updated state"""
         if isinstance(propname, Field):
             propname = propname.public_name
@@ -436,7 +436,7 @@ class DeviceBase(abc.ABC):
         for update in self._state_update_callbacks[propname]:
             update(value)
 
-    def notify_field[T](self, field: "Field[T]", value: T | None = None) -> None:
+    def notify_field[T](self, field: Field[T], value: T | None = None) -> None:
         """Notify listeners that a field has been updated."""
         name = field.public_name
         if value is not None:

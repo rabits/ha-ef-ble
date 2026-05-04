@@ -97,9 +97,17 @@ class Delta3Base(DeviceBase, ProtobufProps):
 
     ac_charging_speed = pb_field(pb.plug_in_info_ac_in_chg_pow_max)
 
+    _pcs_fan_level = pb_field(pb.pcs_fan_level)
+
     @computed_field
     def error_occurred(self) -> bool:
         return bool(self.error_code)
+
+    @computed_field
+    def fan_running(self) -> bool | None:
+        if self._pcs_fan_level is None:
+            return None
+        return self._pcs_fan_level > 0
 
     @computed_field
     def max_ac_charging_power(self) -> int:

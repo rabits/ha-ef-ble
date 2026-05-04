@@ -1,6 +1,12 @@
 {
   "entity": {
     "binary_sensor": {
+      "fan_running": {
+        "default": "mdi:fan",
+        "state": {
+          "off": "mdi:fan-off"
+        }
+      },
       "channel_is_enabled": {
         "default": "mdi:power-plug-battery",
         "state": {

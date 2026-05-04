@@ -94,10 +94,17 @@ class Device(DeviceBase, ProtobufProps):
     remaining_time_discharging = pb_field(pb.cms_dsg_rem_time)
 
     error_code = pb_field(pb.errcode)
+    _pcs_fan_level = pb_field(pb.pcs_fan_level)
 
     @computed_field
     def error_occurred(self) -> bool:
         return bool(self.error_code)
+
+    @computed_field
+    def fan_running(self) -> bool | None:
+        if self._pcs_fan_level is None:
+            return None
+        return self._pcs_fan_level > 0
 
     @computed_field
     def input_energy(self) -> int | None:

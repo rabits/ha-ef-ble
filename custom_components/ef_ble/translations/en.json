@@ -331,6 +331,9 @@
       "plugged_in_ac": {
         "name": "AC Plugged In"
       },
+      "fan_running": {
+        "name": "Fan Running"
+      },
       "storm_mode": {
         "name": "Storm Mode"
       },
@@ -813,9 +816,6 @@
       },
       "condensate_water_level": {
         "name": "Water Level"
-      },
-      "pcs_fan_level": {
-        "name": "Fan Level"
       },
       "in_drainage": {
         "name": "In Drainage"

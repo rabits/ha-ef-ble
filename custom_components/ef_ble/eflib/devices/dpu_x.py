@@ -167,7 +167,7 @@ class Device(DeviceBase, ProtobufProps):
         cfg.operate_intelligent_schedule_mode_open = mode == OperatingMode.INTELLIGENT
         await self._send_config_packet(message)
 
-    @controls.power(ac_charging_speed, min=600, max=7200, step=100)
+    @controls.power(ac_charging_speed, min=600, max=12000, step=100)
     async def set_ac_charging_speed(self, watts: float):
         await self._send_config_packet(
             pd100_pb2.ConfigWrite(cfg_plug_in_info_acp_chg_pow_max=int(watts))

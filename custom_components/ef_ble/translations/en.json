@@ -418,6 +418,15 @@
       "total_energy": {
         "name": "Total Energy"
       },
+      "estimated_pv_energy": {
+        "name": "Estimated PV Energy"
+      },
+      "estimated_battery_input_energy": {
+        "name": "Estimated Battery Charge Energy"
+      },
+      "estimated_battery_output_energy": {
+        "name": "Estimated Battery Discharge Energy"
+      },
       "grid_power": {
         "name": "Grid Power"
       },

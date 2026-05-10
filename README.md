@@ -358,27 +358,30 @@ Click on any device below to see available sensors, switches, and controls:
 
 <br>
 
-| *Sensors*                           | *Switches*         | *Sliders*                 | *Selects*       |
-|-------------------------------------|--------------------|---------------------------|-----------------|
-| Battery Level                       | Feed Grid          | Feed Grid Power Limit     | Energy Strategy |
-| Main Battery Level                  | AC (1) ᴬᴹᴾᵁ        | Backup Reserve Level      |                 |
-| Battery Power                       | AC (2) ᴬᴾᵁ         | Charge Limit              |                 |
-| Grid Power                          | Charging Task ²    | Discharge Limit           |                 |
-| Grid Voltage                        | Discharging Task ³ | Base Load Power ¹         |                 |
-| Grid Frequency                      |                    | Grid Input Power Limit    |                 |
-| Load from Battery                   |                    | Charging Power Limit ²    |                 |
-| Load from Grid                      |                    | Charging Target SOC ²     |                 |
-| Load from PV ᴹᴾᵁ                    |                    | Discharging Power Limit ³ |                 |
-| AC (1) Power ᴬᴹᴾᵁ                   |                    |                           |                 |
-| AC (2) Power ᴬᴾᵁ                    |                    |                           |                 |
-| PV (1) Power ᴹᴾᵁ                    |                    |                           |                 |
-| PV (2) Power ᴹᴾᵁ                    |                    |                           |                 |
-| PV (3) Power ᴾᵁ                     |                    |                           |                 |
-| PV (4) Power ᵁ                      |                    |                           |                 |
-| PV Power Total ᴹᴾᵁ                  |                    |                           |                 |
-| Cell Temperature (disabled)         |                    |                           |                 |
-| Charge Time Remaining (disabled)    |                    |                           |                 |
-| Discharge Time Remaining (disabled) |                    |                           |                 |
+| *Sensors*                                      | *Switches*         | *Sliders*                 | *Selects*       |
+|------------------------------------------------|--------------------|---------------------------|-----------------|
+| Battery Level                                  | Feed Grid          | Feed Grid Power Limit     | Energy Strategy |
+| Main Battery Level                             | AC (1) ᴬᴹᴾᵁ        | Backup Reserve Level      |                 |
+| Battery Power                                  | AC (2) ᴬᴾᵁ         | Charge Limit              |                 |
+| Grid Power                                     | Charging Task ²    | Discharge Limit           |                 |
+| Grid Voltage                                   | Discharging Task ³ | Base Load Power ¹         |                 |
+| Grid Frequency                                 |                    | Grid Input Power Limit    |                 |
+| Load from Battery                              |                    | Charging Power Limit ²    |                 |
+| Load from Grid                                 |                    | Charging Target SOC ²     |                 |
+| Load from PV ᴹᴾᵁ                               |                    | Discharging Power Limit ³ |                 |
+| AC (1) Power ᴬᴹᴾᵁ                              |                    |                           |                 |
+| AC (2) Power ᴬᴾᵁ                               |                    |                           |                 |
+| PV (1) Power ᴹᴾᵁ                               |                    |                           |                 |
+| PV (2) Power ᴹᴾᵁ                               |                    |                           |                 |
+| PV (3) Power ᴾᵁ                                |                    |                           |                 |
+| PV (4) Power ᵁ                                 |                    |                           |                 |
+| PV Power Total ᴹᴾᵁ                             |                    |                           |                 |
+| Estimated PV Energy (disabled)                 |                    |                           |                 |
+| Estimated Battery Charge Energy (disabled)     |                    |                           |                 |
+| Estimated Battery Discharge Energy (disabled)  |                    |                           |                 |
+| Cell Temperature (disabled)                    |                    |                           |                 |
+| Charge Time Remaining (disabled)               |                    |                           |                 |
+| Discharge Time Remaining (disabled)            |                    |                           |                 |
 
 <sup>ᴬ Only available on AC Pro variant</sup><br>
 <sup>ᴹ Only available on Max variant</sup><br>
@@ -387,6 +390,19 @@ Click on any device below to see available sensors, switches, and controls:
 <sup>¹ Not available when there's no base load timeframe or more than 1 timeframe configured</sup><br>
 <sup>² Only available when a charging timer task is configured</sup><br>
 <sup>³ Only available when a discharging timer task is configured</sup>
+
+#### Energy dashboard
+
+STREAM devices do not currently expose native cumulative PV or battery energy
+counters over BLE. To make PV and battery flows usable in the Home Assistant
+Energy dashboard, this integration provides disabled-by-default estimated energy
+sensors calculated from the available power sensors.
+
+These sensors use left Riemann-style integration from sampled power values, which
+matches the method commonly recommended for EcoFlow power sensors. They restore
+their last value after Home Assistant restarts, but they cannot count energy
+while Home Assistant, this integration, or BLE sampling is not running. Long gaps
+between samples are skipped.
 
 </details>
 
@@ -408,7 +424,16 @@ Click on any device below to see available sensors, switches, and controls:
 | PV (2) Power                      |                      |
 | PV (2) Current                    |                      |
 | PV (2) Voltage                    |                      |
+| Estimated PV Energy (disabled)    |                      |
 | WiFi RSSI (disabled)              |                      |
+
+#### Energy dashboard
+
+STREAM Microinverter does not currently expose native cumulative PV energy
+counters over BLE. The disabled-by-default estimated PV energy sensor uses
+left Riemann-style integration from sampled PV power values so it can be used in
+the Home Assistant Energy dashboard. It cannot count energy while Home Assistant,
+this integration, or BLE sampling is not running.
 
 </details>
 

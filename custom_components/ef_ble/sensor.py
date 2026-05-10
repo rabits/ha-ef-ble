@@ -3,9 +3,11 @@
 from collections.abc import Callable
 from dataclasses import dataclass, field, replace
 from enum import Enum, EnumType
+from time import monotonic
 from typing import Any, Final, TypedDict, Unpack
 
 from homeassistant.components.sensor import (
+    RestoreSensor,
     SensorDeviceClass,
     SensorEntity,
     SensorEntityDescription,
@@ -38,6 +40,7 @@ from .eflib.devices import (
     powerpulse_ev,
     shp2,
     smart_generator,
+    stream_ac,
     stream_microinverter,
     wave2,
     wave3,
@@ -858,12 +861,109 @@ SENSOR_TYPES: Final[dict[str, SensorEntityDescription]] = (
     resolve_entity_description_keys(_SENSORS)
 )
 
+_MAX_DERIVED_ENERGY_SAMPLE_GAP = 15 * 60
+
 
 _BATTERY_ADDON_SENSORS: Final = {
     "battery_{n}_battery_level": battery(translation_key="battery_level"),
     "battery_{n}_cell_temperature": temperature(translation_key="cell_temperature"),
     "battery_{n}_input_power": power(precision=0, translation_key="input_power"),
     "battery_{n}_output_power": power(precision=0, translation_key="output_power"),
+}
+
+
+@dataclass(frozen=True, kw_only=True)
+class EcoflowDerivedEnergyEntityDescription[Device: DeviceBase](
+    EcoflowSensorEntityDescription[Device]
+):
+    source_fields: tuple[str, ...]
+    power_func: Callable[[Device], float | None]
+    max_sample_gap: float = _MAX_DERIVED_ENERGY_SAMPLE_GAP
+
+
+def derived_energy(
+    *,
+    key: str,
+    source_fields: tuple[str, ...],
+    power_func: Callable[[DeviceBase], float | None],
+    translation_key: str,
+    max_sample_gap: float = _MAX_DERIVED_ENERGY_SAMPLE_GAP,
+) -> EcoflowDerivedEnergyEntityDescription:
+    return EcoflowDerivedEnergyEntityDescription(
+        key=key,
+        source_fields=source_fields,
+        power_func=power_func,
+        max_sample_gap=max_sample_gap,
+        native_unit_of_measurement=UnitOfEnergy.WATT_HOUR,
+        device_class=SensorDeviceClass.ENERGY,
+        state_class=SensorStateClass.TOTAL_INCREASING,
+        suggested_display_precision=3,
+        suggested_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
+        entity_registry_enabled_default=False,
+        translation_key=translation_key,
+    )
+
+
+def _sum_positive_fields(device: DeviceBase, fields: tuple[str, ...]) -> float | None:
+    values: list[float] = []
+    for field_name in fields:
+        if not hasattr(device, field_name):
+            continue
+        if (value := getattr(device, field_name, None)) is None:
+            continue
+        values.append(max(0, float(value)))
+    if not values:
+        return None
+    return sum(values)
+
+
+def _positive_field(device: DeviceBase, field_name: str) -> float | None:
+    if (value := getattr(device, field_name, None)) is None:
+        return None
+    return max(0, float(value))
+
+
+def _negative_field(device: DeviceBase, field_name: str) -> float | None:
+    if (value := getattr(device, field_name, None)) is None:
+        return None
+    return max(0, -float(value))
+
+
+_STREAM_DERIVED_ENERGY_SENSORS: Final = {
+    "estimated_pv_energy": derived_energy(
+        key="estimated_pv_energy",
+        source_fields=("pv_power_sum",),
+        power_func=lambda device: _positive_field(device, "pv_power_sum"),
+        translation_key="estimated_pv_energy",
+    ),
+    "estimated_pv_energy_from_ports": derived_energy(
+        key="estimated_pv_energy",
+        source_fields=("pv_power_1", "pv_power_2", "pv_power_3", "pv_power_4"),
+        power_func=lambda device: _sum_positive_fields(
+            device, ("pv_power_1", "pv_power_2", "pv_power_3", "pv_power_4")
+        ),
+        translation_key="estimated_pv_energy",
+    ),
+    "estimated_pv_energy_from_microinverter_ports": derived_energy(
+        key="estimated_pv_energy",
+        source_fields=("pv_power_1", "pv_power_2"),
+        power_func=lambda device: _sum_positive_fields(
+            device, ("pv_power_1", "pv_power_2")
+        ),
+        translation_key="estimated_pv_energy",
+    ),
+    "estimated_battery_input_energy": derived_energy(
+        key="estimated_battery_input_energy",
+        source_fields=("battery_power",),
+        power_func=lambda device: _positive_field(device, "battery_power"),
+        translation_key="estimated_battery_input_energy",
+    ),
+    "estimated_battery_output_energy": derived_energy(
+        key="estimated_battery_output_energy",
+        source_fields=("battery_power",),
+        power_func=lambda device: _negative_field(device, "battery_power"),
+        translation_key="estimated_battery_output_energy",
+    ),
 }
 
 
@@ -884,10 +984,67 @@ async def async_setup_entry(
     if new_sensors:
         async_add_entities(new_sensors)
 
+    if stream_energy_sensors := _get_stream_derived_energy_entities(device):
+        async_add_entities(stream_energy_sensors)
+
     if battery_entities := _get_extra_battery_entities(
         hass=hass, device=device, conf=config_entry.data.get(CONF_EXTRA_BATTERY)
     ):
         async_add_entities(battery_entities)
+
+
+def _get_stream_derived_energy_entities(
+    device: DeviceBase,
+) -> list["EcoflowDerivedEnergySensor"]:
+    if isinstance(device, stream_ac.Device):
+        entities = []
+        if hasattr(device, "pv_power_sum"):
+            entities.append(
+                EcoflowDerivedEnergySensor(
+                    device, _STREAM_DERIVED_ENERGY_SENSORS["estimated_pv_energy"]
+                )
+            )
+        elif any(hasattr(device, f"pv_power_{i}") for i in range(1, 5)):
+            entities.append(
+                EcoflowDerivedEnergySensor(
+                    device,
+                    _STREAM_DERIVED_ENERGY_SENSORS["estimated_pv_energy_from_ports"],
+                )
+            )
+
+        if hasattr(device, "battery_power"):
+            entities.extend(
+                [
+                    EcoflowDerivedEnergySensor(
+                        device,
+                        _STREAM_DERIVED_ENERGY_SENSORS[
+                            "estimated_battery_input_energy"
+                        ],
+                    ),
+                    EcoflowDerivedEnergySensor(
+                        device,
+                        _STREAM_DERIVED_ENERGY_SENSORS[
+                            "estimated_battery_output_energy"
+                        ],
+                    ),
+                ]
+            )
+        return entities
+
+    if isinstance(device, stream_microinverter.Device):
+        if not any(hasattr(device, f"pv_power_{i}") for i in range(1, 3)):
+            return []
+
+        return [
+            EcoflowDerivedEnergySensor(
+                device,
+                _STREAM_DERIVED_ENERGY_SENSORS[
+                    "estimated_pv_energy_from_microinverter_ports"
+                ],
+            )
+        ]
+
+    return []
 
 
 def _get_extra_battery_entities(
@@ -999,6 +1156,79 @@ class EcoflowSensor(EcoflowEntity, SensorEntity):
         """Entity being removed from hass."""
         await super().async_will_remove_from_hass()
         self._device.remove_callback(self.async_write_ha_state, self._sensor)
+
+
+class EcoflowDerivedEnergySensor(EcoflowEntity, RestoreSensor):
+    """Estimated cumulative energy sensor using left Riemann sampled power."""
+
+    def __init__(
+        self,
+        device: DeviceBase,
+        description: EcoflowDerivedEnergyEntityDescription,
+    ) -> None:
+        super().__init__(device)
+        self.entity_description = description
+        self._attr_unique_id = f"ef_{device.serial_number}_{description.key}"
+        self._attr_translation_key = description.translation_key
+        self._attr_native_value = 0.0
+        self._last_power: float | None = None
+        self._last_update: float | None = None
+
+    @property
+    def native_value(self):
+        return self._attr_native_value
+
+    async def async_added_to_hass(self):
+        await super().async_added_to_hass()
+
+        if (last_sensor_data := await self.async_get_last_sensor_data()) is not None:
+            try:
+                self._attr_native_value = float(last_sensor_data.native_value)
+            except (TypeError, ValueError):
+                self._attr_native_value = 0.0
+
+        now = monotonic()
+        if (power := self.entity_description.power_func(self._device)) is not None:
+            self._last_power = power
+            self._last_update = now
+
+        for field_name in self.entity_description.source_fields:
+            if hasattr(self._device, field_name):
+                self._device.register_callback(self._source_updated, field_name)
+
+    async def async_will_remove_from_hass(self):
+        await super().async_will_remove_from_hass()
+        for field_name in self.entity_description.source_fields:
+            if hasattr(self._device, field_name):
+                self._device.remove_callback(self._source_updated, field_name)
+
+    def _source_updated(self):
+        now = monotonic()
+        power = self.entity_description.power_func(self._device)
+
+        if power is None:
+            self._last_power = None
+            self._last_update = None
+            return
+
+        if self._last_update is None or self._last_power is None:
+            self._last_power = power
+            self._last_update = now
+            self.async_write_ha_state()
+            return
+
+        elapsed = now - self._last_update
+
+        if elapsed <= 0 or elapsed > self.entity_description.max_sample_gap:
+            self._last_power = power
+            self._last_update = now
+            self.async_write_ha_state()
+            return
+
+        self._attr_native_value += self._last_power * elapsed / 3600
+        self._last_power = power
+        self._last_update = now
+        self.async_write_ha_state()
 
 
 class EcoflowBatteryAddonSensor(EcoflowBatteryAddonEntity, SensorEntity):

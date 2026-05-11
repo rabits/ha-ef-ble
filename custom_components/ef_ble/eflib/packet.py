@@ -11,7 +11,7 @@ _LOGGER = logging.getLogger(__name__)
 @dataclass(slots=True)
 class Packet:
     """
-    V2 / V3 / V0x13 packet codec
+    V2 / V3 / V19 packet codec
 
     V4 (version 0x04) is a different wire format and lives in `PacketV4`.
     """

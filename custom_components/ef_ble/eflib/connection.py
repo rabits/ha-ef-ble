@@ -784,10 +784,39 @@ class Connection:
         await self.add_error(err)
 
     async def _start_notify(self, callback: Callable):
-        kwargs = {}
+        # Dictionary to hold extra arguments for the notify call
+        notifyKeywordArguments = {}
+        
+        # Check if the bluez start notify option is enabled in the integration settings
         if self._options.bluez_start_notify:
-            kwargs["bluez"] = {"use_start_notify": True}
-        await self._client.start_notify(self._notify_characteristic, callback, **kwargs)
+            notifyKeywordArguments["bluez"] = {"use_start_notify": True}
+            
+        # Assign the target characteristic to a descriptive camel case variable
+        notifyCharacteristic = self._notify_characteristic
+        
+        try:
+            # Attempt to start the notification stream with the device using the constructed arguments
+            await self._client.start_notify(notifyCharacteristic, callback, **notifyKeywordArguments)
+        except Exception as caughtException:
+            # Convert the exception to a string so we can check the specific error message
+            errorMessage = str(caughtException)
+            
+            # Check if BlueZ has locked the notification channel in a ghost state
+            if "Notify acquired" in errorMessage or "NotPermitted" in errorMessage:
+                self._logger.warning("Ghost notify state detected. Attempting to clear the lock.")
+                
+                # Attempt to explicitly stop the notification to force BlueZ to release the lock
+                try:
+                    await self._client.stop_notify(notifyCharacteristic)
+                except Exception:
+                    # Ignore secondary errors while trying to clear the broken state
+                    pass
+                
+                # Force a disconnect to tear down the broken connection completely
+                await self.disconnect()
+            
+            # Re-raise the exception to abort the current setup attempt cleanly
+            raise caughtException
 
     async def _sendRequest(self, send_data: bytes, response_handler=None):
         # Make sure the connection is here, otherwise just skipping

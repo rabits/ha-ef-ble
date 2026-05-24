@@ -43,12 +43,12 @@
             "name": "EcoFlow Login (skip if you already have your user ID)",
             "description": "After you click Submit with your login information filled in, your EcoFlow User ID will be automatically populated and this form will clear itself. Only your user ID is required so you will not be able to proceed to the next page unless this section is empty.",
             "data": {
-              "email": "Email",
+              "email": "Email / Phone",
               "password": "Password",
               "region": "Region"
             },
             "data_description": {
-              "region": "If you receive an \"Account does not exist\" message after logging in, or if the connection fails with \"User ID may be incorrect\", try selecting a different region."
+              "region": "For China phone number login, use CN or Auto. If you receive an \"Account does not exist\" message, try selecting a different region."
             }
           },
           "log_options": {
@@ -100,12 +100,12 @@
             "name": "EcoFlow Login (skip if you already have your user ID)",
             "description": "After you click Submit with your login information filled in, your EcoFlow User ID will be automatically populated and this form will clear itself. Only your user ID is required so you will not be able to proceed to the next page unless this section is empty.",
             "data": {
-              "email": "Email",
+              "email": "Email / Phone",
               "password": "Password",
               "region": "Region"
             },
             "data_description": {
-              "region": "If you receive an \"Account does not exist\" message after logging in, or if the connection fails with \"User ID may be incorrect\", try selecting a different region."
+              "region": "For China phone number login, use CN or Auto. If you receive an \"Account does not exist\" message, try selecting a different region."
             }
           },
           "log_options": {
@@ -152,12 +152,12 @@
             "name": "EcoFlow Login (skip if you already have your user ID)",
             "description": "After you click Submit with your login information filled in, your EcoFlow User ID will be automatically populated and this form will clear itself. Only your user ID is required so you will not be able to proceed to the next page unless this section is empty.",
             "data": {
-              "email": "Email",
+              "email": "Email / Phone",
               "password": "Password",
               "region": "Region"
             },
             "data_description": {
-              "region": "If you receive an \"Account does not exist\" message after logging in, or if the connection fails with \"User ID may be incorrect\", try selecting a different region."
+              "region": "For China phone number login, use CN or Auto. If you receive an \"Account does not exist\" message, try selecting a different region."
             }
           },
           "log_options": {

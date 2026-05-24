@@ -513,26 +513,41 @@ class EFBLEConfigFlow(ConfigFlow, domain=DOMAIN):
     async def _ecoflow_login(self, email: str, password: str, region: str):
         session = async_get_clientsession(self.hass)
 
+        identifier = email.strip()
+        digits = identifier.removeprefix("+").replace(" ", "")
+        is_phone = digits.isdigit() and 6 <= len(digits) <= 15
+
         match region:
             case "EU":
                 base_url = "api-e.ecoflow.com"
             case "US":
                 base_url = "api-a.ecoflow.com"
+            case "CN":
+                base_url = "api-cn.ecoflow.com"
             case _:
-                base_url = "api.ecoflow.com"
+                # Auto-detect: phone numbers default to China region
+                base_url = "api-cn.ecoflow.com" if is_phone else "api.ecoflow.com"
+
+        json_payload = {
+            "scene": "IOT_APP",
+            "appVersion": "1.0.0",
+            "password": base64.b64encode(password.encode()).decode(),
+            "oauth": {
+                "bundleId": "com.ef.EcoFlow",
+            },
+            "userType": "ECOFLOW",
+        }
+
+        if region == "CN" and not is_phone:
+            return {"login": "CN region requires phone number, not email"}
+        if region not in ("EU", "US") and is_phone:
+            json_payload["phone"] = identifier.removeprefix("+86")
+        else:
+            json_payload["email"] = identifier
 
         async with session.post(
             url=f"https://{base_url}/auth/login",
-            json={
-                "scene": "IOT_APP",
-                "appVersion": "1.0.0",
-                "password": base64.b64encode(password.encode()).decode(),
-                "oauth": {
-                    "bundleId": "com.ef.EcoFlow",
-                },
-                "email": email,
-                "userType": "ECOFLOW",
-            },
+            json=json_payload,
             headers={
                 "Accept": "application/json",
                 "Content-Type": "application/json",
@@ -675,7 +690,9 @@ class _SchemaBuilder:
                         schema_builder()
                         .optional(CONF_EMAIL, str)
                         .optional(CONF_PASSWORD, str)
-                        .optional(CONF_REGION, vol.In(["Auto", "EU", "US"]), "Auto")
+                        .optional(
+                            CONF_REGION, vol.In(["Auto", "EU", "US", "CN"]), "Auto"
+                        )
                         .build()
                     ),
                     options={"collapsed": collapsed},

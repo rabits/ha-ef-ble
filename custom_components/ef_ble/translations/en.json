@@ -48,7 +48,7 @@
               "region": "Region"
             },
             "data_description": {
-              "region": "For China phone number login, use CN or Auto. If you receive an \"Account does not exist\" message, try selecting a different region."
+              "region": "Pick the region matching your EcoFlow account: US (Global / United States), EU (Europe), APAC (Asia-Pacific), CN (China - phone number only). Auto tries CN for phone numbers and US/EU/APAC in order otherwise. If you receive an \"Account does not exist\" message, try selecting your region explicitly."
             }
           },
           "log_options": {
@@ -105,7 +105,7 @@
               "region": "Region"
             },
             "data_description": {
-              "region": "For China phone number login, use CN or Auto. If you receive an \"Account does not exist\" message, try selecting a different region."
+              "region": "Pick the region matching your EcoFlow account: US (Global / United States), EU (Europe), APAC (Asia-Pacific), CN (China - phone number only). Auto tries CN for phone numbers and US/EU/APAC in order otherwise. If you receive an \"Account does not exist\" message, try selecting your region explicitly."
             }
           },
           "log_options": {
@@ -157,7 +157,7 @@
               "region": "Region"
             },
             "data_description": {
-              "region": "For China phone number login, use CN or Auto. If you receive an \"Account does not exist\" message, try selecting a different region."
+              "region": "Pick the region matching your EcoFlow account: US (Global / United States), EU (Europe), APAC (Asia-Pacific), CN (China - phone number only). Auto tries CN for phone numbers and US/EU/APAC in order otherwise. If you receive an \"Account does not exist\" message, try selecting your region explicitly."
             }
           },
           "log_options": {
@@ -1109,6 +1109,17 @@
       },
       "discharging_task_enabled": {
         "name": "Discharging Task"
+      }
+    }
+  },
+  "selector": {
+    "ecoflow_region": {
+      "options": {
+        "auto": "Auto (try CN for phone, US / EU / APAC for email)",
+        "us": "US (Global / United States)",
+        "eu": "EU (Europe)",
+        "apac": "APAC (Asia-Pacific)",
+        "cn": "CN (China - phone number only)"
       }
     }
   }

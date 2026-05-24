@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import asyncio
-import base64
 import enum
 import logging
 from collections.abc import Iterable, Mapping
@@ -64,6 +63,7 @@ from .eflib.connection import Connection, ConnectionState
 from .eflib.device_mappings import battery_name_from_device
 from .eflib.exceptions import AuthErrors
 from .eflib.logging_util import LogOptions
+from .eflib.login import EcoFlowLogin, Region
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -511,61 +511,11 @@ class EFBLEConfigFlow(ConfigFlow, domain=DOMAIN):
         return Store(self.hass, self.VERSION, f"{DOMAIN}.user_id")
 
     async def _ecoflow_login(self, email: str, password: str, region: str):
-        session = async_get_clientsession(self.hass)
-
-        identifier = email.strip()
-        digits = identifier.removeprefix("+").replace(" ", "")
-        is_phone = digits.isdigit() and 6 <= len(digits) <= 15
-
-        match region:
-            case "EU":
-                base_url = "api-e.ecoflow.com"
-            case "US":
-                base_url = "api-a.ecoflow.com"
-            case "CN":
-                base_url = "api-cn.ecoflow.com"
-            case _:
-                # Auto-detect: phone numbers default to China region
-                base_url = "api-cn.ecoflow.com" if is_phone else "api.ecoflow.com"
-
-        json_payload = {
-            "scene": "IOT_APP",
-            "appVersion": "1.0.0",
-            "password": base64.b64encode(password.encode()).decode(),
-            "oauth": {
-                "bundleId": "com.ef.EcoFlow",
-            },
-            "userType": "ECOFLOW",
-        }
-
-        if region == "CN" and not is_phone:
-            return {"login": "CN region requires phone number, not email"}
-        if region not in ("EU", "US") and is_phone:
-            json_payload["phone"] = identifier.removeprefix("+86")
-        else:
-            json_payload["email"] = identifier
-
-        async with session.post(
-            url=f"https://{base_url}/auth/login",
-            json=json_payload,
-            headers={
-                "Accept": "application/json",
-                "Content-Type": "application/json",
-            },
-        ) as response:
-            if not response.ok:
-                return {
-                    "login": (
-                        f"Login failed with status code {response.status}: "
-                        f"{response.reason}"
-                    )
-                }
-
-            result_json = await response.json()
-            if result_json["code"] != "0":
-                return {"login": f"Login failed: '{result_json['message']}'"}
-
-            self._user_id = result_json["data"]["user"]["userId"]
+        client = EcoFlowLogin(async_get_clientsession(self.hass))
+        result = await client.login(email, password, region)
+        if result.error or result.user_id is None:
+            return {"login": result.error or "Login failed"}
+        self._user_id = result.user_id
         self._email = ""
         self._collapsed = True
         return {}
@@ -691,7 +641,15 @@ class _SchemaBuilder:
                         .optional(CONF_EMAIL, str)
                         .optional(CONF_PASSWORD, str)
                         .optional(
-                            CONF_REGION, vol.In(["Auto", "EU", "US", "CN"]), "Auto"
+                            CONF_REGION,
+                            SelectSelector(
+                                SelectSelectorConfig(
+                                    options=[r.value.lower() for r in Region],
+                                    mode=SelectSelectorMode.DROPDOWN,
+                                    translation_key="ecoflow_region",
+                                ),
+                            ),
+                            Region.AUTO.value.lower(),
                         )
                         .build()
                     ),

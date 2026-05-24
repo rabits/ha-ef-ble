@@ -1,5 +1,6 @@
 """The unofficial EcoFlow BLE devices integration"""
 
+import asyncio
 import logging
 from collections.abc import Callable
 from functools import partial
@@ -192,7 +193,16 @@ async def async_unload_entry(hass: HomeAssistant, entry: DeviceConfigEntry) -> b
     """Unload a config entry."""
     _cancel_reappear_callback(hass, entry)
     device = entry.runtime_data
-    await device.disconnect()
+    try:
+        async with asyncio.timeout(6.0):
+            await device.disconnect()
+    except TimeoutError:
+        _LOGGER.warning(
+            "Timed out waiting for device disconnect during unload of entry %s. "
+            "The BLE client may be in a mid-auth flap. Forcing cleanup to avoid "
+            "ConfigEntryState.FAILED_UNLOAD.",
+            entry.entry_id,
+        )
     device.with_logging_options(LogOptions.no_options())
     return await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
 

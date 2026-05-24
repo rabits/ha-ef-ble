@@ -486,9 +486,16 @@ class Connection:
         if self._client is not None and self._client.is_connected:
             self._set_state(ConnectionState.DISCONNECTING)
             try:
-                await self._client.disconnect()
+                async with asyncio.timeout(5.0):
+                    await self._client.disconnect()
             except (EOFError, BleakError) as e:
                 self._logger.debug("Disconnect failed (already down): %s", e)
+            except TimeoutError:
+                self._logger.warning(
+                    "BleakClient.disconnect() timed out after 5 s — "
+                    "a write-with-response was still pending on the ESPHome "
+                    "proxy socket (device flap during auth). Forcing local cleanup."
+                )
 
         self._client = None
         if self._state == ConnectionState.DISCONNECTING:

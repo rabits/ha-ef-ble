@@ -644,12 +644,12 @@ class _SchemaBuilder:
                             CONF_REGION,
                             SelectSelector(
                                 SelectSelectorConfig(
-                                    options=[r.value.lower() for r in Region],
+                                    options=[r.value for r in Region],
                                     mode=SelectSelectorMode.DROPDOWN,
                                     translation_key="ecoflow_region",
                                 ),
                             ),
-                            Region.AUTO.value.lower(),
+                            Region.AUTO.value,
                         )
                         .build()
                     ),

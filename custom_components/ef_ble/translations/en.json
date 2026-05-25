@@ -48,7 +48,7 @@
               "region": "Region"
             },
             "data_description": {
-              "region": "Pick the region matching your EcoFlow account: US (Global / United States), EU (Europe), APAC (Asia-Pacific), CN (China - phone number only). Auto tries CN for phone numbers and US/EU/APAC in order otherwise. If you receive an \"Account does not exist\" message, try selecting your region explicitly."
+              "region": "Pick the EcoFlow API host matching your account. Auto uses api.ecoflow.com for email and api-cn for phone numbers. Your account may live on a different host than your actual geographic region, so if you receive an \"Account does not exist\" message, try selecting the host explicitly."
             }
           },
           "log_options": {
@@ -105,7 +105,7 @@
               "region": "Region"
             },
             "data_description": {
-              "region": "Pick the region matching your EcoFlow account: US (Global / United States), EU (Europe), APAC (Asia-Pacific), CN (China - phone number only). Auto tries CN for phone numbers and US/EU/APAC in order otherwise. If you receive an \"Account does not exist\" message, try selecting your region explicitly."
+              "region": "Pick the EcoFlow API host matching your account. Auto uses api.ecoflow.com for email and api-cn for phone numbers. Your account may live on a different host than your actual geographic region, so if you receive an \"Account does not exist\" message, try selecting the host explicitly."
             }
           },
           "log_options": {
@@ -157,7 +157,7 @@
               "region": "Region"
             },
             "data_description": {
-              "region": "Pick the region matching your EcoFlow account: US (Global / United States), EU (Europe), APAC (Asia-Pacific), CN (China - phone number only). Auto tries CN for phone numbers and US/EU/APAC in order otherwise. If you receive an \"Account does not exist\" message, try selecting your region explicitly."
+              "region": "Pick the EcoFlow API host matching your account. Auto uses api.ecoflow.com for email and api-cn for phone numbers. Your account may live on a different host than your actual geographic region, so if you receive an \"Account does not exist\" message, try selecting the host explicitly."
             }
           },
           "log_options": {
@@ -1115,11 +1115,13 @@
   "selector": {
     "ecoflow_region": {
       "options": {
-        "auto": "Auto (try CN for phone, US / EU / APAC for email)",
-        "us": "US (Global / United States)",
-        "eu": "EU (Europe)",
-        "apac": "APAC (Asia-Pacific)",
-        "cn": "CN (China - phone number only)"
+        "auto": "Auto (api.ecoflow.com for email, api-cn for phone)",
+        "api": "api.ecoflow.com (Global / US)",
+        "api-e": "api-e.ecoflow.com (Europe)",
+        "api-a": "api-a.ecoflow.com (Asia / MEA)",
+        "api-j": "api-j.ecoflow.com (Japan)",
+        "api-r": "api-r.ecoflow.com (Russia)",
+        "api-cn": "api-cn.ecoflow.com (China - phone number only)"
       }
     }
   }

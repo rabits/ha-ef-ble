@@ -9,13 +9,15 @@ import aiohttp
 
 
 class Region(StrEnum):
-    """Selectable EcoFlow account region"""
+    """Selectable EcoFlow API host"""
 
-    AUTO = "Auto"
-    US = "US"
-    EU = "EU"
-    APAC = "APAC"
-    CN = "CN"
+    AUTO = "auto"
+    API = "api"
+    API_E = "api-e"
+    API_A = "api-a"
+    API_J = "api-j"
+    API_R = "api-r"
+    API_CN = "api-cn"
 
     @classmethod
     def _missing_(cls, value: object) -> "Region | None":
@@ -27,21 +29,10 @@ class Region(StrEnum):
 
     @property
     def base_url(self) -> str | None:
-        """API host for this region, or None for AUTO."""
-        return _REGION_BASE_URL.get(self)
-
-
-_REGION_BASE_URL: dict[Region, str] = {
-    Region.US: "api.ecoflow.com",
-    Region.EU: "api-e.ecoflow.com",
-    Region.APAC: "api-a.ecoflow.com",
-    Region.CN: "api-cn.ecoflow.com",
-}
-
-# AUTO tries these in order for email logins. Phone numbers go straight to CN.
-# `api.ecoflow.com` does not route to other regions automatically, so each endpoint
-# has to be probed explicitly.
-_AUTO_REGION_ORDER: tuple[Region, ...] = (Region.US, Region.EU, Region.APAC)
+        """Hostname for this region, or None for `AUTO`"""
+        if self is Region.AUTO:
+            return None
+        return f"{self.value}.ecoflow.com"
 
 
 @dataclass(frozen=True)
@@ -68,38 +59,24 @@ class EcoFlowLogin:
         password: str,
         region: Region | str,
     ) -> LoginResult:
-        """
-        Resolve an EcoFlow user ID for the given identifier/password/region
-
-        In `Region.AUTO` mode phone numbers go to `CN` and email addresses are tried
-        against the regions in `_AUTO_REGION_ORDER` until one succeeds.
-        """
+        """Resolve an EcoFlow user ID for the given identifier/password/region"""
         region = Region(region)
         identifier = identifier.strip()
         is_phone = self.is_phone_identifier(identifier)
 
-        if region is Region.CN and not is_phone:
-            return LoginResult(error="CN region requires phone number, not email")
+        if region is Region.API_CN and not is_phone:
+            return LoginResult(error="api-cn requires phone number, not email")
 
         if region is Region.AUTO:
-            regions_to_try = (Region.CN,) if is_phone else _AUTO_REGION_ORDER
-        else:
-            regions_to_try = (region,)
+            region = Region.API_CN if is_phone else Region.API
 
-        last_error: str | None = None
-        for try_region in regions_to_try:
-            assert try_region.base_url is not None
-            result = await self._try_login_at(
-                try_region.base_url,
-                identifier,
-                password,
-                is_phone=is_phone and try_region is Region.CN,
-            )
-            if result.user_id is not None:
-                return result
-            last_error = result.error
-
-        return LoginResult(error=last_error)
+        assert region.base_url is not None
+        return await self._try_login_at(
+            region.base_url,
+            identifier,
+            password,
+            is_phone=is_phone and region is Region.API_CN,
+        )
 
     async def _try_login_at(
         self,

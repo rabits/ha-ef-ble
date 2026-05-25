@@ -29,7 +29,7 @@ from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
 from . import DeviceConfigEntry
-from .const import CONF_EXTRA_BATTERY, DOMAIN
+from .const import CONF_EXTRA_BATTERY, CONF_LOCAL_BINDING, CONF_USER_ID, DOMAIN
 from .eflib import DeviceBase
 from .eflib.devices import (
     _delta3_base,
@@ -891,6 +891,11 @@ async def async_setup_entry(
         if hasattr(device, sensor)
     ]
 
+    if config_entry.data.get(CONF_LOCAL_BINDING) and (
+        user_id := config_entry.data.get(CONF_USER_ID)
+    ):
+        new_sensors.append(EcoflowUserIdSensor(device, user_id))
+
     if new_sensors:
         async_add_entities(new_sensors)
 
@@ -1009,6 +1014,29 @@ class EcoflowSensor(EcoflowEntity, SensorEntity):
         """Entity being removed from hass."""
         await super().async_will_remove_from_hass()
         self._device.remove_callback(self.async_write_ha_state, self._sensor)
+
+
+class EcoflowUserIdSensor(EcoflowEntity, SensorEntity):
+    """
+    Diagnostic sensor exposing the locally-bound user_id.
+
+    The value comes from the config entry rather than the device so the
+    sensor stays available even when the BLE link is down - this is the
+    key the user needs to copy into other tools.
+    """
+
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
+    _attr_translation_key = "user_id"
+    _attr_icon = "mdi:key-variant"
+
+    def __init__(self, device: DeviceBase, user_id: str):
+        super().__init__(device)
+        self._attr_unique_id = f"ef_{device.serial_number}_user_id"
+        self._attr_native_value = user_id
+
+    @property
+    def available(self) -> bool:
+        return True
 
 
 class EcoflowBatteryAddonSensor(EcoflowBatteryAddonEntity, SensorEntity):

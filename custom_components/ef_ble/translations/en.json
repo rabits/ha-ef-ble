@@ -384,6 +384,9 @@
       "collecting_data": {
         "name": "Collecting diagnostics data"
       },
+      "user_id": {
+        "name": "User ID (local binding)"
+      },
       "battery_level": {
         "name": "Battery Level"
       },

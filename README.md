@@ -697,9 +697,13 @@ Click on any device below to see available sensors, switches, and controls:
 ### Prerequisites
 
 - Home Assistant with Bluetooth support
-- Your device must be **bound to your account** through the EcoFlow app before setup
-- Your **User ID** from the EcoFlow app (can be retrieved via the config flow login form
-  during setup)
+- One of:
+  - An **EcoFlow account** and a device already bound to it (the integration retrieves
+    your User ID via the login form during setup), or
+  - A **numeric User ID** you already have (e.g. from a previous setup or another local
+    tool), or
+  - A previously **unbound device** if you intend to use local binding (see
+    [Authentication](#authentication))
 - [HACS](https://hacs.xyz/) installed (recommended method)
 
 ### Method 1: HACS Installation (Recommended)
@@ -739,6 +743,27 @@ via Bluetooth LE.
 > [!TIP]
 > For detailed configuration help, FAQ, and troubleshooting common issues (like BLE
 > disconnections), see the [**Wiki**](https://github.com/rabits/ha-ef-ble/wiki)
+
+### Authentication
+
+When you add a device the integration asks how to source its **User ID**. The User ID is
+the device's binding key. Once a device is bound to a given ID, only that same ID can
+authenticate to it until the device is factory-reset. Pick one of:
+
+- **EcoFlow account login** Enter your EcoFlow email and password. The integration
+  contacts EcoFlow's servers once to look up your User ID, then operates entirely over
+  Bluetooth. Suitable when you already have a working EcoFlow account and a device
+  already bound to it.
+- **Existing user ID** Type your numeric User ID directly. No internet connection
+  required. Useful if you already know the ID (e.g. from a previous setup, or from
+  another local tool that's already talking to the device).
+- **Local binding (no EcoFlow account)** Pick this for first-time setup of an
+  **unbound** device without ever requring an EcoFlow account. The integration
+  generates a 10-digit numeric User ID, pre-fills it in the form so you can see and
+  copy it, then binds the device to that ID. **Save the ID somewhere safe** it's
+  the key any other local tool will need to talk to the same device. After setup the
+  ID is also surfaced as a diagnostic sensor on the device entity, so you can recover
+  it later if needed.
 
 ---
 

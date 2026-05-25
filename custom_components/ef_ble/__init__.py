@@ -32,6 +32,7 @@ from .const import (
     CONF_DIAGNOSTICS_ON_EXCEPTION,
     CONF_DIAGNOSTICS_OPTIONS,
     CONF_EXTRA_BATTERY,
+    CONF_LOCAL_BINDING,
     CONF_PACKET_VERSION,
     CONF_UPDATE_PERIOD,
     CONF_USER_ID,
@@ -74,6 +75,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: DeviceConfigEntry) -> bo
 
     address = entry.data.get(CONF_ADDRESS)
     user_id = entry.data.get(CONF_USER_ID)
+    local_binding = entry.data.get(CONF_LOCAL_BINDING, False)
     merged_options = entry.data | entry.options
     update_period = merged_options.get(CONF_UPDATE_PERIOD, DEFAULT_UPDATE_PERIOD)
     packet_version = PacketVersion.from_str(
@@ -128,6 +130,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: DeviceConfigEntry) -> bo
             .connect(
                 user_id=user_id,
                 max_attempts=0 if eflib.is_solar_only(device) else None,
+                local_binding=local_binding,
             )
         )
         state = await device.wait_until_authenticated_or_error(raise_on_error=True)

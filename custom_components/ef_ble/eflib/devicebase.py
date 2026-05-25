@@ -258,6 +258,7 @@ class DeviceBase(abc.ABC):
         self,
         user_id: str | None = None,
         max_attempts: int | None = None,
+        local_binding: bool = False,
     ):
         if self._conn is None:
             self._conn = (
@@ -270,6 +271,7 @@ class DeviceBase(abc.ABC):
                     packet_version=self.packet_version,
                     encrypt_type=self.scan_record.encrypt_type,
                     auth_header_dst=self.auth_header_dst,
+                    local_binding=local_binding,
                 )
                 .with_logging_options(self._logger.options)
                 .with_disabled_reconnect(self._reconnect_disabled)

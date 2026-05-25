@@ -219,6 +219,7 @@ class Connection:
         packet_version: int = 0x03,
         encrypt_type: int = 7,
         auth_header_dst: int = 0x35,
+        local_binding: bool = False,
     ) -> None:
         self._ble_dev = ble_dev
         self._address = ble_dev.address
@@ -242,6 +243,7 @@ class Connection:
         self._retry_on_disconnect = False
         self._retry_on_disconnect_delay = 10
         self._auth_header_dst = auth_header_dst
+        self._local_binding = local_binding
 
         self._tasks: set[asyncio.Task] = set()
         self._call_later_handles: dict[str, asyncio.TimerHandle] = {}
@@ -1045,6 +1047,31 @@ class Connection:
             await self._client.disconnect()
         raise exc
 
+    async def _set_authentication(self):
+        """
+        Bind an unbound device locally (no EcoFlow account).
+
+        Sends `setAuthentication` (0x85) carrying the same MD5(user_id+sn)
+        payload as `checkAuth` (0x86). The 0x86 step must have already been
+        sent — the device only accepts 0x85 after a 0x86 that returned
+        `NeedBindInstallFirst` (0x04).
+        """
+        md5_data = hashlib.md5((self._user_id + self._dev_sn).encode("ASCII")).digest()
+        payload = ("".join(f"{c:02X}" for c in md5_data)).encode("ASCII")
+
+        packet = Packet(
+            0x21,
+            self._auth_header_dst,
+            0x35,
+            0x85,
+            payload,
+            0x01,
+            0x01,
+            self._packet_version,
+        )
+
+        await self.sendPacket(packet)
+
     async def send_auth_status_packet(self):
         """Send the auth status packet used for initial auth wake-up."""
         pkt = Packet(
@@ -1078,18 +1105,40 @@ class Connection:
                 and packet.cmd_set == 0x35
                 and packet.cmd_id == 0x86
             )
+            is_bind_reply = (
+                packet.src == self._auth_header_dst
+                and packet.cmd_set == 0x35
+                and packet.cmd_id == 0x85
+            )
             authenticating = self._state == ConnectionState.AUTHENTICATING
 
             if is_auth_reply and authenticating:
+                exc = AuthErrors.from_payload(packet.payload)
+                if self._local_binding and exc is AuthErrors.NeedBindInstallFirst:
+                    self._logger.info(
+                        "Device unbound (NeedBindInstallFirst), "
+                        "attempting first-time binding"
+                    )
+                    await self._set_authentication()
+                    processed = True
+                else:
+                    await self._check_auth(packet)
+                    self._connection_attempt = 0
+                    self._reconnect_attempt = 0
+                    processed = True
+                    self._logger.info("Auth completed, everything is fine")
+                    self._set_state(ConnectionState.AUTHENTICATED)
+                    self._connected.set()
+            elif self._local_binding and is_bind_reply and authenticating:
                 await self._check_auth(packet)
                 self._connection_attempt = 0
                 self._reconnect_attempt = 0
                 processed = True
-                self._logger.info("Auth completed, everything is fine")
+                self._logger.info("Device bound successfully (first-time binding)")
                 self._set_state(ConnectionState.AUTHENTICATED)
                 self._connected.set()
             else:
-                if authenticating and not is_auth_reply:
+                if authenticating:
                     self._connection_attempt = 0
                     self._reconnect_attempt = 0
                     self._logger.info("Auth completed - first data packet received")

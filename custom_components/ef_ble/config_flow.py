@@ -6,6 +6,7 @@ import asyncio
 import base64
 import enum
 import logging
+import secrets
 from collections.abc import Iterable, Mapping
 from functools import cached_property
 from typing import Any, ClassVar, cast
@@ -45,6 +46,7 @@ from .const import (
     CONF_DIAGNOSTICS_ON_EXCEPTION,
     CONF_DIAGNOSTICS_OPTIONS,
     CONF_EXTRA_BATTERY,
+    CONF_LOCAL_BINDING,
     CONF_LOG_BLEAK,
     CONF_LOG_CONNECTION,
     CONF_LOG_ENCRYPTED_PAYLOADS,
@@ -88,6 +90,24 @@ class PacketVersion(enum.StrEnum):
             return PacketVersion.V3
 
 
+class AuthMode(enum.StrEnum):
+    """How the device's authentication user_id is sourced at setup."""
+
+    CLOUD_LOGIN = "cloud_login"
+    EXISTING_USER_ID = "existing_user_id"
+    LOCAL_BINDING = "local_binding"
+
+
+def _generate_numeric_user_id() -> str:
+    """
+    Generate a 10-digit numeric user_id for local-only binding.
+
+    Shape matches EcoFlow cloud user IDs, so tools that parse the value
+    as an integer keep working.
+    """
+    return str(secrets.randbelow(9_000_000_000) + 1_000_000_000)
+
+
 class EFBLEConfigFlow(ConfigFlow, domain=DOMAIN):
     """EcoFlow BLE ConfigFlow"""
 
@@ -109,6 +129,7 @@ class EFBLEConfigFlow(ConfigFlow, domain=DOMAIN):
         self._user_id_validated: bool = False
         self._log_options = LogOptions.no_options()
         self._collapsed = True
+        self._auth_mode: AuthMode = AuthMode.CLOUD_LOGIN
 
     async def async_step_bluetooth(
         self, discovery_info: BluetoothServiceInfoBleak
@@ -125,7 +146,56 @@ class EFBLEConfigFlow(ConfigFlow, domain=DOMAIN):
         self._set_name_from_discovery(self._discovery_info, device.name)
 
         _LOGGER.debug("Discovered device: %s", device)
-        return await self.async_step_bluetooth_confirm()
+        return await self.async_step_auth_mode()
+
+    async def async_step_auth_mode(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Pick how the user_id is sourced for this device."""
+        if user_input is not None:
+            self._auth_mode = AuthMode(user_input["auth_mode"])
+            if self._auth_mode == AuthMode.LOCAL_BINDING:
+                self._user_id = _generate_numeric_user_id()
+            return await self._next_confirm_step()
+
+        return self.async_show_form(
+            step_id="auth_mode",
+            data_schema=vol.Schema(
+                {
+                    vol.Required("auth_mode", default=AuthMode.CLOUD_LOGIN.value): (
+                        SelectSelector(
+                            SelectSelectorConfig(
+                                options=[
+                                    SelectOptionDict(
+                                        value=AuthMode.CLOUD_LOGIN.value,
+                                        label="EcoFlow account login",
+                                    ),
+                                    SelectOptionDict(
+                                        value=AuthMode.EXISTING_USER_ID.value,
+                                        label="Enter an existing EcoFlow user ID",
+                                    ),
+                                    SelectOptionDict(
+                                        value=AuthMode.LOCAL_BINDING.value,
+                                        label="Local binding (no EcoFlow account)",
+                                    ),
+                                ],
+                                mode=SelectSelectorMode.LIST,
+                            )
+                        )
+                    )
+                }
+            ),
+        )
+
+    async def _next_confirm_step(self) -> ConfigFlowResult:
+        """Route to the right confirm step after the auth-mode pick."""
+        if self._discovery_info is not None:
+            return await self.async_step_bluetooth_confirm()
+        if self._discovered_device is not None and eflib.is_unsupported(
+            self._discovered_device
+        ):
+            return await self.async_step_unsupported_device()
+        return await self.async_step_device_confirm()
 
     async def async_step_bluetooth_confirm(
         self, user_input: dict[str, Any] | None = None
@@ -138,7 +208,9 @@ class EFBLEConfigFlow(ConfigFlow, domain=DOMAIN):
         errors = {}
         title = f"{device.device} ({self._local_names[device.address]})"
 
-        if data := await self._store.async_load():
+        if self._auth_mode != AuthMode.LOCAL_BINDING and (
+            data := await self._store.async_load()
+        ):
             self._user_id = data["user_id"]
 
         self._set_confirm_only()
@@ -162,7 +234,9 @@ class EFBLEConfigFlow(ConfigFlow, domain=DOMAIN):
             data_schema=(
                 schema_builder()
                 .user_id(self._user_id)
-                .login(self._collapsed)
+                .login(
+                    self._collapsed, condition=self._auth_mode == AuthMode.CLOUD_LOGIN
+                )
                 .required(CONF_ADDRESS, vol.In([full_name]))
                 .update_period()
                 .conf_log(self._log_options)
@@ -181,10 +255,7 @@ class EFBLEConfigFlow(ConfigFlow, domain=DOMAIN):
                 user_input[CONF_ADDRESS]
             ]
 
-            if eflib.is_unsupported(self._discovered_device):
-                return await self.async_step_unsupported_device()
-
-            return await self.async_step_device_confirm()
+            return await self.async_step_auth_mode()
 
         current_addresses = self._async_current_ids()
 
@@ -248,7 +319,9 @@ class EFBLEConfigFlow(ConfigFlow, domain=DOMAIN):
 
         errors = {}
 
-        if data := await self._store.async_load():
+        if self._auth_mode != AuthMode.LOCAL_BINDING and (
+            data := await self._store.async_load()
+        ):
             self._user_id = data["user_id"]
 
         if user_input is not None:
@@ -266,7 +339,9 @@ class EFBLEConfigFlow(ConfigFlow, domain=DOMAIN):
             data_schema=(
                 schema_builder()
                 .user_id(self._user_id)
-                .login(self._collapsed)
+                .login(
+                    self._collapsed, condition=self._auth_mode == AuthMode.CLOUD_LOGIN
+                )
                 .update_period()
                 .conf_log(self._log_options)
                 .advanced_connection_options()
@@ -280,7 +355,9 @@ class EFBLEConfigFlow(ConfigFlow, domain=DOMAIN):
         assert eflib.is_unsupported(self._discovered_device)
         device = self._discovered_device
 
-        if data := await self._store.async_load():
+        if self._auth_mode != AuthMode.LOCAL_BINDING and (
+            data := await self._store.async_load()
+        ):
             self._user_id = data["user_id"]
 
         errors = {}
@@ -312,7 +389,9 @@ class EFBLEConfigFlow(ConfigFlow, domain=DOMAIN):
                     ),
                     default=PacketVersion.from_str(f"v{device.packet_version}"),
                 )
-                .login(self._collapsed)
+                .login(
+                    self._collapsed, condition=self._auth_mode == AuthMode.CLOUD_LOGIN
+                )
                 .conf_log(self._log_options)
                 .advanced_connection_options()
                 .build()
@@ -389,6 +468,12 @@ class EFBLEConfigFlow(ConfigFlow, domain=DOMAIN):
         entry_data["local_name"] = self._local_names.get(device.address, None)
         entry_data.pop("login", None)
 
+        entry_data[CONF_LOCAL_BINDING] = self._auth_mode == AuthMode.LOCAL_BINDING
+        # In local-binding mode the user_id may have been auto-generated after the
+        # form was submitted; persist the value actually used to bind the device.
+        if entry_data[CONF_LOCAL_BINDING]:
+            entry_data[CONF_USER_ID] = self._user_id
+
         if CONF_EXTRA_BATTERY not in entry_data:
             entry_data[CONF_EXTRA_BATTERY] = _find_enabled_batteries(
                 device, range(1, 6)
@@ -404,6 +489,18 @@ class EFBLEConfigFlow(ConfigFlow, domain=DOMAIN):
 
         return None
 
+    async def _handle_cloud_login(
+        self, password: str, region: str
+    ) -> dict[str, Any] | None:
+        """Dispatch EcoFlow account login if credentials were submitted."""
+        if not self._email and not password:
+            return None
+        if not self._email:
+            return {"login": "email_empty"}
+        if not password:
+            return {"login": "password_empty"}
+        return await self._ecoflow_login(self._email, password, region)
+
     async def _validate_user_id(
         self, device: eflib.DeviceBase, user_input: dict[str, Any]
     ) -> dict[str, Any]:
@@ -418,16 +515,17 @@ class EFBLEConfigFlow(ConfigFlow, domain=DOMAIN):
         packet_version = PacketVersion.from_str(user_input.get(CONF_PACKET_VERSION))
 
         self._collapsed = False
+        local_binding = self._auth_mode == AuthMode.LOCAL_BINDING
 
-        if not self._email and not password and not user_id:
+        if local_binding and not user_id:
+            user_id = _generate_numeric_user_id()
+
+        if not local_binding and not self._email and not password and not user_id:
             return {CONF_USER_ID: "User ID cannot be empty"}
 
-        if self._email or password:
-            if not self._email:
-                return {"login": "email_empty"}
-            if not password:
-                return {"login": "password_empty"}
-            return await self._ecoflow_login(self._email, password, region)
+        login_result = await self._handle_cloud_login(password, region)
+        if login_result is not None:
+            return login_result
 
         self._user_id = user_id
 
@@ -441,7 +539,7 @@ class EFBLEConfigFlow(ConfigFlow, domain=DOMAIN):
             .with_connection_options(Connection.Options(timeout=timeout))
         )
 
-        await device.connect(self._user_id)
+        await device.connect(self._user_id, local_binding=local_binding)
         exc = None
         try:
             conn_state, exc = await asyncio.wait_for(
@@ -469,7 +567,8 @@ class EFBLEConfigFlow(ConfigFlow, domain=DOMAIN):
                 error = "unknown"
             case ConnectionState.AUTHENTICATED:
                 self._user_id_validated = True
-                await self._store.async_save(data={"user_id": self._user_id})
+                if not local_binding:
+                    await self._store.async_save(data={"user_id": self._user_id})
             case _:
                 error = (
                     "error_try_refresh"
@@ -682,7 +781,9 @@ class _SchemaBuilder:
 
         return self.update({marker(CONF_USER_ID, default=user_id): str})
 
-    def login(self, collapsed: bool = True):
+    def login(self, collapsed: bool = True, condition: bool = True):
+        if not condition:
+            return self
         return self.update(
             {
                 vol.Required("login"): section(

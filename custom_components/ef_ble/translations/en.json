@@ -28,6 +28,13 @@
       "error_try_refresh_unsupported": "Device disconnected before it could authenticate - try changing packet version. If that does not help and resubmitting after reloading does not work, this device probably uses different auth procedure and has to be reverse engineered."
     },
     "step": {
+      "auth_mode": {
+        "title": "Choose how to authenticate",
+        "description": "Pick how this device's user ID will be sourced. The user ID becomes the device's binding key (MD5 of `user_id` + serial number) and must be reused by any other tool that talks to the device after setup.",
+        "data": {
+          "auth_mode": "Authentication mode"
+        }
+      },
       "bluetooth_confirm": {
         "title": "Discovered Device Configuration",
         "data": {

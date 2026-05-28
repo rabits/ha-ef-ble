@@ -41,7 +41,7 @@ class Device(DeviceBase, ProtobufProps):
     battery_level = pb_field(pb.cms_batt_soc, pround(2))
     battery_level_main = pb_field(pb.bms_batt_soc, pround(2))
 
-    ac_input_power = pb_field(pb.pow_get_ac, out_power)
+    ac_input_power = pb_field(pb.pow_get_ac_in)
     ac_lv_output_power = pb_field(pb.pow_get_ac_lv_out, out_power)
     ac_hv_output_power = pb_field(pb.pow_get_ac_hv_out, out_power)
 

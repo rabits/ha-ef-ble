@@ -26,6 +26,7 @@ from .logging_util import (
     DeviceDiagnosticsCollector,
     DeviceLogger,
     LogOptions,
+    caller_chain,
 )
 from .packet import Packet
 from .props.raw_data_props import Literal
@@ -283,7 +284,7 @@ class DeviceBase(abc.ABC):
             self._conn.on_packet_data_received(self._listeners.on_packet_received)
             self._conn.on_packet_parsed(self._listeners.on_packet_parsed)
             self._conn.on_state_change(self._listeners.on_connection_state_change)
-            self._conn.on_state_change(self.connection_log.append)
+            self._conn.on_state_change(self._append_state_to_log)
             self._conn.on_data_received(self._listeners.on_data_received)
             self._conn.on_data_send(self._listeners.on_data_send)
 
@@ -292,12 +293,16 @@ class DeviceBase(abc.ABC):
 
         await self._conn.connect(max_attempts=max_attempts)
 
+    def _append_state_to_log(self, state: ConnectionState) -> None:
+        reason = self._conn.state_reason if self._conn is not None else None
+        self.connection_log.append(state, reason)
+
     async def disconnect(self):
         if self._conn is None:
             self._logger.error("Device has no connection")
             return
 
-        await self._conn.disconnect()
+        await self._conn.disconnect(reason=caller_chain())
         self._connection_event.clear()
         self._conn = None
 

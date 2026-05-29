@@ -352,6 +352,8 @@ class DeviceDiagnosticsCollector:
         }
         if session is not None:
             result["session"] = session.header.hex()
+        if (conn := device._conn) is not None and conn.disconnect_log:
+            result["disconnect_log"] = conn.disconnect_log
         if self.is_enabled:
             result |= self.as_dict(session)
         return result
@@ -592,3 +594,14 @@ class _LazyHex:
 
     def __repr__(self) -> str:
         return bytes(self._data).hex()
+
+
+def caller_chain(depth: int = 4) -> str:
+    """
+    Compact `->` chain of the innermost `depth` call frames, for tracing triggers
+
+    Drops this helper's own frame; awaited coroutine frames stay on the stack, so the
+    chain reaches across `await` boundaries to whatever ultimately triggered the call.
+    """
+    frames = traceback.extract_stack()[:-1]
+    return " -> ".join(frame.name for frame in frames[-depth:])

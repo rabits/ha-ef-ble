@@ -1,7 +1,11 @@
+import logging
+
 import pytest
 from pytest_mock import MockerFixture
 
 from custom_components.ef_ble.eflib.devices.shp2 import Device
+from custom_components.ef_ble.eflib.packet import Packet
+from custom_components.ef_ble.eflib.pb import pd303_pb2
 from custom_components.ef_ble.eflib.props import FieldGroup
 
 
@@ -112,6 +116,46 @@ async def test_shp2_handles_zero_values_correctly(device, packet_sequence):
         assert isinstance(error_count, int)
 
 
+def _backup_incre_packet(*err_codes: bytes) -> Packet:
+    """A backup_incre_info (0x0B/0x0C/0x20) packet carrying the given errcodes."""
+    message = pd303_pb2.ProtoPushAndSet()
+    message.backup_incre_info.errcode.err_code.extend(err_codes)
+    return Packet(0x0B, 0x21, 0x0C, 0x20, message.SerializeToString())
+
+
+async def test_shp2_empty_errcode_is_not_an_error(device, caplog):
+    zero = b"\x00" * 8
+    with caplog.at_level(logging.WARNING):
+        await device.data_parse(_backup_incre_packet(zero))
+
+    assert device.error_count == 0
+    assert device.error_happened is False
+    assert "Error happened on device" not in caplog.text
+
+
+async def test_shp2_real_error_warns_then_clears(device, caplog):
+    err = b"\x01\x00\x00\x00\x00\x00\x00\x00"
+
+    pushed: list[bool] = []
+    device.register_state_update_callback(pushed.append, "error_happened")
+
+    with caplog.at_level(logging.WARNING):
+        await device.data_parse(_backup_incre_packet(err))
+    assert device.error_count == 1
+    assert device.error_happened is True
+    assert "Error happened on device" in caplog.text
+
+    # error clears -> problem turns off and no new warning is logged
+    caplog.clear()
+    with caplog.at_level(logging.WARNING):
+        await device.data_parse(_backup_incre_packet(b"\x00" * 8))
+    assert device.error_count == 0
+    assert device.error_happened is False
+    assert "Error happened on device" not in caplog.text
+
+    assert pushed == [True, False]
+
+
 async def test_shp2_field_types_are_consistent(device, packet_sequence):
     for hex_packet in packet_sequence:
         packet = await device.packet_parse(bytes.fromhex(hex_packet))
@@ -153,7 +197,7 @@ async def test_shp2_exact_values_from_known_packets(device, packet_sequence):
         Device.in_use_power: 677.0,
         Device.storm_mode: False,
         Device.error_count: 0,
-        Device.error_happened: True,
+        Device.error_happened: False,
         Device.channel_power[1]: 0.0,
         Device.channel_power[2]: -344.08,
         Device.channel_power[3]: -294.92,

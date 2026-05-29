@@ -8,8 +8,8 @@ from ..entity.base import dynamic
 from ..packet import Packet
 from ..pb import pd303_pb2
 from ..props import (
-    Field,
     ProtobufProps,
+    computed_field,
     field_group,
     pb_field,
     pb_group,
@@ -203,8 +203,14 @@ class Device(DeviceBase, ProtobufProps):
     ac_charging_speed = pb_field(pb_push_set.charge_watt_power)
 
     errors = pb_field(pb_push_set.backup_incre_info.errcode, _errors)
-    error_count = Field[int]()
-    error_happened = Field[bool]()
+
+    @computed_field
+    def error_count(self) -> int | None:
+        return len(self.errors) if self.errors is not None else None
+
+    @computed_field
+    def error_happened(self) -> bool:
+        return bool(self.errors)
 
     @staticmethod
     def check(sn: bytes):
@@ -224,67 +230,45 @@ class Device(DeviceBase, ProtobufProps):
 
         prev_error_count = self.error_count
 
-        if packet.src == 0x0B and packet.cmd_set == 0x0C:
-            if (
-                packet.cmd_id == 0x01
-            ):  # master_info, load_info, backup_info, watt_info, master_ver_info
+        match packet.src, packet.cmd_set, packet.cmd_id:
+            case 0x0B, 0x0C, 0x01:
+                # master_info, load_info, backup_info, watt_info, master_ver_info
                 self._logger.debug("Parsed data: %r", packet)
-
                 await self._conn.replyPacket(packet)
                 self.update_from_bytes(pd303_pb2.ProtoTime, packet.payload)
                 processed = True
-            elif packet.cmd_id == 0x20:  # backup_incre_info
-                self._logger.debug("Parsed data: %r", packet)
 
+            case 0x0B, 0x0C, 0x20:  # backup_incre_info
+                self._logger.debug("Parsed data: %r", packet)
                 await self._conn.replyPacket(packet)
                 self.update_from_bytes(pd303_pb2.ProtoPushAndSet, packet.payload)
-
                 processed = True
 
-            elif packet.cmd_id == 0x21:  # is_get_cfg_flag
+            case 0x0B, 0x0C, 0x21:  # is_get_cfg_flag
                 self._logger.debug("Parsed data: %r", packet)
                 self.update_from_bytes(pd303_pb2.ProtoPushAndSet, packet.payload)
                 processed = True
 
-        elif packet.src == 0x35 and packet.cmd_set == 0x35 and packet.cmd_id == 0x20:
-            self._logger.debug("Ping received: %r", packet)
-            processed = True
+            case 0x35, 0x35, 0x20:
+                self._logger.debug("Ping received: %r", packet)
+                processed = True
 
-        elif (
-            packet.src == 0x35
-            and packet.cmd_set == 0x01
-            and packet.cmd_id == Packet.NET_BLE_COMMAND_CMD_SET_RET_TIME
-        ):
-            # Device requested for time and timezone offset, so responding with that
-            # otherwise it will not be able to send us predictions and config data
-            if len(packet.payload) == 0:
-                self._time_commands.async_send_all()
-            processed = True
+            case 0x35, 0x01, Packet.NET_BLE_COMMAND_CMD_SET_RET_TIME:
+                # Device requested for time and timezone offset, so responding with that
+                # otherwise it will not be able to send us predictions and config data
+                if len(packet.payload) == 0:
+                    self._time_commands.async_send_all()
+                processed = True
 
-        elif packet.src == 0x0B and packet.cmd_set == 0x01 and packet.cmd_id == 0x55:
-            # Device reply that it's online and ready
-            self._conn._add_task(self.set_config_flag(True))
-            processed = True
+            case 0x0B, 0x01, 0x55:
+                # Device reply that it's online and ready
+                self._conn._add_task(self.set_config_flag(True))
+                processed = True
 
-        self.error_count = len(self.errors) if self.errors is not None else None
-
-        if (
-            self.error_count is not None
-            and prev_error_count is not None
-            and self.error_count > prev_error_count
-        ) or (self.error_count is not None and prev_error_count is None):
-            self.error_happened = True
+        if self.error_count and self.error_count > (prev_error_count or 0):
             self._logger.warning("Error happened on device: %s", self.errors)
 
-        for field_name in self.updated_fields:
-            try:
-                self.update_callback(field_name)
-                self.update_state(field_name, getattr(self, field_name))
-            except Exception as e:  # noqa: BLE001
-                self._logger.warning(
-                    "Error happened while updating field %s: %s", field_name, e
-                )
-
+        self._notify_updated()
         return processed
 
     async def _send_config_packet(self, message):

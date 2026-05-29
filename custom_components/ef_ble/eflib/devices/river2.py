@@ -2,6 +2,8 @@ from bleak.backends.device import BLEDevice
 from bleak.backends.scanner import AdvertisementData
 
 from ..devicebase import DeviceBase
+from ..entity import controls
+from ..entity.base import dynamic
 from ..model import (
     DirectBmsMDeltaHeartbeatPack,
     DirectEmsDeltaHeartbeatPack,
@@ -140,11 +142,13 @@ class Device(DeviceBase, RawDataProps):
 
         return processed
 
+    @controls.outlet(ac_ports)
     async def enable_ac_ports(self, enabled: bool):
         payload = bytes([1 if enabled else 0, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF])
         packet = Packet(0x21, 0x05, 0x20, 0x42, payload, version=2)
         await self._conn.sendPacket(packet)
 
+    @controls.switch(dc_12v_port)
     async def enable_dc_12v_port(self, enabled: bool):
         payload = bytes([0x01 if enabled else 0x00])
         packet = Packet(0x21, 0x05, 0x20, 0x51, payload, version=2)
@@ -160,6 +164,7 @@ class Device(DeviceBase, RawDataProps):
         packet = Packet(0x21, 0x02, 0x20, 0x5F, payload, version=2)
         await self._conn.sendPacket(packet)
 
+    @controls.switch(energy_backup)
     async def enable_energy_backup(self, enabled: bool):
         reserve = (
             self.energy_backup_battery_level
@@ -172,15 +177,22 @@ class Device(DeviceBase, RawDataProps):
         packet = Packet(0x21, 0x02, 0x20, 0x5E, payload, version=2)
         await self._conn.sendPacket(packet)
 
-    async def set_energy_backup_battery_level(self, value: int) -> bool:
+    @controls.battery(
+        energy_backup_battery_level,
+        min=dynamic(battery_charge_limit_min),
+        max=dynamic(battery_charge_limit_max),
+        availability=energy_backup,
+    )
+    async def set_energy_backup_battery_level(self, value: float) -> bool:
         percent = max(0, min(int(value), 100))
         payload = bytes([0x01, percent, 0x00, 0x00])
         packet = Packet(0x21, 0x02, 0x20, 0x5E, payload, version=2)
         await self._conn.sendPacket(packet)
         return True
 
-    async def set_battery_charge_limit_min(self, limit: int) -> bool:
-        limit = max(0, min(int(limit), 30))
+    @controls.battery(battery_charge_limit_min, max=dynamic(battery_charge_limit_max))
+    async def set_battery_charge_limit_min(self, value: float) -> bool:
+        limit = max(0, min(int(value), 30))
         if (
             self.battery_charge_limit_max is not None
             and limit > self.battery_charge_limit_max
@@ -191,9 +203,12 @@ class Device(DeviceBase, RawDataProps):
         await self._conn.sendPacket(packet)
         return True
 
-    async def set_battery_charge_limit_max(self, limit: int) -> bool:
-        if self.battery_charge_limit_min is not None and limit < int(
-            self.battery_charge_limit_min
+    @controls.battery(battery_charge_limit_max, min=dynamic(battery_charge_limit_min))
+    async def set_battery_charge_limit_max(self, value: float) -> bool:
+        limit = int(value)
+        if (
+            self.battery_charge_limit_min is not None
+            and limit < self.battery_charge_limit_min
         ):
             return False
 
@@ -201,18 +216,25 @@ class Device(DeviceBase, RawDataProps):
         await self._conn.sendPacket(packet)
         return True
 
-    async def set_dc_charging_amps_max(self, value: int) -> bool:
-        packet = Packet(0x21, 0x05, 0x20, 0x47, value.to_bytes(), version=2)
+    @controls.current(dc_charging_max_amps, max=dynamic(dc_charging_current_max))
+    async def set_dc_charging_amps_max(self, value: float) -> bool:
+        payload = (int(value) * 1000).to_bytes(4, "little")
+        packet = Packet(0x21, 0x05, 0x20, 0x47, payload, version=2)
         await self._conn.sendPacket(packet)
         return True
 
-    async def set_dc_mode(self, value: DCMode) -> bool:
+    @controls.select(dc_mode, options=DCMode)
+    async def set_dc_mode(self, value: DCMode):
         packet = Packet(0x21, 0x05, 0x20, 0x52, value.to_bytes(), version=2)
         await self._conn.sendPacket(packet)
-        return True
 
-    async def set_ac_charging_speed(self, value: int):
-        payload = value.to_bytes(2, "little") + b"\xff"
+    @controls.power(
+        ac_charging_speed,
+        min=dynamic(min_ac_charging_power),
+        max=dynamic(max_ac_charging_power),
+    )
+    async def set_ac_charging_speed(self, value: float) -> bool:
+        payload = int(value).to_bytes(2, "little") + b"\xff"
         packet = Packet(0x21, 0x05, 0x20, 0x45, payload, version=2)
         await self._conn.sendPacket(packet)
         return True

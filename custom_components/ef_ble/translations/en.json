@@ -922,6 +922,14 @@
       "dc_charging_type": {
         "name": "DC Charging Type"
       },
+      "dc_mode": {
+        "name": "DC Mode",
+        "state": {
+          "auto": "Auto",
+          "solar": "Solar",
+          "car": "Car"
+        }
+      },
       "performance_mode": {
         "name": "Performance Mode"
       },

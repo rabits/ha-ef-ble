@@ -52,11 +52,6 @@ class EcoflowEntity(Entity):
         if prop_name is None or not hasattr(self._device, prop_name):
             return
 
-        if value := getattr(self._device, prop_name, None):
-            setattr(self, entity_attr, get_state(value))
-        else:
-            setattr(self, entity_attr, None)
-
         @callback
         def state_updated(state: Any):
             if (state := get_state(state)) is EcoflowEntity.SkipWrite:
@@ -65,10 +60,11 @@ class EcoflowEntity(Entity):
             setattr(self, entity_attr, state)
             self.async_write_ha_state()
 
-        if (state := getattr(self._device, prop_name, None)) is not None:
-            setattr(self, entity_attr, get_state(state))
-        elif default_state is not None:
+        device_state = getattr(self._device, prop_name, None)
+        if device_state is None and default_state is not None:
             setattr(self, entity_attr, default_state)
+        elif (initial := get_state(device_state)) is not EcoflowEntity.SkipWrite:
+            setattr(self, entity_attr, initial)
 
         self._update_callbacks.append((prop_name, state_updated))
 

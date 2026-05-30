@@ -1,7 +1,7 @@
 import inspect
 from collections.abc import Callable, Iterator
 from functools import cached_property
-from typing import TYPE_CHECKING, Any, ClassVar, Self, overload
+from typing import TYPE_CHECKING, Any, ClassVar, Self, TypeIs, overload
 
 if TYPE_CHECKING:
     from ..entity import controls
@@ -26,6 +26,20 @@ class UpdatableProps:
     _updated_fields: set[str] | None = None
     _fields: ClassVar[list["Field[Any]"]] = []
     _computed_fields: ClassVar[list["_ComputedField[Any]"]] = []
+
+    @staticmethod
+    def is_props(obj: object) -> "TypeIs[UpdatableProps]":
+        """
+        Whether `obj` carries the updatable-props machinery (`_fields`, fields, ...)
+
+        Lets a `DeviceBase` mixin narrow `self` before touching props-only members,
+        since not every device is also `UpdatableProps`.
+        """
+        return isinstance(obj, UpdatableProps)
+
+    def fields_with_missing_default(self) -> "list[Field[Any]]":
+        """Fields declared with `Field.default_when_missing`"""
+        return [field for field in self._fields if field.has_missing_default]
 
     @property
     def updated_fields(self):
@@ -106,11 +120,32 @@ class Skip:
     """Sentinel value for skipping assignment in field's transform function"""
 
 
+_NO_DEFAULT: Any = object()
+
+
 class Field[T]:
     """Descriptor for updating values only if they changed"""
 
     transform_value: Callable[[Any], T] | None = None
     sensor_type: "EntityType | None" = None
+    missing_default: Any = _NO_DEFAULT
+
+    @property
+    def has_missing_default(self) -> bool:
+        return self.missing_default is not _NO_DEFAULT
+
+    def default_when_missing(self, value: T) -> Self:
+        """
+        Fall back to `value` if this field is still unset shortly after authentication
+
+        Some devices stop sending a whole message while the related hardware is off (the
+        inverter heartbeat while AC output is off, say), leaving its fields `None` and
+        their entities unavailable. Mark the measurement-style fields with their off
+        value (e.g. `0`, `False`); leave config/spec fields unmarked so they are not
+        clobbered. `value` is the resolved (post-transform) value.
+        """
+        self.missing_default = value
+        return self
 
     def __set_name__[P: UpdatableProps](
         self,

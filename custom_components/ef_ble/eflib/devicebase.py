@@ -29,7 +29,12 @@ from .logging_util import (
 )
 from .packet import Packet
 from .props.raw_data_props import Literal
-from .props.updatable_props import Field
+from .props.updatable_props import Field, UpdatableProps
+
+# Seconds to wait after authentication before falling back to a field's
+# `default_when_missing` value (covers devices that withhold a whole message while the
+# related hardware is off, e.g. the inverter heartbeat while AC output is off).
+MISSING_DEFAULT_GRACE = 10
 
 
 class _Listeners(ListenerRegistry):
@@ -93,6 +98,9 @@ class DeviceBase(abc.ABC):
         self._diagnostics = DeviceDiagnosticsCollector(self)
 
         self._manufacturer_data = adv_data.manufacturer_data[self.MANUFACTURER_KEY]
+
+        if UpdatableProps.is_props(self) and self.fields_with_missing_default():
+            self.on_connection_state_change(self._schedule_missing_field_defaults)
 
     @property
     def device(self):
@@ -163,7 +171,7 @@ class DeviceBase(abc.ABC):
         event_loop: asyncio.AbstractEventLoop | None = None,
     ):
         def _register_timer_task(state: ConnectionState):
-            if state == ConnectionState.AUTHENTICATED:
+            if state.authenticated:
                 self._conn.add_timer_task(coro, interval, event_loop)
 
         self.on_connection_state_change(_register_timer_task)
@@ -460,6 +468,26 @@ class DeviceBase(abc.ABC):
 
         self.update_callback(name)
         self.update_state(name, value)
+
+    def _schedule_missing_field_defaults(self, state: ConnectionState) -> None:
+        if not state.authenticated:
+            return
+
+        self.call_later(
+            MISSING_DEFAULT_GRACE,
+            self._apply_missing_field_defaults,
+            key="missing_field_defaults",
+        )
+
+    def _apply_missing_field_defaults(self) -> None:
+        # a field declared with `default_when_missing` whose message never arrived is
+        # still `None` here - fall back to its declared off value so it isn't left
+        # unavailable; a real value afterwards still overrides it
+        if not UpdatableProps.is_props(self):
+            return
+        for prop_field in self.fields_with_missing_default():
+            if self.get_value(prop_field) is None:
+                self.notify_field(prop_field, prop_field.missing_default)
 
 
 @dataclass

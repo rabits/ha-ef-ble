@@ -55,8 +55,8 @@ class Device(DeviceBase, RawDataProps):
 
     input_power = raw_field(pb_pd.watts_in_sum)
     output_power = raw_field(pb_pd.watts_out_sum)
-    ac_input_power = raw_field(pb_inv.input_watts)
-    ac_output_power = raw_field(pb_inv.output_watts)
+    ac_input_power = raw_field(pb_inv.input_watts).default_when_missing(0)
+    ac_output_power = raw_field(pb_inv.output_watts).default_when_missing(0)
 
     remaining_time_charging = raw_field(pb_ems.chg_remain_time)
     remaining_time_discharging = raw_field(pb_ems.dsg_remain_time)

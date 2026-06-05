@@ -192,7 +192,10 @@ async def async_unload_entry(hass: HomeAssistant, entry: DeviceConfigEntry) -> b
     """Unload a config entry."""
     _cancel_reappear_callback(hass, entry)
     device = entry.runtime_data
-    await device.disconnect()
+    try:
+        await device.disconnect()
+    except Exception:
+        _LOGGER.exception("Error disconnecting device during unload, continuing")
     device.with_logging_options(LogOptions.no_options())
     return await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
 

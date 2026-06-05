@@ -507,6 +507,14 @@ class Connection:
                 DISCONNECT_TIMEOUT,
                 trigger,
             )
+        except (OSError, RuntimeError) as e:
+            outcome = f"transport_broken: {e}"
+            self._logger.warning(
+                "BleakClient.disconnect() raised %s (%s); the BLE transport is broken, "
+                "continuing with local cleanup",
+                type(e).__name__,
+                trigger,
+            )
         self._disconnect_log.append(
             {"time": time.time(), "trigger": trigger, "outcome": outcome}
         )

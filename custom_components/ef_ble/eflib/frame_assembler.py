@@ -4,7 +4,6 @@ from abc import ABC, abstractmethod
 from .crc import crc8, crc16
 from .encpacket import EncPacket
 from .encryption import EncryptionStrategy
-from .exceptions import PacketParseError
 from .packet import Packet
 
 
@@ -244,10 +243,12 @@ class SimplePacketAssembler:
         """
         Extract the payload from one EncPacket frame, scanning for the prefix
 
-        Returns the payload when a complete valid frame is found, or None if the data is
-        incomplete and another BLE notification is expected to arrive. Raises
-        PacketParseError only when the data is clearly unrecoverable (no prefix found,
-        or only CRC-invalid candidates with nothing left to scan).
+        Returns the payload when a complete valid frame is found, or None when no frame
+        is available yet and another BLE notification is expected to arrive: incomplete
+        data, stale/foreign notification bytes with no frame prefix, or only CRC-invalid
+        candidates. This assembler runs only during the auth handshake, where the right
+        response to unparseable data is to wait for the next notification (and let the
+        connection timeout bound a truly stuck device) rather than abort the handshake.
         """
         if self._buffer:
             data = self._buffer + data
@@ -256,9 +257,7 @@ class SimplePacketAssembler:
         while data:
             start = data.find(EncPacket.PREFIX)
             if start < 0:
-                raise PacketParseError(
-                    f"SimplePacketAssembler: no prefix found in: {data.hex()}"
-                )
+                return None
             if start > 0:
                 data = data[start:]
 
@@ -287,6 +286,6 @@ class SimplePacketAssembler:
 
             return payload_data
 
-        raise PacketParseError(
-            f"SimplePacketAssembler: no valid frame found in: {data.hex()}"
-        )
+        # Loop only exits here when the data was fully consumed without yielding a frame
+        # (all candidates were false prefixes / CRC failures). Wait for more data.
+        return None

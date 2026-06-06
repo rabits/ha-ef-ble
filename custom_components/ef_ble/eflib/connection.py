@@ -809,6 +809,17 @@ class Connection:
             try:
                 await self._sendRequest(send_data, response_handler)
             except Exception as e:  # noqa: BLE001
+                if self._client is None or not self._client.is_connected:
+                    # The BLE link dropped mid-request - e.g. BlueZ raising "Remote peer
+                    # disconnected" synchronously from start_notify. bleak does not
+                    # always fire its disconnected callback for a synchronous GATT
+                    # failure, so nothing else would drive a reconnect and
+                    # `wait_until_authenticated_or_error` hangs forever.
+                    self._logger.warning(
+                        "BLE link lost while sending request (%s); reconnecting", e
+                    )
+                    self.disconnected()
+                    return
                 self._logger.log_filtered(
                     LogOptions.CONNECTION_DEBUG,
                     (

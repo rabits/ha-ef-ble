@@ -1,5 +1,6 @@
 """The unofficial EcoFlow BLE devices integration"""
 
+import asyncio
 import logging
 from collections.abc import Callable
 from functools import partial
@@ -130,8 +131,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: DeviceConfigEntry) -> bo
                 max_attempts=0 if eflib.is_solar_only(device) else None,
             )
         )
-        state = await device.wait_until_authenticated_or_error(raise_on_error=True)
+        async with asyncio.timeout(timeout):
+            state = await device.wait_until_authenticated_or_error(raise_on_error=True)
     except (ConnectionTimeout, BleakError, TimeoutError) as e:
+        await device.disconnect()
         raise ConfigEntryNotReady(
             translation_key="could_not_connect",
             translation_placeholders={"time": str(timeout), "error_msg": str(e)},

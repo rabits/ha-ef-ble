@@ -9,10 +9,10 @@ from .pb import utc_sys_pb2
 
 _LOGGER = logging.getLogger(__name__)
 
-# Some devices (e.g. River 3 Plus) re-request the time in a tight loop when they don't
-# accept the response, which would have us flood the link with time-sync packets. The
-# device only needs the time set occasionally, so collapse repeated requests within this
-# window into a single send.
+# Some devices re-request the time in a tight loop when they don't accept the response,
+# which would have us flood the link with time-sync packets. The device only needs the
+# time set occasionally, so collapse repeated requests within this window into a single
+# send.
 _MIN_RESEND_INTERVAL = 30.0
 
 

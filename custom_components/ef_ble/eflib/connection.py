@@ -1127,6 +1127,14 @@ class Connection:
         self._reset_error_counter()
 
         for packet in packets:
+            if self._client is None:
+                self._logger.log_filtered(
+                    LogOptions.CONNECTION_DEBUG,
+                    "Dropping buffered packet after disconnect: %r",
+                    packet,
+                )
+                return
+
             processed = False
 
             is_auth_reply = (

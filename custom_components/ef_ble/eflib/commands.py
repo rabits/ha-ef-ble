@@ -1,7 +1,7 @@
 import logging
 import struct
 import time
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from .devicebase import DeviceBase
 from .packet import Packet
@@ -9,10 +9,17 @@ from .pb import utc_sys_pb2
 
 _LOGGER = logging.getLogger(__name__)
 
+# Some devices (e.g. River 3 Plus) re-request the time in a tight loop when they don't
+# accept the response, which would have us flood the link with time-sync packets. The
+# device only needs the time set occasionally, so collapse repeated requests within this
+# window into a single send.
+_MIN_RESEND_INTERVAL = 30.0
+
 
 @dataclass
 class TimeCommands:
     device: DeviceBase
+    _last_sent: float | None = field(default=None, init=False)
 
     async def sendUtcTime(self):
         """Send UTC time as unix timestamp seconds through PB"""
@@ -94,6 +101,15 @@ class TimeCommands:
         await self.device._conn.sendPacket(packet)
 
     def async_send_all(self):
+        now = time.monotonic()
+        if self._last_sent is not None and now - self._last_sent < _MIN_RESEND_INTERVAL:
+            _LOGGER.debug(
+                "%s: throttling repeated time-sync request (last sent %.1fs ago)",
+                self.device.address,
+                now - self._last_sent,
+            )
+            return
+        self._last_sent = now
         self.device._conn._add_task(self.sendUtcTime())
         self.device._conn._add_task(self.sendRTCRespond())
         self.device._conn._add_task(self.sendRTCCheck())

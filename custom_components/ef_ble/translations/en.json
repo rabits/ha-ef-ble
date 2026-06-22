@@ -380,6 +380,12 @@
       "battery_level": {
         "name": "Battery Level"
       },
+      "lcd_battery_level": {
+        "name": "LCD Battery Level"
+      },
+      "bms_battery_level": {
+        "name": "BMS Battery Level"
+      },
       "battery_time_remaining": {
         "name": "Battery Time Remaining"
       },

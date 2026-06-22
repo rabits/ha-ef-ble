@@ -380,6 +380,12 @@
       "battery_level": {
         "name": "Рівень заряду батареї"
       },
+      "lcd_battery_level": {
+        "name": "Рівень заряду батареї LCD"
+      },
+      "bms_battery_level": {
+        "name": "Рівень заряду батареї BMS"
+      },
       "battery_time_remaining": {
         "name": "Залишок часу роботи батареї"
       },

@@ -380,6 +380,12 @@
       "battery_level": {
         "name": "电池电量"
       },
+      "lcd_battery_level": {
+        "name": "LCD 电池电量"
+      },
+      "bms_battery_level": {
+        "name": "BMS 电池电量"
+      },
       "battery_time_remaining": {
         "name": "电池剩余时间"
       },

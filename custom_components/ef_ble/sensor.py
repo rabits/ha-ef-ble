@@ -843,6 +843,12 @@ _SENSORS: Final[dict[str, SensorEntityDescription]] = {
     "power_mppt": power(precision=0),
     "water_level": enum(options=wave2.WaterLevel),
     # PowerStream
+    "lcd_battery_level": battery(
+        enabled=False, entity_category=EntityCategory.DIAGNOSTIC
+    ),
+    "bms_battery_level": battery(
+        enabled=False, entity_category=EntityCategory.DIAGNOSTIC
+    ),
     "battery_power": power(precision=1),
     "inverter_temperature": temperature(),
     "inverter_current": current(precision=2),

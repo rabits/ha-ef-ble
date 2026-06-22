@@ -190,6 +190,12 @@
             "manufacturer_id": 46517,
             "manufacturer_data_start": [19, 80, 49, 48],
             "connectable": true
+        },
+        {
+            "local_name": "EF-R70*",
+            "manufacturer_id": 46517,
+            "manufacturer_data_start": [19, 82, 55, 48],
+            "connectable": true
         }
     ],
 

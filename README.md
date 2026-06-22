@@ -568,7 +568,7 @@ Click on any device below to see available sensors, switches, and controls:
 </details>
 
 <details>
-<summary><b>Delta 2</b> <i>(Max, Delta 3 1500)</i></summary>
+<summary><b>Delta 2</b> <i>(Max, Black (E980), Delta 3 1500)</i></summary>
 
 <br>
 

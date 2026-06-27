@@ -37,6 +37,7 @@ from .eflib.devices import (
     dpu,
     powerpulse_ev,
     shp2,
+    shp3,
     smart_generator,
     stream_microinverter,
     wave2,
@@ -55,6 +56,9 @@ class EcoflowSensorEntityDescription[Device: DeviceBase](SensorEntityDescription
     state_attribute_fields: list[str] = field(default_factory=list)
     native_unit_of_measurement_field: str | Callable[[Device], str] | None = None
     indexed_range: range | None = None
+    # Name of a device attribute whose value should be used as the entity name
+    # (e.g. a user-configured circuit name). {n} is expanded for indexed entities.
+    name_field: str | None = None
 
 
 class _SensorKwargs(TypedDict, total=False):
@@ -63,6 +67,7 @@ class _SensorKwargs(TypedDict, total=False):
     indexed_range: range
     entity_category: EntityCategory
     state_attribute_fields: list[str]
+    name_field: str
 
 
 def battery(
@@ -452,6 +457,7 @@ def port_error_code(
 
 _shp2_circuit_range = range(1, shp2.Device.NUM_OF_CIRCUITS + 1)
 _shp2_channel_range = range(1, shp2.Device.NUM_OF_CHANNELS + 1)
+_shp3_circuit_range = range(1, 33)
 
 
 def shp2_channel(
@@ -604,6 +610,47 @@ _SENSORS: Final[dict[str, SensorEntityDescription]] = {
         state_class=SensorStateClass.MEASUREMENT,
         entity_category=EntityCategory.DIAGNOSTIC,
     ),
+    # SHP3 (Smart Home Panel 3) — 32 circuits, custom protocol
+    "shp3_circuit_power_{n}": power(
+        precision=1,
+        translation_key="circuit_power",
+        translation_placeholders={"index": "{n:02d}"},
+        indexed_range=_shp3_circuit_range,
+        name_field="shp3_circuit_name_{n}",
+    ),
+    "shp3_circuit_voltage_{n}": voltage(
+        precision=1,
+        enabled=False,
+        translation_key="port_voltage",
+        translation_placeholders={"name": "Circuit {n:02d}"},
+        entity_category=EntityCategory.DIAGNOSTIC,
+        indexed_range=_shp3_circuit_range,
+    ),
+    "shp3_circuit_current_{n}": current(
+        precision=2,
+        enabled=False,
+        state_class=None,
+        translation_key="port_current",
+        translation_placeholders={"name": "Circuit {n:02d}"},
+        entity_category=EntityCategory.DIAGNOSTIC,
+        indexed_range=_shp3_circuit_range,
+    ),
+    "shp3_circuit_name_{n}": raw(
+        translation_key="port_name",
+        translation_placeholders={"name": "Circuit {n:02d}"},
+        entity_category=EntityCategory.DIAGNOSTIC,
+        indexed_range=_shp3_circuit_range,
+    ),
+    "shp3_circuit_status_{n}": enum(
+        options=shp3.CircuitStatus,
+        translation_key="circuit_status",
+        translation_placeholders={"index": "{n:02d}"},
+        indexed_range=_shp3_circuit_range,
+        name_field="shp3_circuit_name_{n}",
+    ),
+    "grid_voltage_l1": voltage(precision=1),
+    "grid_voltage_l2": voltage(precision=1),
+    "total_power": power(precision=1),
     # DPU
     "lv_solar_power": port_power("LV Solar", precision=2),
     "lv_solar_voltage": port_voltage("LV Solar"),
@@ -970,6 +1017,16 @@ class EcoflowSensor(EcoflowEntity, SensorEntity):
         )
 
     @property
+    def name(self):
+        """Use a device-provided name (e.g. circuit name) when available."""
+        desc = self.entity_description
+        if isinstance(desc, EcoflowSensorEntityDescription) and desc.name_field:
+            value = getattr(self._device, desc.name_field, None)
+            if value:
+                return value
+        return super().name
+
+    @property
     def native_value(self):
         """Return the value of the sensor."""
         value = getattr(self._device, self._sensor, None)
@@ -1000,15 +1057,27 @@ class EcoflowSensor(EcoflowEntity, SensorEntity):
             if hasattr(self._device, field_name)
         }
 
+    @property
+    def _name_field(self) -> str | None:
+        desc = self.entity_description
+        if isinstance(desc, EcoflowSensorEntityDescription):
+            return desc.name_field
+        return None
+
     async def async_added_to_hass(self):
         """Run when this Entity has been added to HA."""
         await super().async_added_to_hass()
         self._device.register_callback(self.async_write_ha_state, self._sensor)
+        # Refresh the entity name when the name source (e.g. circuit name) updates.
+        if (name_field := self._name_field) is not None:
+            self._device.register_callback(self.async_write_ha_state, name_field)
 
     async def async_will_remove_from_hass(self):
         """Entity being removed from hass."""
         await super().async_will_remove_from_hass()
         self._device.remove_callback(self.async_write_ha_state, self._sensor)
+        if (name_field := self._name_field) is not None:
+            self._device.remove_callback(self.async_write_ha_state, name_field)
 
 
 class EcoflowBatteryAddonSensor(EcoflowBatteryAddonEntity, SensorEntity):

@@ -469,6 +469,16 @@
       "circuit_power": {
         "name": "电路功率 {index}"
       },
+      "circuit_status": {
+        "name": "电路 {index} 状态",
+        "state": {
+          "unknown": "未知",
+          "off": "关闭",
+          "on_grid": "开启（市电）",
+          "on_back": "开启（备用电源）",
+          "em_stop": "紧急停止"
+        }
+      },
       "circuit_current": {
         "name": "电路电流 {index}"
       },
@@ -913,6 +923,9 @@
       },
       "ac_c20_in_type": {
         "name": "AC C20 输入类型"
+      },
+      "port_name": {
+        "name": "{name} 名称"
       }
     },
     "select": {

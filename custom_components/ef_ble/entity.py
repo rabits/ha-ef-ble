@@ -176,11 +176,15 @@ def resolve_entity_description_keys[D: EntityDescription](
             placeholders = v.translation_placeholders
             if placeholders:
                 placeholders = {pk: pv.format(n=i) for pk, pv in placeholders.items()}
-            result[actual_key] = dataclasses.replace(
-                v,
-                key=actual_key,
-                indexed_range=None,
-                translation_placeholders=placeholders,
-            )
+            replacements: dict[str, Any] = {
+                "key": actual_key,
+                "indexed_range": None,
+                "translation_placeholders": placeholders,
+            }
+            # Expand {n} in an optional device-attribute name source.
+            name_field = getattr(v, "name_field", None)
+            if name_field and "{n}" in name_field:
+                replacements["name_field"] = name_field.replace("{n}", str(i))
+            result[actual_key] = dataclasses.replace(v, **replacements)
 
     return result

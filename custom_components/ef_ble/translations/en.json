@@ -469,6 +469,16 @@
       "circuit_power": {
         "name": "Circuit Power {index}"
       },
+      "circuit_status": {
+        "name": "Circuit {index} Status",
+        "state": {
+          "unknown": "Unknown",
+          "off": "Off",
+          "on_grid": "On (Grid)",
+          "on_back": "On (Backup)",
+          "em_stop": "Emergency Stop"
+        }
+      },
       "circuit_current": {
         "name": "Circuit Current {index}"
       },
@@ -913,6 +923,9 @@
       },
       "ac_c20_in_type": {
         "name": "AC C20 In Type"
+      },
+      "port_name": {
+        "name": "{name} Name"
       }
     },
     "select": {
@@ -998,6 +1011,9 @@
       "backup_charge_limit": {
         "name": "Charge Limit"
       },
+      "ac_charging": {
+        "name": "AC Charging"
+      },
       "backup_discharge_limit": {
         "name": "Discharge Limit"
       },
@@ -1066,6 +1082,12 @@
       },
       "eps_mode": {
         "name": "EPS Mode"
+      },
+      "charge_now": {
+        "name": "Charge Now"
+      },
+      "storm_guard": {
+        "name": "Storm Guard"
       },
       "dc_ports": {
         "name": "DC Ports"

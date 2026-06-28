@@ -342,15 +342,6 @@
       "grid_is_energized": {
         "name": "Grid Energized"
       },
-      "ac1_input_connected": {
-        "name": "AC 1 Input Connected"
-      },
-      "ac2_input_connected": {
-        "name": "AC 2 Input Connected"
-      },
-      "ac3_input_connected": {
-        "name": "AC 3 Input Connected"
-      },
       "backup_channel_signal_line": {
         "name": "Channel {channel} Signal Line"
       },

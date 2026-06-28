@@ -1,3 +1,4 @@
+import dataclasses
 import time
 from enum import IntEnum
 
@@ -87,7 +88,7 @@ def _operating_mode_from_message(
     return OperatingMode.NONE
 
 
-def _ac_input_connected(info: dev_apl_comm_pb2.BackupChInfo) -> bool | None:
+def _channel_enabled(info: dev_apl_comm_pb2.BackupChInfo) -> bool | None:
     if not info.ch_dev_type:
         return None
     return info.ch_sta == 1
@@ -120,8 +121,6 @@ class Device(DeviceBase, ProtobufProps):
     NUM_OF_CIRCUITS = 32
     NUM_OF_CHANNELS = 3
     _KEEPALIVE_INTERVAL = 20
-
-    _USERID_FIELD_LEN = 64
 
     battery_level = pb_field(pb.cms_batt_soc, pround(2))
     remaining_time_charging = pb_field(pb.cms_chg_rem_time)
@@ -207,9 +206,15 @@ class Device(DeviceBase, ProtobufProps):
     battery_power = pb_field(pb.pow_get_bp_cms, pround(2))
     pv_power_sum = pb_field(pb.pow_get_pv_sum, pround(2))
 
-    ac1_input_connected = pb_field(pb.panel_backup_ch1_Info, _ac_input_connected)
-    ac2_input_connected = pb_field(pb.panel_backup_ch2_Info, _ac_input_connected)
-    ac3_input_connected = pb_field(pb.panel_backup_ch3_Info, _ac_input_connected)
+    # Per-channel enable state, driving the switch control below. ch_sta is the
+    # enable/connected status (None for an empty channel); the switch writes ctrl_en.
+    channel_is_enabled = pb_field_group(
+        pb.panel_backup_ch1_Info,
+        match="panel_backup_ch{n}_Info",
+        count=NUM_OF_CHANNELS,
+        transform=_channel_enabled,
+        name_template="ch{n}_is_enabled",
+    )
 
     channel_type = pb_field_group(
         pb.panel_backup_ch1_Info,
@@ -286,14 +291,14 @@ class Device(DeviceBase, ProtobufProps):
             + int(time.time()).to_bytes(4, "little")
         )
         packet = Packet(
-            0x21,
-            0x35,
-            0x35,
-            0xA8,
-            payload,
-            0x01,
-            0x01,
-            3,
+            src=0x21,
+            dst=0x35,
+            cmd_set=0x35,
+            cmd_id=0xA8,
+            payload=payload,
+            dsrc=0x01,
+            ddst=0x01,
+            version=0x03,
         )
         await self._conn.sendPacket(packet, wait_for_response=False)
 
@@ -445,6 +450,29 @@ class Device(DeviceBase, ProtobufProps):
         config.cfg_storm_pattern.storm_pattern_enable = enable
         await self._send_config_packet(config)
 
+    @controls.for_each(
+        channel_is_enabled,
+        control=controls.switch,
+        translation_key="channel_is_enabled",
+        translation_placeholders=lambda i: {"channel": str(i)},
+    )
+    async def set_channel_enable(self, channel_id: int, enable: bool):
+        """
+        Enable / disable a backup channel via `cfg_panel_backup_ch{N}_ctrl`.
+
+        `BackupCtrl` carries both the channel enable (ctrl_en) and the force-charge
+        toggle (ctrl_force_chg), and the panel applies them together, so we send the
+        current force-charge state alongside the new enable value (on = 1, off = 2).
+        """
+        config = dev_apl_comm_pb2.ConfigWrite()
+        ctrl = pb_indexed_attr(
+            config, pb_cfg.cfg_panel_backup_ch1_ctrl, "cfg_panel_backup_ch{n}_ctrl"
+        )
+        backup = ctrl[channel_id]
+        backup.ctrl_en = 1 if enable else 2
+        backup.ctrl_force_chg = 1 if self.channel_force_charge[channel_id] else 2
+        await self._send_config_packet(config)
+
 
 class _StandardProtocolRouting:
     """
@@ -453,28 +481,28 @@ class _StandardProtocolRouting:
     Reads: the v4 application payload is a routing header (the device-side SN fragment
     plus a 13-byte envelope) followed by the `DisplayPropertyUpload` protobuf.
 
-    Writes: reconstruct the control frame - a v4 packet addressed src=0x21 dst=0x60,
-    cmd_set=0xFE cmd_id=0x11, whose application payload is the routing header followed
-    by the `ConfigWrite`. The routing header is the panel's own latest post routing
-    header (device serial + envelope, captured verbatim) with the embedded standard-
-    protocol command swapped to PROPERTY_WRITE (FE 11); the two v4 obfuscation keys are
-    lifted from the same post. This mirrors the panel's exact addressing rather than
-    rebuilding it from the host's connection serial.
+    Writes:  mirror the latest telemetry post's v4 frame - reusing its session
+    obfuscation, addressing and inner header via `dataclasses.replace` - and only
+    override cmd_flags / is_ack / is_rw_cmd and the application payload. The payload is
+    `serial9 + full_serial16 + envelope + ConfigWrite`, where the envelope is `40 03 03
+    <seq> FE 11 00 21 01 0B 01` (FE 11 = PROPERTY_WRITE). Before any post is seen it
+    falls back to a plain v3 frame.
     """
 
     HEADER_LEN = 22  # device SN fragment (9) + envelope (13), on reads
     _SERIAL_FRAGMENT_LEN = 9
-    _ENVELOPE_LEN = 13
-    _CMD_SET = 0xFE
-    _PROPERTY_WRITE = 0x11
-    _DEFAULT_V4_TYPE_A = 0x13
-    _DEFAULT_V4_TYPE_B = 0x01
+    _WRITE_CMD_FLAGS = 0x10
+    _WRITE_ENVELOPE_PREFIX = bytes([0x40, 0x03, 0x03])
+    _WRITE_ENVELOPE_MID = bytes(
+        [0xFE, 0x11, 0x00]
+    )  # cmd_set 0xFE, cmd_id 0x11, reserved
+    _WRITE_ENVELOPE_SUFFIX = bytes([0x21, 0x01, 0x0B, 0x01])
 
     def __init__(self, serial: str) -> None:
         self._serial = serial
-        self._v4_type_a = self._DEFAULT_V4_TYPE_A
-        self._v4_type_b = self._DEFAULT_V4_TYPE_B
-        self._post_routing_header: bytes | None = None
+        self._post_template: PacketV4 | None = None
+        self._envelope_template: bytes | None = None
+        self._write_seq = 0x20
 
     @classmethod
     def split(cls, payload: bytes) -> tuple[str, bytes]:
@@ -483,39 +511,37 @@ class _StandardProtocolRouting:
         return serial, payload[cls.HEADER_LEN :]
 
     def remember_post(self, packet: PacketV4) -> None:
-        """Capture the post's v4 obfuscation keys and its routing header verbatim"""
-        self._v4_type_a = packet.v4_type_a
-        self._v4_type_b = packet.v4_type_b
-        if len(packet.payload) >= self.HEADER_LEN:
-            self._post_routing_header = bytes(packet.payload[: self.HEADER_LEN])
+        """Capture the post as the transport template + routing envelope (for seq)"""
+        self._post_template = packet
+        self._envelope_template = packet.payload[
+            self._SERIAL_FRAGMENT_LEN : self.HEADER_LEN
+        ]
 
-    def _routing_header(self) -> bytes:
-        if self._post_routing_header is not None:
-            header = bytearray(self._post_routing_header)
-            # Envelope is `21 01 40 03 03 <seq> FE <cmd> ...`, so the standard-protocol
-            # command sits right after the 0xFE marker at a fixed offset.
-            fe = self._SERIAL_FRAGMENT_LEN + 6
-            if fe + 1 < len(header) and header[fe] == self._CMD_SET:
-                header[fe + 1] = self._PROPERTY_WRITE
-            return bytes(header)
-
-        # No post captured yet: best-effort rebuild from the host connection serial.
-        # fmt: off
-        envelope = bytes(
-            [0x21, 0x01, 0x40, 0x03, 0x03, 0x00, self._CMD_SET, self._PROPERTY_WRITE,
-             0x00, 0x00, 0x01, 0x21, 0x01]
-        )
-        # fmt: on
-        return self._serial.encode("ascii") + envelope
+    def _next_seq(self) -> int:
+        # Track the panel's session seq from the latest post, else a local counter.
+        if self._envelope_template is not None and len(self._envelope_template) > 5:
+            return self._envelope_template[5]
+        self._write_seq = (self._write_seq + 1) & 0xFF
+        return self._write_seq
 
     def write_packet(self, config_bytes: bytes) -> Packet | PacketV4:
-        return PacketV4(
-            src=0x21,
-            dst=0x60,
-            cmd_set=self._CMD_SET,
-            cmd_id=self._PROPERTY_WRITE,
-            payload=self._routing_header() + config_bytes,
-            cmd_flags=0x20,
-            v4_type_a=self._v4_type_a,
-            v4_type_b=self._v4_type_b,
+        """Build the control-write frame for a serialized `ConfigWrite`"""
+        if self._post_template is None:
+            # No telemetry post captured yet: plain v3 fallback.
+            return Packet(0x21, 0x60, 0xFE, 0x11, config_bytes, 0x01, 0x01, 0x13)
+        envelope = (
+            self._WRITE_ENVELOPE_PREFIX
+            + bytes([self._next_seq()])
+            + self._WRITE_ENVELOPE_MID
+            + self._WRITE_ENVELOPE_SUFFIX
+        )
+        serial9 = self._serial[-self._SERIAL_FRAGMENT_LEN :].encode("ascii")
+        serial16 = self._serial.encode("ascii")
+        payload = serial9 + serial16 + envelope + config_bytes
+        return dataclasses.replace(
+            self._post_template,
+            cmd_flags=self._WRITE_CMD_FLAGS,
+            is_ack=True,
+            is_rw_cmd=False,
+            payload=payload,
         )

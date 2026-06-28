@@ -1,10 +1,26 @@
 import pytest
 from pytest_mock import MockerFixture
 
-from custom_components.ef_ble.eflib.devices.shp3 import Device, GridStatus
-from custom_components.ef_ble.eflib.packet import Packet
+from custom_components.ef_ble.eflib.devices.shp3 import (
+    BackupChannelType,
+    CircuitStatus,
+    Device,
+    GridStatus,
+    OperatingMode,
+)
+from custom_components.ef_ble.eflib.packet import Packet, PacketV4
 from custom_components.ef_ble.eflib.pb import dev_apl_comm_pb2
 from custom_components.ef_ble.eflib.props import FieldGroup
+
+
+def _config_write(device: Device, packet: Packet) -> dev_apl_comm_pb2.ConfigWrite:
+    payload = packet.payload
+    if isinstance(packet, PacketV4):
+        marker = payload.index(bytes([0xFE, 0x11]))
+        payload = payload[marker + 7 :]
+    config = dev_apl_comm_pb2.ConfigWrite()
+    config.ParseFromString(payload)
+    return config
 
 
 @pytest.fixture
@@ -30,6 +46,7 @@ def device(mocker: MockerFixture):
     adv_data = mocker.MagicMock()
     device = Device(ble_dev, adv_data, "HR63XXXXXXXXX001")
     device._conn = mocker.AsyncMock()
+    device._conn._user_id = "test-user-id"
     return device
 
 
@@ -119,6 +136,18 @@ def test_shp3_field_groups_are_expanded_and_renamed():
         *(f"circuit_power_{i}" for i in range(1, Device.NUM_OF_CIRCUITS + 1)),
         *(f"circuit_current_{i}" for i in range(1, Device.NUM_OF_CIRCUITS + 1)),
         *(f"circuit_voltage_{i}" for i in range(1, Device.NUM_OF_CIRCUITS + 1)),
+        *(f"circuit_status_{i}" for i in range(1, Device.NUM_OF_CIRCUITS + 1)),
+        *(f"circuit_is_enabled_{i}" for i in range(1, Device.NUM_OF_CIRCUITS + 1)),
+        *(f"circuit_name_{i}" for i in range(1, Device.NUM_OF_CIRCUITS + 1)),
+        *(f"circuit_split_link_{i}" for i in range(1, Device.NUM_OF_CIRCUITS + 1)),
+        *(
+            f"circuit_split_info_loaded_{i}"
+            for i in range(1, Device.NUM_OF_CIRCUITS + 1)
+        ),
+        *(f"ch{i}_is_enabled" for i in range(1, Device.NUM_OF_CHANNELS + 1)),
+        *(f"ch{i}_type" for i in range(1, Device.NUM_OF_CHANNELS + 1)),
+        *(f"ch{i}_force_charge" for i in range(1, Device.NUM_OF_CHANNELS + 1)),
+        *(f"ch{i}_signal_line" for i in range(1, Device.NUM_OF_CHANNELS + 1)),
     }
 
     actual_names: set[str] = set()
@@ -136,35 +165,24 @@ async def test_shp3_set_backup_reserve_level_sends_config_write(device):
 
     device._conn.sendPacket.assert_awaited_once()
     packet = device._conn.sendPacket.await_args.args[0]
-    assert (
-        packet.src,
-        packet.dst,
-        packet.cmd_set,
-        packet.cmd_id,
-        packet.dsrc,
-        packet.ddst,
-        packet.version,
-    ) == (0x21, 0x60, 0xFE, 0x11, 0x01, 0x01, 0x13)
+    assert not isinstance(packet, PacketV4)
+    assert (packet.src, packet.dst, packet.cmd_set, packet.cmd_id) == (
+        0x21,
+        0x60,
+        0xFE,
+        0x11,
+    )
 
-    config = dev_apl_comm_pb2.ConfigWrite()
-    config.ParseFromString(packet.payload)
-    assert config.cfg_backup_reverse_soc == 40
+    assert _config_write(device, packet).cfg_backup_reverse_soc == 40
 
 
 async def test_shp3_charge_limit_controls_send_expected_fields(device):
     await device.set_battery_charge_limit_max(95)
     await device.set_battery_charge_limit_min(15)
 
-    payloads = [
-        call.args[0].payload for call in device._conn.sendPacket.await_args_list
-    ]
-    max_cfg = dev_apl_comm_pb2.ConfigWrite()
-    max_cfg.ParseFromString(payloads[0])
-    min_cfg = dev_apl_comm_pb2.ConfigWrite()
-    min_cfg.ParseFromString(payloads[1])
-
-    assert max_cfg.cfg_max_chg_soc == 95
-    assert min_cfg.cfg_min_dsg_soc == 15
+    packets = [call.args[0] for call in device._conn.sendPacket.await_args_list]
+    assert _config_write(device, packets[0]).cfg_max_chg_soc == 95
+    assert _config_write(device, packets[1]).cfg_min_dsg_soc == 15
 
 
 async def test_shp3_handles_v3_time_ping_without_crash(device, packet_sequence):
@@ -174,3 +192,187 @@ async def test_shp3_handles_v3_time_ping_without_crash(device, packet_sequence):
     assert packet.src == 0x35
     assert packet.cmd_set == 0x01
     assert packet.cmd_id == Packet.NET_BLE_COMMAND_CMD_SET_RET_TIME
+
+
+async def test_shp3_parses_circuit_status_and_settings(device, packet_sequence):
+    for hex_packet in packet_sequence:
+        packet = await device.packet_parse(bytes.fromhex(hex_packet))
+        await device.data_parse(packet)
+
+    assert device.circuit_status[28] is CircuitStatus.ON_GRID
+    assert device.circuit_is_enabled[28] is True
+    assert device.circuit_name[28] == "Circuit 28"
+    assert device.storm_guard is True
+
+
+async def test_shp3_set_circuit_power_writes_ctrl_info(device):
+    device.set_value("circuit_split_link_28", 0)
+    await device.set_circuit_power(28, True)
+
+    packet = device._conn.sendPacket.await_args.args[0]
+    ctrl = _config_write(device, packet).cfg_load_ch28_ctrl_info
+    assert ctrl.chanel_enable_ctrl == 1
+    assert ctrl.ctrl_mode == dev_apl_comm_pb2.LOAD_RLY_CTRL_MODE_HAND
+
+    await device.set_circuit_power(28, False)
+    packet = device._conn.sendPacket.await_args.args[0]
+    assert _config_write(device, packet).cfg_load_ch28_ctrl_info.chanel_enable_ctrl == 2
+
+
+async def test_shp3_set_circuit_power_skips_when_split_info_missing(device):
+    await device.set_circuit_power(28, True)
+    device._conn.sendPacket.assert_not_awaited()
+
+
+async def test_shp3_set_circuit_power_gangs_split_phase(device, packet_sequence):
+    # Seed a split-phase link (slot 2 <-> slot 4) as the panel would report it.
+    device.set_value("circuit_split_link_2", 4)
+
+    await device.set_circuit_power(2, True)
+
+    packet = device._conn.sendPacket.await_args.args[0]
+    config = _config_write(device, packet)
+    assert config.cfg_load_ch2_ctrl_info.chanel_enable_ctrl == 1
+    assert config.cfg_load_ch4_ctrl_info.chanel_enable_ctrl == 1
+
+
+async def test_shp3_set_ac_charging_speed_rounds_to_step(device):
+    await device.set_ac_charging_speed(5050)
+
+    packet = device._conn.sendPacket.await_args.args[0]
+    assert _config_write(device, packet).cfg_panel_max_charge_pow_set == 5000
+
+
+async def test_shp3_set_operating_mode_preserves_eps_and_mix(device):
+    device.set_value("_eps_mode", True)
+
+    await device.set_operating_mode(OperatingMode.SELF_POWERED)
+
+    packet = device._conn.sendPacket.await_args.args[0]
+    mode = _config_write(device, packet).cfg_panle_energy_strategy_operate_mode
+    assert mode.operate_self_powered_open is True
+    assert mode.operate_scheduled_open is False
+    assert mode.operate_eps_mode is True
+
+
+async def test_shp3_channel_is_enabled_state_from_backup_channels(device):
+    msg = dev_apl_comm_pb2.DisplayPropertyUpload()
+    # ch1: installed + connected, ch2: installed + dropped, ch3: empty slot.
+    msg.panel_backup_ch1_Info.ch_dev_type = dev_apl_comm_pb2.BACK_CH_TYPE_BAT
+    msg.panel_backup_ch1_Info.ch_sta = dev_apl_comm_pb2.BACK_CH_DEV_ENABLE
+    msg.panel_backup_ch2_Info.ch_dev_type = dev_apl_comm_pb2.BACK_CH_TYPE_BAT
+    msg.panel_backup_ch2_Info.ch_sta = dev_apl_comm_pb2.BACK_CH_DEV_DISABLE
+    msg.panel_backup_ch3_Info.ch_sta = dev_apl_comm_pb2.BACK_CH_DEV_DISABLE
+
+    device.update_from_message(msg)
+
+    assert device.channel_is_enabled[1] is True
+    assert device.channel_is_enabled[2] is False
+    assert device.channel_is_enabled[3] is None
+
+
+async def test_shp3_set_channel_enable_writes_backup_ctrl(device):
+    """The enable switch writes ctrl_en and preserves the current force-charge state"""
+    # ch2 currently force-charging; toggling its enable must keep that on.
+    msg = dev_apl_comm_pb2.DisplayPropertyUpload()
+    msg.panel_backup_ch2_Info.ch_dev_type = dev_apl_comm_pb2.BACK_CH_TYPE_BAT
+    msg.panel_backup_ch2_Info.force_chg_sta = dev_apl_comm_pb2.BACK_CH_DEV_ENABLE
+    device.update_from_message(msg)
+
+    await device.set_channel_enable(2, True)
+    ctrl = _config_write(device, device._conn.sendPacket.await_args.args[0])
+    assert ctrl.cfg_panel_backup_ch2_ctrl.ctrl_en == 1
+    assert ctrl.cfg_panel_backup_ch2_ctrl.ctrl_force_chg == 1  # preserved (on)
+
+    await device.set_channel_enable(2, False)
+    ctrl = _config_write(device, device._conn.sendPacket.await_args.args[0])
+    assert ctrl.cfg_panel_backup_ch2_ctrl.ctrl_en == 2
+
+
+async def test_shp3_config_write_mirrors_post_frame(device, packet_sequence):
+    """
+    After a post, PR #389 mirrors the panel's own v4 frame for the write.
+
+    The transport (addressing, inner header, obfuscation keys) is the post's verbatim
+    via `dataclasses.replace`; only cmd_flags / is_ack / is_rw_cmd and the application
+    payload change. The payload is `serial9 + serial16 + envelope + ConfigWrite`.
+    """
+    post = await device.packet_parse(bytes.fromhex(packet_sequence[1]))
+    await device.data_parse(post)
+
+    await device.set_backup_reserve_level(40)
+    sent = device._conn.sendPacket.await_args.args[0]
+    assert isinstance(sent, PacketV4)
+    # Addressing + obfuscation keys are inherited from the post (frame mirroring).
+    assert (sent.src, sent.dst, sent.cmd_set, sent.cmd_id) == (
+        post.src,
+        post.dst,
+        post.cmd_set,
+        post.cmd_id,
+    )
+    assert (sent.v4_type_a, sent.v4_type_b) == (post.v4_type_a, post.v4_type_b)
+    # Only the write-specific flags are overridden.
+    assert sent.cmd_flags == 0x10
+    assert sent.is_ack is True
+    assert sent.is_rw_cmd is False
+
+    decoded = PacketV4.from_bytes(sent.to_bytes())
+    # Payload carries the host SN (serial9 + serial16) and the FE 11 write envelope.
+    assert decoded.payload[:9] == device.serial_number[-9:].encode("ascii")
+    assert bytes([0xFE, 0x11]) in decoded.payload
+    assert _config_write(device, decoded).cfg_backup_reverse_soc == 40
+
+
+async def test_shp3_registers_userid_once_on_time_request(device, packet_sequence):
+    await device.data_parse(
+        await device.packet_parse(bytes.fromhex(packet_sequence[0]))
+    )
+
+    userid = [
+        c.args[0]
+        for c in device._conn.sendPacket.await_args_list
+        if (c.args[0].cmd_set, c.args[0].cmd_id) == (0x35, 0xA8)
+    ]
+    assert len(userid) == 1
+    assert userid[0].payload[0] == 0x01
+    assert len(userid[0].payload) == 69
+
+    # A second time request must not re-register.
+    device._conn.sendPacket.reset_mock()
+    await device.data_parse(
+        await device.packet_parse(bytes.fromhex(packet_sequence[0]))
+    )
+    assert not [
+        c
+        for c in device._conn.sendPacket.await_args_list
+        if (c.args[0].cmd_set, c.args[0].cmd_id) == (0x35, 0xA8)
+    ]
+
+
+async def test_shp3_backup_channels_from_backup_ch_info(device):
+    msg = dev_apl_comm_pb2.DisplayPropertyUpload()
+    # ch1: a battery with the signal line up; ch2: a generator; ch3: empty slot.
+    msg.panel_backup_ch1_Info.ch_dev_type = dev_apl_comm_pb2.BACK_CH_TYPE_BAT
+    msg.panel_backup_ch1_Info.force_chg_sta = dev_apl_comm_pb2.BACK_CH_DEV_ENABLE
+    msg.panel_backup_ch1_Info.signal_line_sta = dev_apl_comm_pb2.BACK_CH_DEV_ENABLE
+    msg.panel_backup_ch2_Info.ch_dev_type = dev_apl_comm_pb2.BACK_CH_TYPE_OIL
+    msg.panel_backup_ch2_Info.force_chg_sta = dev_apl_comm_pb2.BACK_CH_DEV_DISABLE
+
+    device.update_from_message(msg)
+
+    assert device.channel_type[1] is BackupChannelType.BATTERY
+    assert device.channel_force_charge[1] is True
+    assert device.channel_signal_line[1] is True
+    assert device.channel_type[2] is BackupChannelType.OIL
+    assert device.channel_force_charge[2] is False
+    # Empty channel: every field unavailable.
+    assert device.channel_type[3] is None
+    assert device.channel_force_charge[3] is None
+    assert device.channel_signal_line[3] is None
+
+
+async def test_shp3_echoes_liveness_ping(device):
+    ping = Packet(0x35, 0x35, 0x35, 0x20, b"", 0x01, 0x01, 0x03)
+    processed = await device.data_parse(ping)
+    assert processed is True
+    device._conn.replyPacket.assert_awaited_once()

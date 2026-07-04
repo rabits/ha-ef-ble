@@ -342,6 +342,9 @@
       "grid_status": {
         "name": "电网状态"
       },
+      "grid_is_energized": {
+        "name": "电网带电"
+      },
       "bms_run_state": {
         "name": "BMS 运行状态"
       },
@@ -350,6 +353,9 @@
       },
       "backup_force_charge": {
         "name": "通道 {channel} 强制充电"
+      },
+      "backup_channel_signal_line": {
+        "name": "通道 {channel} 信号线"
       },
       "is_charging": {
         "name": "正在充电"
@@ -471,6 +477,9 @@
       },
       "circuit_current": {
         "name": "电路电流 {index}"
+      },
+      "circuit_voltage": {
+        "name": "电路电压 {index}"
       },
       "channel_power": {
         "name": "通道功率 {index}"
@@ -913,6 +922,29 @@
       },
       "ac_c20_in_type": {
         "name": "AC C20 输入类型"
+      },
+      "circuit_status": {
+        "name": "电路 {index} 状态",
+        "state": {
+          "unknown": "未知",
+          "off": "关闭",
+          "on_grid": "开启（电网）",
+          "on_back": "开启（备用）",
+          "em_stop": "紧急停止"
+        }
+      },
+      "circuit_name": {
+        "name": "电路 {index} 名称"
+      },
+      "backup_channel_type": {
+        "name": "通道 {channel} 类型",
+        "state": {
+          "unknown": "未知",
+          "none": "无",
+          "battery": "电池",
+          "oil": "智能发电机",
+          "station_charger": "充电桩"
+        }
       }
     },
     "select": {
@@ -961,6 +993,14 @@
           "self_powered": "自给自足",
           "scheduled": "定时任务",
           "intelligent": "智能调度"
+        }
+      },
+      "dc_mode": {
+        "name": "DC 模式",
+        "state": {
+          "auto": "自动",
+          "solar": "太阳能",
+          "car": "车充"
         }
       },
       "energy_strategy": {
@@ -1052,6 +1092,9 @@
       },
       "channel_is_enabled": {
         "name": "通道 {channel}"
+      },
+      "storm_guard": {
+        "name": "风暴防护"
       },
       "ch_force_charge": {
         "name": "通道 {channel} 强制充电"

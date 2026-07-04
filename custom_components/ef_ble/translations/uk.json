@@ -342,6 +342,9 @@
       "grid_status": {
         "name": "Статус мережі"
       },
+      "grid_is_energized": {
+        "name": "Мережа під напругою"
+      },
       "bms_run_state": {
         "name": "Стан роботи BMS"
       },
@@ -350,6 +353,9 @@
       },
       "backup_force_charge": {
         "name": "Канал {channel} Примусове заряджання"
+      },
+      "backup_channel_signal_line": {
+        "name": "Канал {channel} сигнальна лінія"
       },
       "is_charging": {
         "name": "Заряджається"
@@ -471,6 +477,9 @@
       },
       "circuit_current": {
         "name": "Струм контуру {index}"
+      },
+      "circuit_voltage": {
+        "name": "Напруга контуру {index}"
       },
       "channel_power": {
         "name": "Потужність каналу {index}"
@@ -913,6 +922,29 @@
       },
       "ac_c20_in_type": {
         "name": "Тип входу AC C20"
+      },
+      "circuit_status": {
+        "name": "Стан контуру {index}",
+        "state": {
+          "unknown": "Невідомо",
+          "off": "Вимкнено",
+          "on_grid": "Увімкнено (мережа)",
+          "on_back": "Увімкнено (резерв)",
+          "em_stop": "Аварійна зупинка"
+        }
+      },
+      "circuit_name": {
+        "name": "Назва контуру {index}"
+      },
+      "backup_channel_type": {
+        "name": "Тип каналу {channel}",
+        "state": {
+          "unknown": "Невідомо",
+          "none": "Немає",
+          "battery": "Акумулятор",
+          "oil": "Розумний генератор",
+          "station_charger": "Зарядна станція"
+        }
       }
     },
     "select": {
@@ -961,6 +993,14 @@
           "self_powered": "Автономне живлення",
           "scheduled": "Заплановані завдання",
           "intelligent": "Інтелектуальний розклад"
+        }
+      },
+      "dc_mode": {
+        "name": "Режим DC",
+        "state": {
+          "auto": "Авто",
+          "solar": "Сонячна панель",
+          "car": "Автомобіль"
         }
       },
       "energy_strategy": {
@@ -1052,6 +1092,9 @@
       },
       "channel_is_enabled": {
         "name": "Канал {channel}"
+      },
+      "storm_guard": {
+        "name": "Захист від шторму"
       },
       "ch_force_charge": {
         "name": "Канал {channel} Примусове заряджання"

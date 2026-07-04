@@ -47,10 +47,10 @@ class CircuitStatus(IntFieldValue):
 
     UNKNOWN = -1  # LOAD_CH_UNKNOWN_STA (4) and any unrecognized value
 
-    OFF = 0  # relay open / circuit off
-    ON_GRID = 1  # on, powered from grid
-    ON_BACK = 2  # on, powered from battery backup
-    EM_STOP = 3  # emergency stop
+    OFF = 0
+    ON_GRID = 1
+    ON_BACK = 2
+    EM_STOP = 3
 
 
 class OperatingMode(IntFieldValue):
@@ -445,6 +445,7 @@ class Device(DeviceBase, ProtobufProps):
 
         await self._send_config_packet(config)
 
+    @controls.switch(storm_guard)
     async def set_storm_guard(self, enable: bool):
         config = dev_apl_comm_pb2.ConfigWrite()
         config.cfg_storm_pattern.storm_pattern_enable = enable

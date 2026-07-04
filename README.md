@@ -77,16 +77,31 @@ Click on any device below to see available sensors, switches, and controls:
 
 <br>
 
-| *Sensors*       |
-|-----------------|
-| Battery Level   |
-| Battery Power   |
-| Load Total      |
-| Load From Grid  |
-| L1 Power        |
-| L2 Power        |
-| L3 Power        |
-| PV Power Sum    |
+| *Sensors*                           | *Switches*                    | *Sliders*            | *Selects*      |
+|-------------------------------------|-------------------------------|----------------------|----------------|
+| Battery Level                       | Circuit On/Off (Each Circuit) | Charge Limit         | Operating Mode |
+| Battery Power                       | Channel On/Off (Each Channel) | Discharge Limit      |                |
+| System Load                         | Storm Guard                   | Backup Reserve Level |                |
+| Load From Grid                      |                               | AC Charging Speed    |                |
+| PV Power Total                      |                               |                      |                |
+| Grid Connection Status              |                               |                      |                |
+| Grid Energized                      |                               |                      |                |
+| Charge Time Remaining               |                               |                      |                |
+| Discharge Time Remaining            |                               |                      |                |
+| L1 / L2 / L3 Power                  |                               |                      |                |
+| L1 / L2 / L3 Voltage                |                               |                      |                |
+| L1 / L2 / L3 Current                |                               |                      |                |
+| Circuit Power (Each Circuit)        |                               |                      |                |
+| Circuit Current (Each Circuit)      |                               |                      |                |
+| Circuit Voltage (Each Circuit)      |                               |                      |                |
+| Circuit Status (Each Circuit)       |                               |                      |                |
+| Channel Type (Each Channel)         |                               |                      |                |
+| Channel Signal Line (Each Channel)  |                               |                      |                |
+| Channel Force Charge (Each Channel) |                               |                      |                |
+
+> **📝 Note:** Using an ESPHome bluetooth proxy connection with a Smart Home Panel 3 can
+> result in slow performance and dropped packets at this time. Please see the
+> [Issue #221](https://github.com/rabits/ha-ef-ble/issues/221) for tracking.
 
 </details>
 <details>

@@ -382,7 +382,9 @@ async def test_shp3_set_eps_mode_preserves_operating_mode_and_mix(device):
     msg = dev_apl_comm_pb2.DisplayPropertyUpload()
     msg.panle_energy_strategy_operate_mode.operate_scheduled_open = True
     msg.panle_energy_strategy_operate_mode.operate_mix_scheduled_open = True
-    device.update_from_bytes(dev_apl_comm_pb2.DisplayPropertyUpload, msg.SerializeToString())
+    device.update_from_bytes(
+        dev_apl_comm_pb2.DisplayPropertyUpload, msg.SerializeToString()
+    )
 
     await device.set_eps_mode(True)
 

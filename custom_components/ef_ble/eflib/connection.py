@@ -39,6 +39,7 @@ from .exceptions import (
 )
 from .frame_assembler import (
     EncPacketAssembler,
+    FrameAssembler,
     PassthroughAssembler,
     RawHeaderAssembler,
     SimplePacketAssembler,
@@ -239,6 +240,7 @@ class Connection:
         self._encryption: EncryptionStrategy | None = None
         self._initial_session_key: bytes = b""
         self._simple_assembler = SimplePacketAssembler()
+        self._frame_assembler: FrameAssembler | None = None
         self._options = Connection.Options()
 
         self._errors = 0
@@ -801,7 +803,7 @@ class Connection:
         )
 
         frame_assembler = (
-            self._frame_assembler
+            self._get_frame_assembler()
             if self._connection_state.received_session_key
             else self._create_frame_assembler()
         )
@@ -905,7 +907,7 @@ class Connection:
         )
 
         frame_assembler = (
-            self._frame_assembler
+            self._get_frame_assembler()
             if self._connection_state.received_session_key
             else self._create_frame_assembler()
         )
@@ -940,6 +942,8 @@ class Connection:
         self._add_task(self.sendPacket(reply_packet))
 
     async def initBleSessionKey(self):
+        self._reset_assemblers()
+
         match self._encrypt_type:
             case 0:
                 await self._type_0_session()
@@ -947,6 +951,13 @@ class Connection:
                 await self._type_1_session()
             case _:
                 await self._ecdh_key_exchange()
+
+    def _reset_assemblers(self) -> None:
+        """Drop buffered frame data and rebuild assemblers for a fresh auth routine"""
+        self._simple_assembler = SimplePacketAssembler()
+        # Clear it so the next use rebuilds it against this attempt's encryption rather
+        # than reusing a previous attempt's session key.
+        self._frame_assembler = None
 
     async def _type_0_session(self):
         self._encryption = None
@@ -1217,9 +1228,10 @@ class Connection:
             case _:
                 raise ValueError(f"Unsupported encryption type: {self._encrypt_type}")
 
-    @cached_property
-    def _frame_assembler(self):
-        return self._create_frame_assembler()
+    def _get_frame_assembler(self) -> FrameAssembler:
+        if self._frame_assembler is None:
+            self._frame_assembler = self._create_frame_assembler()
+        return self._frame_assembler
 
     def _cancel_tasks(self):
         for task in self._tasks:

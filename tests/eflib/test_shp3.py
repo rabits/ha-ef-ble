@@ -244,7 +244,7 @@ async def test_shp3_set_ac_charging_speed_rounds_to_step(device):
 
 
 async def test_shp3_set_operating_mode_preserves_eps_and_mix(device):
-    device.set_value("_eps_mode", True)
+    device.set_value("eps_mode", True)
 
     await device.set_operating_mode(OperatingMode.SELF_POWERED)
 
@@ -376,3 +376,20 @@ async def test_shp3_echoes_liveness_ping(device):
     processed = await device.data_parse(ping)
     assert processed is True
     device._conn.replyPacket.assert_awaited_once()
+
+
+async def test_shp3_set_eps_mode_preserves_operating_mode_and_mix(device):
+    msg = dev_apl_comm_pb2.DisplayPropertyUpload()
+    msg.panle_energy_strategy_operate_mode.operate_scheduled_open = True
+    msg.panle_energy_strategy_operate_mode.operate_mix_scheduled_open = True
+    device.update_from_bytes(dev_apl_comm_pb2.DisplayPropertyUpload, msg.SerializeToString())
+
+    await device.set_eps_mode(True)
+
+    packet = device._conn.sendPacket.await_args.args[0]
+    mode = _config_write(device, packet).cfg_panle_energy_strategy_operate_mode
+    assert mode.operate_eps_mode is True
+    assert mode.operate_scheduled_open is True
+    assert mode.operate_self_powered_open is False
+    assert mode.operate_intelligent_schedule_mode_open is False
+    assert mode.operate_mix_scheduled_open is True

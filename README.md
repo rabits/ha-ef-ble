@@ -82,7 +82,7 @@ Click on any device below to see available sensors, switches, and controls:
 | Battery Level                       | Circuit On/Off (Each Circuit) | Charge Limit         | Operating Mode |
 | Battery Power                       | Channel On/Off (Each Channel) | Discharge Limit      |                |
 | System Load                         | Storm Guard                   | Backup Reserve Level |                |
-| Load From Grid                      |                               | AC Charging Speed    |                |
+| Load From Grid                      | EPS Mode                      | AC Charging Speed    |                |
 | PV Power Total                      |                               |                      |                |
 | Grid Connection Status              |                               |                      |                |
 | Grid Energized                      |                               |                      |                |

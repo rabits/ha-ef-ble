@@ -251,7 +251,7 @@ class Device(DeviceBase, ProtobufProps):
     _mode_generic = pb_field(
         pb.energy_strategy_operate_mode, _operating_mode_from_message
     )
-    _eps_mode = pb_field(
+    eps_mode = pb_field(
         pb.panle_energy_strategy_operate_mode.operate_eps_mode,
         TransformIfMissing(bool),
     )
@@ -440,7 +440,7 @@ class Device(DeviceBase, ProtobufProps):
         message.operate_intelligent_schedule_mode_open = (
             mode is OperatingMode.INTELLIGENT
         )
-        message.operate_eps_mode = bool(self._eps_mode)
+        message.operate_eps_mode = bool(self.eps_mode)
         message.operate_mix_scheduled_open = bool(self._mix_scheduled)
 
         await self._send_config_packet(config)
@@ -449,6 +449,28 @@ class Device(DeviceBase, ProtobufProps):
     async def set_storm_guard(self, enable: bool):
         config = dev_apl_comm_pb2.ConfigWrite()
         config.cfg_storm_pattern.storm_pattern_enable = enable
+        await self._send_config_packet(config)
+
+    @controls.switch(eps_mode)
+    async def set_eps_mode(self, enable: bool):
+        """
+        Toggle EPS (fast-cutover) mode.
+
+        The panel applies `cfg_panle_energy_strategy_operate_mode` as a whole, so
+        the current operating mode and mix-scheduled flag are written back
+        alongside the new EPS value to avoid clearing the operating mode
+        (mirrors `set_operating_mode`, which preserves EPS the same way).
+        """
+        config = dev_apl_comm_pb2.ConfigWrite()
+        message = config.cfg_panle_energy_strategy_operate_mode
+        mode = self.operating_mode_select
+        message.operate_self_powered_open = mode is OperatingMode.SELF_POWERED
+        message.operate_scheduled_open = mode is OperatingMode.SCHEDULED
+        message.operate_intelligent_schedule_mode_open = (
+            mode is OperatingMode.INTELLIGENT
+        )
+        message.operate_eps_mode = enable
+        message.operate_mix_scheduled_open = bool(self._mix_scheduled)
         await self._send_config_packet(config)
 
     @controls.for_each(

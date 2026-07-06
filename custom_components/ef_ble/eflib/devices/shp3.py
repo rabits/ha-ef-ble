@@ -149,7 +149,9 @@ class Device(DeviceBase, ProtobufProps):
         pb.load_ch1_sample_info.load_ch_power,
         match="load_ch{n}_sample_info",
         count=NUM_OF_CIRCUITS,
-        transform=pround(2),
+        transform=TransformIfMissing[float, float](
+            lambda v: round(v, 2) if v is not None else 0.0
+        ),
         name_template="circuit_power_{n}",
     )
     circuit_current = pb_field_group(
@@ -333,10 +335,6 @@ class Device(DeviceBase, ProtobufProps):
         self._notify_updated()
         return processed
 
-    async def _send_config_packet(self, message: Message):
-        packet = self._routing.write_packet(message.SerializeToString())
-        await self._conn.sendPacket(packet)
-
     @controls.battery(
         battery_charge_limit_min,
         max=dynamic(battery_charge_limit_max),
@@ -428,26 +426,6 @@ class Device(DeviceBase, ProtobufProps):
         await self._send_config_packet(config)
         return True
 
-    async def _write_energy_strategy(
-        self, mode: OperatingMode | None, eps_enable: bool
-    ):
-        """
-        Write the full `cfg_panle_energy_strategy_operate_mode` message
-
-        The panel applies the message as a whole, so operating mode, EPS and
-        mix-scheduled are always written together to avoid clearing each other.
-        """
-        config = dev_apl_comm_pb2.ConfigWrite()
-        message = config.cfg_panle_energy_strategy_operate_mode
-        message.operate_self_powered_open = mode is OperatingMode.SELF_POWERED
-        message.operate_scheduled_open = mode is OperatingMode.SCHEDULED
-        message.operate_intelligent_schedule_mode_open = (
-            mode is OperatingMode.INTELLIGENT
-        )
-        message.operate_eps_mode = eps_enable
-        message.operate_mix_scheduled_open = bool(self._mix_scheduled)
-        await self._send_config_packet(config)
-
     @controls.select(operating_mode_select, options=OperatingMode)
     async def set_operating_mode(self, mode: OperatingMode):
         if mode is OperatingMode.UNKNOWN:
@@ -465,24 +443,6 @@ class Device(DeviceBase, ProtobufProps):
     async def set_eps_mode(self, enable: bool):
         """Toggle EPS (fast-cutover) mode, preserving the operating mode"""
         await self._write_energy_strategy(self.operating_mode_select, enable)
-
-    async def _write_backup_channel_ctrl(
-        self, channel_id: int, *, enable: bool, force_charge: bool
-    ):
-        """
-        Write a backup channel's `BackupCtrl`
-
-        The panel applies ctrl_en and ctrl_force_chg together, so both are
-        always sent (on = 1, off = 2).
-        """
-        config = dev_apl_comm_pb2.ConfigWrite()
-        ctrl = pb_indexed_attr(
-            config, pb_cfg.cfg_panel_backup_ch1_ctrl, "cfg_panel_backup_ch{n}_ctrl"
-        )
-        backup = ctrl[channel_id]
-        backup.ctrl_en = 1 if enable else 2
-        backup.ctrl_force_chg = 1 if force_charge else 2
-        await self._send_config_packet(config)
 
     @controls.for_each(
         channel_force_charge,
@@ -511,10 +471,40 @@ class Device(DeviceBase, ProtobufProps):
             force_charge=bool(self.channel_force_charge[channel_id]),
         )
 
+    async def _send_config_packet(self, message: Message):
+        packet = self._routing.write_packet(message.SerializeToString())
+        await self._conn.sendPacket(packet)
+
+    async def _write_energy_strategy(
+        self, mode: OperatingMode | None, eps_enable: bool
+    ):
+        config = dev_apl_comm_pb2.ConfigWrite()
+        message = config.cfg_panle_energy_strategy_operate_mode
+        message.operate_self_powered_open = mode is OperatingMode.SELF_POWERED
+        message.operate_scheduled_open = mode is OperatingMode.SCHEDULED
+        message.operate_intelligent_schedule_mode_open = (
+            mode is OperatingMode.INTELLIGENT
+        )
+        message.operate_eps_mode = eps_enable
+        message.operate_mix_scheduled_open = bool(self._mix_scheduled)
+        await self._send_config_packet(config)
+
+    async def _write_backup_channel_ctrl(
+        self, channel_id: int, *, enable: bool, force_charge: bool
+    ):
+        config = dev_apl_comm_pb2.ConfigWrite()
+        ctrl = pb_indexed_attr(
+            config, pb_cfg.cfg_panel_backup_ch1_ctrl, "cfg_panel_backup_ch{n}_ctrl"
+        )
+        backup = ctrl[channel_id]
+        backup.ctrl_en = 1 if enable else 2
+        backup.ctrl_force_chg = 1 if force_charge else 2
+        await self._send_config_packet(config)
+
 
 class _StandardProtocolRouting:
     """
-    SHP3 standard-protocol routing layer that wraps the protobuf inside the v4 payload.
+    SHP3 standard-protocol routing layer that wraps the protobuf inside the v4 payload
 
     Reads: the v4 application payload is a routing header (the device-side SN fragment
     plus a 13-byte envelope) followed by the `DisplayPropertyUpload` protobuf.

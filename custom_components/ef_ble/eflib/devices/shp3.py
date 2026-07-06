@@ -467,6 +467,30 @@ class Device(DeviceBase, ProtobufProps):
         await self._write_energy_strategy(self.operating_mode_select, enable)
 
     @controls.for_each(
+        channel_force_charge,
+        control=controls.switch,
+        translation_key="ch_force_charge",
+        translation_placeholders=lambda i: {"channel": str(i)},
+    )
+    async def set_channel_force_charge(self, channel_id: int, enable: bool):
+        """
+        Force-charge (Charge Now) a backup channel via `cfg_panel_backup_ch{N}_ctrl`.
+
+        `BackupCtrl` carries both the channel enable (ctrl_en) and the force-charge
+        toggle (ctrl_force_chg) and the panel applies them together, so the current
+        enable state is written back alongside the new force-charge value
+        (on = 1, off = 2), mirroring `set_channel_enable`.
+        """
+        config = dev_apl_comm_pb2.ConfigWrite()
+        ctrl = pb_indexed_attr(
+            config, pb_cfg.cfg_panel_backup_ch1_ctrl, "cfg_panel_backup_ch{n}_ctrl"
+        )
+        backup = ctrl[channel_id]
+        backup.ctrl_en = 1 if self.channel_is_enabled[channel_id] else 2
+        backup.ctrl_force_chg = 1 if enable else 2
+        await self._send_config_packet(config)
+
+    @controls.for_each(
         channel_is_enabled,
         control=controls.switch,
         translation_key="channel_is_enabled",

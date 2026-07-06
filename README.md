@@ -83,7 +83,7 @@ Click on any device below to see available sensors, switches, and controls:
 | Battery Power                       | Channel On/Off (Each Channel) | Discharge Limit      |                |
 | System Load                         | Storm Guard                   | Backup Reserve Level |                |
 | Load From Grid                      | EPS Mode                      | AC Charging Speed    |                |
-| PV Power Total                      |                               |                      |                |
+| PV Power Total                      | Channel Force Charge (Each Channel) |                      |                |
 | Grid Connection Status              |                               |                      |                |
 | Grid Energized                      |                               |                      |                |
 | Charge Time Remaining               |                               |                      |                |
@@ -97,7 +97,6 @@ Click on any device below to see available sensors, switches, and controls:
 | Circuit Status (Each Circuit)       |                               |                      |                |
 | Channel Type (Each Channel)         |                               |                      |                |
 | Channel Signal Line (Each Channel)  |                               |                      |                |
-|                                     | Channel Force Charge (Each Channel) |                      |                |
 
 > **📝 Note:** Using an ESPHome bluetooth proxy connection with a Smart Home Panel 3 can
 > result in slow performance and dropped packets at this time. Please see the

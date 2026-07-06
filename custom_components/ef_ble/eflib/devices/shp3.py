@@ -428,11 +428,15 @@ class Device(DeviceBase, ProtobufProps):
         await self._send_config_packet(config)
         return True
 
-    @controls.select(operating_mode_select, options=OperatingMode)
-    async def set_operating_mode(self, mode: OperatingMode):
-        if mode is OperatingMode.UNKNOWN:
-            return
+    async def _write_energy_strategy(
+        self, mode: OperatingMode | None, eps_enable: bool
+    ):
+        """
+        Write the full `cfg_panle_energy_strategy_operate_mode` message.
 
+        The panel applies the message as a whole, so operating mode, EPS and
+        mix-scheduled are always written together to avoid clearing each other.
+        """
         config = dev_apl_comm_pb2.ConfigWrite()
         message = config.cfg_panle_energy_strategy_operate_mode
         message.operate_self_powered_open = mode is OperatingMode.SELF_POWERED
@@ -440,10 +444,16 @@ class Device(DeviceBase, ProtobufProps):
         message.operate_intelligent_schedule_mode_open = (
             mode is OperatingMode.INTELLIGENT
         )
-        message.operate_eps_mode = bool(self.eps_mode)
+        message.operate_eps_mode = eps_enable
         message.operate_mix_scheduled_open = bool(self._mix_scheduled)
-
         await self._send_config_packet(config)
+
+    @controls.select(operating_mode_select, options=OperatingMode)
+    async def set_operating_mode(self, mode: OperatingMode):
+        if mode is OperatingMode.UNKNOWN:
+            return
+
+        await self._write_energy_strategy(mode, bool(self.eps_mode))
 
     @controls.switch(storm_guard)
     async def set_storm_guard(self, enable: bool):
@@ -453,25 +463,8 @@ class Device(DeviceBase, ProtobufProps):
 
     @controls.switch(eps_mode)
     async def set_eps_mode(self, enable: bool):
-        """
-        Toggle EPS (fast-cutover) mode.
-
-        The panel applies `cfg_panle_energy_strategy_operate_mode` as a whole, so
-        the current operating mode and mix-scheduled flag are written back
-        alongside the new EPS value to avoid clearing the operating mode
-        (mirrors `set_operating_mode`, which preserves EPS the same way).
-        """
-        config = dev_apl_comm_pb2.ConfigWrite()
-        message = config.cfg_panle_energy_strategy_operate_mode
-        mode = self.operating_mode_select
-        message.operate_self_powered_open = mode is OperatingMode.SELF_POWERED
-        message.operate_scheduled_open = mode is OperatingMode.SCHEDULED
-        message.operate_intelligent_schedule_mode_open = (
-            mode is OperatingMode.INTELLIGENT
-        )
-        message.operate_eps_mode = enable
-        message.operate_mix_scheduled_open = bool(self._mix_scheduled)
-        await self._send_config_packet(config)
+        """Toggle EPS (fast-cutover) mode, preserving the operating mode."""
+        await self._write_energy_strategy(self.operating_mode_select, enable)
 
     @controls.for_each(
         channel_is_enabled,

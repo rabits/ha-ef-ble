@@ -432,7 +432,7 @@ class Device(DeviceBase, ProtobufProps):
         self, mode: OperatingMode | None, eps_enable: bool
     ):
         """
-        Write the full `cfg_panle_energy_strategy_operate_mode` message.
+        Write the full `cfg_panle_energy_strategy_operate_mode` message
 
         The panel applies the message as a whole, so operating mode, EPS and
         mix-scheduled are always written together to avoid clearing each other.
@@ -463,8 +463,24 @@ class Device(DeviceBase, ProtobufProps):
 
     @controls.switch(eps_mode)
     async def set_eps_mode(self, enable: bool):
-        """Toggle EPS (fast-cutover) mode, preserving the operating mode."""
+        """Toggle EPS (fast-cutover) mode, preserving the operating mode"""
         await self._write_energy_strategy(self.operating_mode_select, enable)
+
+    async def _write_backup_channel_ctrl(
+        self, channel_id: int, *, enable: bool, force_charge: bool
+    ):
+        """
+        Write a backup channel's `BackupCtrl` - the panel applies ctrl_en and
+        ctrl_force_chg together, so both are always sent (on = 1, off = 2)
+        """
+        config = dev_apl_comm_pb2.ConfigWrite()
+        ctrl = pb_indexed_attr(
+            config, pb_cfg.cfg_panel_backup_ch1_ctrl, "cfg_panel_backup_ch{n}_ctrl"
+        )
+        backup = ctrl[channel_id]
+        backup.ctrl_en = 1 if enable else 2
+        backup.ctrl_force_chg = 1 if force_charge else 2
+        await self._send_config_packet(config)
 
     @controls.for_each(
         channel_force_charge,
@@ -473,22 +489,12 @@ class Device(DeviceBase, ProtobufProps):
         translation_placeholders=lambda i: {"channel": str(i)},
     )
     async def set_channel_force_charge(self, channel_id: int, enable: bool):
-        """
-        Force-charge (Charge Now) a backup channel via `cfg_panel_backup_ch{N}_ctrl`.
-
-        `BackupCtrl` carries both the channel enable (ctrl_en) and the force-charge
-        toggle (ctrl_force_chg) and the panel applies them together, so the current
-        enable state is written back alongside the new force-charge value
-        (on = 1, off = 2), mirroring `set_channel_enable`.
-        """
-        config = dev_apl_comm_pb2.ConfigWrite()
-        ctrl = pb_indexed_attr(
-            config, pb_cfg.cfg_panel_backup_ch1_ctrl, "cfg_panel_backup_ch{n}_ctrl"
+        """Force-charge (Charge Now in the EcoFlow app) a backup channel"""
+        await self._write_backup_channel_ctrl(
+            channel_id,
+            enable=bool(self.channel_is_enabled[channel_id]),
+            force_charge=enable,
         )
-        backup = ctrl[channel_id]
-        backup.ctrl_en = 1 if self.channel_is_enabled[channel_id] else 2
-        backup.ctrl_force_chg = 1 if enable else 2
-        await self._send_config_packet(config)
 
     @controls.for_each(
         channel_is_enabled,
@@ -497,21 +503,11 @@ class Device(DeviceBase, ProtobufProps):
         translation_placeholders=lambda i: {"channel": str(i)},
     )
     async def set_channel_enable(self, channel_id: int, enable: bool):
-        """
-        Enable / disable a backup channel via `cfg_panel_backup_ch{N}_ctrl`.
-
-        `BackupCtrl` carries both the channel enable (ctrl_en) and the force-charge
-        toggle (ctrl_force_chg), and the panel applies them together, so we send the
-        current force-charge state alongside the new enable value (on = 1, off = 2).
-        """
-        config = dev_apl_comm_pb2.ConfigWrite()
-        ctrl = pb_indexed_attr(
-            config, pb_cfg.cfg_panel_backup_ch1_ctrl, "cfg_panel_backup_ch{n}_ctrl"
+        await self._write_backup_channel_ctrl(
+            channel_id,
+            enable=enable,
+            force_charge=bool(self.channel_force_charge[channel_id]),
         )
-        backup = ctrl[channel_id]
-        backup.ctrl_en = 1 if enable else 2
-        backup.ctrl_force_chg = 1 if self.channel_force_charge[channel_id] else 2
-        await self._send_config_packet(config)
 
 
 class _StandardProtocolRouting:

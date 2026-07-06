@@ -97,7 +97,7 @@ Click on any device below to see available sensors, switches, and controls:
 | Circuit Status (Each Circuit)       |                               |                      |                |
 | Channel Type (Each Channel)         |                               |                      |                |
 | Channel Signal Line (Each Channel)  |                               |                      |                |
-| Channel Force Charge (Each Channel) |                               |                      |                |
+|                                     | Channel Force Charge (Each Channel) |                      |                |
 
 > **📝 Note:** Using an ESPHome bluetooth proxy connection with a Smart Home Panel 3 can
 > result in slow performance and dropped packets at this time. Please see the

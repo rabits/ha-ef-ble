@@ -470,8 +470,10 @@ class Device(DeviceBase, ProtobufProps):
         self, channel_id: int, *, enable: bool, force_charge: bool
     ):
         """
-        Write a backup channel's `BackupCtrl` - the panel applies ctrl_en and
-        ctrl_force_chg together, so both are always sent (on = 1, off = 2)
+        Write a backup channel's `BackupCtrl`
+
+        The panel applies ctrl_en and ctrl_force_chg together, so both are
+        always sent (on = 1, off = 2).
         """
         config = dev_apl_comm_pb2.ConfigWrite()
         ctrl = pb_indexed_attr(

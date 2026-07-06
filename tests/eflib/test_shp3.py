@@ -395,3 +395,35 @@ async def test_shp3_set_eps_mode_preserves_operating_mode_and_mix(device):
     assert mode.operate_self_powered_open is False
     assert mode.operate_intelligent_schedule_mode_open is False
     assert mode.operate_mix_scheduled_open is True
+
+
+async def test_shp3_set_channel_force_charge_preserves_enable(device):
+    msg = dev_apl_comm_pb2.DisplayPropertyUpload()
+    msg.panel_backup_ch1_Info.ch_dev_type = 1
+    msg.panel_backup_ch1_Info.ch_sta = 1
+    device.update_from_bytes(
+        dev_apl_comm_pb2.DisplayPropertyUpload, msg.SerializeToString()
+    )
+
+    await device.set_channel_force_charge(1, True)
+
+    packet = device._conn.sendPacket.await_args.args[0]
+    ctrl = _config_write(device, packet).cfg_panel_backup_ch1_ctrl
+    assert ctrl.ctrl_force_chg == 1
+    assert ctrl.ctrl_en == 1
+
+
+async def test_shp3_set_channel_force_charge_off_on_disabled_channel(device):
+    msg = dev_apl_comm_pb2.DisplayPropertyUpload()
+    msg.panel_backup_ch2_Info.ch_dev_type = 1
+    msg.panel_backup_ch2_Info.ch_sta = 2
+    device.update_from_bytes(
+        dev_apl_comm_pb2.DisplayPropertyUpload, msg.SerializeToString()
+    )
+
+    await device.set_channel_force_charge(2, False)
+
+    packet = device._conn.sendPacket.await_args.args[0]
+    ctrl = _config_write(device, packet).cfg_panel_backup_ch2_ctrl
+    assert ctrl.ctrl_force_chg == 2
+    assert ctrl.ctrl_en == 2

@@ -2,7 +2,7 @@ from collections.abc import Sequence
 
 from ..entity import controls
 from ..pb import pd335_sys_pb2
-from ..props import pb_field, repeated_pb_field_type
+from ..props import computed_field, pb_field, repeated_pb_field_type
 from ..props.transforms import flow_is_on, out_power
 from . import delta3_plus
 
@@ -27,7 +27,15 @@ class Device(delta3_plus.Device):
     ac_power_2 = _ACPortPower(3)
 
     usbc3_output_power = pb_field(pb.pow_get_typec3, out_power)
-    max_ac_charging_power = pb_field(pb.plug_in_info_ac_in_chg_hal_pow_max)
+    _max_ac_charging_power = pb_field(pb.plug_in_info_ac_in_chg_hal_pow_max)
+
+    @computed_field
+    def max_ac_charging_power(self) -> int:
+        return (
+            self._max_ac_charging_power
+            if self._max_ac_charging_power is not None
+            else 2400
+        )
 
     @controls.outlet(ac_ports_2)
     async def enable_ac_ports_2(self, enabled: bool):

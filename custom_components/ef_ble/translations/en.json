@@ -193,14 +193,15 @@
           "extra_battery": "Enabled Extra Batteries"
         }
       },
-      "connecting": {
+      "connect": {
         "title": "Connecting to device"
       }
     },
     "progress": {
-      "connecting": "Connecting to device...",
-      "authenticating": "Connection successful, running authentication procedure...",
-      "disconnecting": "Sucess! Disconnecting from device..."
+      "connecting": "Establishing Bluetooth connection to {name}...",
+      "exchanging_keys": "Connected to {name}, exchanging encryption keys...",
+      "authenticating": "Authenticating with {name}...",
+      "finalizing": "Finishing the connection check..."
     }
   },
   "options": {

@@ -193,14 +193,15 @@
           "extra_battery": "已启用的额外电池"
         }
       },
-      "connecting": {
+      "connect": {
         "title": "正在连接设备"
       }
     },
     "progress": {
-      "connecting": "正在连接设备...",
-      "authenticating": "连接成功，正在运行认证程序...",
-      "disconnecting": "成功！正在断开设备连接..."
+      "connecting": "正在与 {name} 建立蓝牙连接...",
+      "exchanging_keys": "已连接到 {name}，正在交换加密密钥...",
+      "authenticating": "正在与 {name} 进行身份验证...",
+      "finalizing": "正在完成连接检查..."
     }
   },
   "options": {
@@ -285,6 +286,9 @@
     },
     "failed_after_successful_connection": {
       "message": "设备已连接但未进入认证程序，上一个状态: {last_state}"
+    },
+    "missing_address_or_user_id": {
+      "message": "存储的配置缺少设备数据（{missing}）。请删除该设备并重新添加以修复配置条目。"
     }
   },
   "issues": {

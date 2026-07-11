@@ -285,6 +285,9 @@
     },
     "failed_after_successful_connection": {
       "message": "Device connected but did not get to auth procedure, last state: {last_state}"
+    },
+    "missing_address_or_user_id": {
+      "message": "Stored configuration is missing the device {missing}. Remove the device and add it again to repair the configuration entry."
     }
   },
   "issues": {

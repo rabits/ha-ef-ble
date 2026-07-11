@@ -82,7 +82,14 @@ async def async_setup_entry(hass: HomeAssistant, entry: DeviceConfigEntry) -> bo
     )
 
     if address is None or user_id is None:
-        return False
+        # Returning False here would fail setup without any log or UI message
+        # (issue #403) - raise instead so the user sees what is wrong
+        raise ConfigEntryError(
+            translation_key="missing_address_or_user_id",
+            translation_placeholders={
+                "missing": "address" if address is None else "user ID"
+            },
+        )
 
     if not bluetooth.async_address_present(hass, address):
         _register_reappear_callback(hass, entry, address)

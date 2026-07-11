@@ -386,6 +386,10 @@ class EFBLEConfigFlow(ConfigFlow, domain=DOMAIN):
     def _create_entry(self, user_input: dict[str, Any], device: eflib.DeviceBase):
         entry_data = user_input.copy()
         entry_data[CONF_ADDRESS] = device.address
+        # Persist the validated user ID explicitly - the form field is optional, so
+        # relying on it round-tripping through user_input can produce an entry
+        # without a user ID that then silently fails to set up (issue #403)
+        entry_data[CONF_USER_ID] = self._user_id
         entry_data["local_name"] = self._local_names.get(device.address, None)
         entry_data.pop("login", None)
 

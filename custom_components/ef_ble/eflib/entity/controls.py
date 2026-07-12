@@ -176,6 +176,7 @@ class select[E: IntFieldValue](ControlType):
     type SetFunc = Callable[[DeviceBase, E], Awaitable[None]]
 
     options: type[E] | list[str]
+    exclude: list[E] = dataclasses.field(default_factory=list, kw_only=True)
     set_value_func: SetFunc = dataclasses.field(
         repr=False,
         init=False,
@@ -186,7 +187,9 @@ class select[E: IntFieldValue](ControlType):
             self._value_type: type[E] | None = None
         else:
             self._value_type = self.options
-            self.options = self.options.options(include_unknown=False)
+            self.options = self.options.options(
+                include_unknown=False, exclude=self.exclude
+            )
 
     @property
     def options_str(self) -> list[str]:

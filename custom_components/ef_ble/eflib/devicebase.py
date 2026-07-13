@@ -202,7 +202,7 @@ class DeviceBase(abc.ABC):
         packet
             Packet to deliver.
         wait_for_response
-            Forwarded to `Connection.sendPacket`.
+            Forwarded to `Connection.send_packet`.
         raise_on_failure
             Raise instead of dropping the packet when it cannot be delivered.
         """
@@ -213,7 +213,7 @@ class DeviceBase(abc.ABC):
                     f"{self.name}: cannot send packet, device is not connected"
                 )
             return
-        await conn.sendPacket(
+        await conn.send_packet(
             packet,
             wait_for_response=wait_for_response,
             raise_on_failure=raise_on_failure,

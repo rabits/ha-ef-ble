@@ -235,13 +235,13 @@ class Device(DeviceBase, ProtobufProps):
             case 0x0B, 0x0C, 0x01:
                 # master_info, load_info, backup_info, watt_info, master_ver_info
                 self._logger.debug("Parsed data: %r", packet)
-                await self._conn.replyPacket(packet)
+                await self._conn.reply_packet(packet)
                 self.update_from_bytes(pd303_pb2.ProtoTime, packet.payload)
                 processed = True
 
             case 0x0B, 0x0C, 0x20:  # backup_incre_info
                 self._logger.debug("Parsed data: %r", packet)
-                await self._conn.replyPacket(packet)
+                await self._conn.reply_packet(packet)
                 self.update_from_bytes(pd303_pb2.ProtoPushAndSet, packet.payload)
                 processed = True
 

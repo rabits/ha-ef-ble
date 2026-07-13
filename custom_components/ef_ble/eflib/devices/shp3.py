@@ -398,7 +398,7 @@ class Device(DeviceBase, ProtobufProps):
                         await self._send_userid_registration()
                 processed = True
             case _, 0x35, 0x35, 0x20:
-                await self._conn.replyPacket(packet)
+                await self._conn.reply_packet(packet)
                 processed = True
 
         self._notify_updated()

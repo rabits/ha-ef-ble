@@ -196,8 +196,8 @@ async def test_dpu_unpause_solar_registered_as_button_control(device):
 async def test_dpu_unpause_solar_sends_unlock_pv_weak(device):
     await device.unpause_solar()
 
-    device._conn.sendPacket.assert_awaited_once()
-    packet = device._conn.sendPacket.await_args.args[0]
+    device._conn.send_packet.assert_awaited_once()
+    packet = device._conn.send_packet.await_args.args[0]
     assert (packet.src, packet.dst) == (0x21, 0x02)
     assert (packet.cmd_set, packet.cmd_id) == (0xFE, 0x11)
 

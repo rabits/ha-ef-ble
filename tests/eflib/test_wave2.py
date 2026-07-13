@@ -49,7 +49,7 @@ async def _process(device: Device, hex_packet: str) -> bool:
 
 
 def _sent_drain_payload(device: Device) -> bytes:
-    packet = device._conn.sendPacket.call_args.args[0]
+    packet = device._conn.send_packet.call_args.args[0]
     assert packet.cmd_id == 0x59
     return packet.payload
 
@@ -254,11 +254,11 @@ async def test_set_drain_mode_in_cool_mode_sends_new_wte_value(
 @pytest.mark.parametrize("mode", [DrainMode.DRAIN_FREE, DrainMode.EXTERNAL])
 async def test_set_drain_mode_is_a_noop_outside_cool_mode(device, packet_name, mode):
     await _process(device, PACKETS[packet_name])
-    device._conn.sendPacket.reset_mock()
+    device._conn.send_packet.reset_mock()
 
     await device.set_drain_mode(mode)
 
-    device._conn.sendPacket.assert_not_called()
+    device._conn.send_packet.assert_not_called()
 
 
 def test_power_mode_select_hides_internal_init_state(device):

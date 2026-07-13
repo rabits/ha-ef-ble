@@ -11,7 +11,7 @@ from collections.abc import Awaitable, Callable, Collection, Coroutine, MutableS
 from dataclasses import dataclass
 from enum import StrEnum, auto
 from functools import cached_property
-from typing import Any, Concatenate, Literal
+from typing import Any, Concatenate, Literal, Self
 
 import ecdsa
 from bleak import BleakClient
@@ -188,22 +188,6 @@ class ConnectionState(StrEnum):
         return None
 
 
-def _auth_stage[**P, R](state: ConnectionState):
-    """Enter `state` before running the decorated auth stage method"""
-
-    def decorator(
-        fn: "Callable[Concatenate[Connection, P], Awaitable[R]]",
-    ) -> "Callable[Concatenate[Connection, P], Awaitable[R]]":
-        @functools.wraps(fn)
-        async def wrapper(self: "Connection", *args: P.args, **kwargs: P.kwargs) -> R:
-            self._set_state(state)
-            return await fn(self, *args, **kwargs)
-
-        return wrapper
-
-    return decorator
-
-
 type DisconnectListener = Callable[[Exception | type[Exception] | None], None]
 type ConnectionStateListener = Callable[[ConnectionState], None]
 type PacketReceivedListener = Callable[[bytes], None]
@@ -270,7 +254,7 @@ class Connection:
         self._undecryptable_frames = 0
         self._last_errors = deque(maxlen=10)
         self._disconnect_log: deque[dict[str, Any]] = deque(maxlen=10)
-        self._client = None
+        self._client: BleakClient | None = None
         self._connected = asyncio.Event()
         self._disconnected = asyncio.Event()
         self._retry_on_disconnect = False
@@ -306,18 +290,34 @@ class Connection:
     def update_ble_device(self, ble_dev: BLEDevice):
         self._ble_dev = ble_dev
 
-    def with_logging_options(self, options: LogOptions):
+    def with_logging_options(self, options: LogOptions) -> Self:
         self._logger.set_options(options)
         return self
 
-    def with_disabled_reconnect(self, is_disabled: bool = True):
+    def with_disabled_reconnect(self, is_disabled: bool = True) -> Self:
         self._reconnect = not is_disabled
         return self
 
-    def with_options(self, options: "Connection.Options"):
+    def with_options(self, options: "Connection.Options") -> Self:
         """Set connection options."""
         self._options = options
         return self
+
+    @staticmethod
+    def _auth_stage[**P, R](state: ConnectionState):
+        """Enter `state` before running the decorated auth stage method"""
+
+        def decorator(
+            fn: "Callable[Concatenate[Self, P], Awaitable[R]]",
+        ) -> "Callable[Concatenate[Self, P], Awaitable[R]]":
+            @functools.wraps(fn)
+            async def wrapper(self: "Self", *args: P.args, **kwargs: P.kwargs) -> R:
+                self._set_state(state)
+                return await fn(self, *args, **kwargs)
+
+            return wrapper
+
+        return decorator
 
     @property
     def disconnect_log(self) -> list[dict[str, Any]]:
@@ -418,7 +418,7 @@ class Connection:
             self._client = await establish_connection(
                 BleakClient,
                 self.ble_dev(),
-                self._ble_dev.name,
+                self._ble_dev.name or self._address,
                 disconnected_callback=self.disconnected,
                 ble_device_callback=self.ble_dev,
                 max_attempts=ble_attempts,
@@ -926,6 +926,8 @@ class Connection:
         return hashlib.md5(data).digest()
 
     async def _start_notify(self, callback: Callable):
+        assert self._client is not None
+
         kwargs = {}
         if self._options.bluez_start_notify:
             kwargs["bluez"] = {"use_start_notify": True}
@@ -1151,8 +1153,10 @@ class Connection:
             case 0:
                 return PassthroughAssembler()
             case 1:
+                assert self._encryption is not None
                 return RawHeaderAssembler(self._encryption)
             case 7:
+                assert self._encryption is not None
                 return EncPacketAssembler(self._encryption)
             case _:
                 raise ValueError(f"Unsupported encryption type: {self._encrypt_type}")
@@ -1260,11 +1264,12 @@ class Connection:
             else:
                 return
 
-        await self.add_error(err)
-        if raise_on_failure and err is not None:
-            # Retries exhausted while still nominally connected - the command never
-            # reached the device, so surface it instead of reporting success
-            raise err
+        if err is not None:
+            await self.add_error(err)
+            if raise_on_failure:
+                # Retries exhausted while still nominally connected - the command never
+                # reached the device, so surface it instead of reporting success
+                raise err
 
     async def _send_request(self, send_data: bytes, *, raise_on_failure: bool = False):
         # Make sure the connection is here, otherwise just skipping

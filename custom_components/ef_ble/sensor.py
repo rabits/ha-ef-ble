@@ -712,7 +712,10 @@ _SENSORS: Final[dict[str, SensorEntityDescription]] = {
         entity_category=EntityCategory.DIAGNOSTIC,
         options=dpu.Access5p8OutputType,
     ),
-    "battery_voltage": port_voltage("Battery"),
+    "battery_voltage": port_voltage(
+        "Battery",
+        state_attribute_fields=["max_cell_voltage", "min_cell_voltage"],
+    ),
     "battery_current": port_current("Battery"),
     "dc_inverter_temperature": port_temperature("DC Inverter"),
     "dc_inverter_error_code": port_error_code("DC Inverter"),
@@ -835,6 +838,12 @@ _SENSORS: Final[dict[str, SensorEntityDescription]] = {
     "temp_evaporator": wave_temperature(),
     "temp_compressor_discharge": wave_temperature(),
     # Delta 2
+    "max_cell_voltage": voltage(
+        precision=3, enabled=False, entity_category=EntityCategory.DIAGNOSTIC
+    ),
+    "min_cell_voltage": voltage(
+        precision=3, enabled=False, entity_category=EntityCategory.DIAGNOSTIC
+    ),
     "dc12v_output_voltage": voltage(precision=2, enabled=False),
     "dc12v_output_current": current(precision=2, enabled=False),
     "dc_input_voltage": voltage(precision=2, enabled=False),
@@ -898,6 +907,25 @@ SENSOR_TYPES: Final[dict[str, SensorEntityDescription]] = (
 _BATTERY_ADDON_SENSORS: Final = {
     "battery_{n}_battery_level": battery(translation_key="battery_level"),
     "battery_{n}_cell_temperature": temperature(translation_key="cell_temperature"),
+    "battery_{n}_voltage": port_voltage(
+        "Battery",
+        state_attribute_fields=[
+            "battery_{n}_max_cell_voltage",
+            "battery_{n}_min_cell_voltage",
+        ],
+    ),
+    "battery_{n}_max_cell_voltage": voltage(
+        precision=3,
+        enabled=False,
+        entity_category=EntityCategory.DIAGNOSTIC,
+        translation_key="max_cell_voltage",
+    ),
+    "battery_{n}_min_cell_voltage": voltage(
+        precision=3,
+        enabled=False,
+        entity_category=EntityCategory.DIAGNOSTIC,
+        translation_key="min_cell_voltage",
+    ),
     "battery_{n}_input_power": power(precision=0, translation_key="input_power"),
     "battery_{n}_output_power": power(precision=0, translation_key="output_power"),
 }
@@ -966,7 +994,14 @@ def _get_extra_battery_entities(
                 EcoflowBatteryAddonSensor(
                     device=device,
                     sensor=attr_name,
-                    description=replace(desc, key=attr_name),
+                    description=replace(
+                        desc,
+                        key=attr_name,
+                        state_attribute_fields=[
+                            attr.replace("{n}", str(battery_index))
+                            for attr in desc.state_attribute_fields
+                        ],
+                    ),
                     battery_index=battery_index,
                 )
             )
@@ -994,6 +1029,12 @@ class EcoflowSensor(EcoflowEntity, SensorEntity):
             if isinstance(self.entity_description, EcoflowSensorEntityDescription)
             else []
         )
+
+        self._register_update_callback(None, sensor)
+        for attribute_field in self._attribute_fields:
+            self._register_update_callback(None, attribute_field)
+        # Refresh the entity name when the name source (e.g. circuit name) updates.
+        self._register_update_callback(None, self._name_field)
 
     @property
     def _name_field(self) -> str | None:
@@ -1042,21 +1083,6 @@ class EcoflowSensor(EcoflowEntity, SensorEntity):
             if hasattr(self._device, field_name)
         }
 
-    async def async_added_to_hass(self):
-        """Run when this Entity has been added to HA."""
-        await super().async_added_to_hass()
-        self._device.register_callback(self.async_write_ha_state, self._sensor)
-        # Refresh the entity name when the name source (e.g. circuit name) updates.
-        if (name_field := self._name_field) is not None:
-            self._device.register_callback(self.async_write_ha_state, name_field)
-
-    async def async_will_remove_from_hass(self):
-        """Entity being removed from hass."""
-        await super().async_will_remove_from_hass()
-        self._device.remove_callback(self.async_write_ha_state, self._sensor)
-        if (name_field := self._name_field) is not None:
-            self._device.remove_callback(self.async_write_ha_state, name_field)
-
 
 class EcoflowBatteryAddonSensor(EcoflowBatteryAddonEntity, SensorEntity):
     def __init__(
@@ -1074,14 +1100,25 @@ class EcoflowBatteryAddonSensor(EcoflowBatteryAddonEntity, SensorEntity):
         if self.entity_description.translation_key is None:
             self._attr_translation_key = self.entity_description.key
 
+        self._attribute_fields = (
+            description.state_attribute_fields
+            if isinstance(description, EcoflowSensorEntityDescription)
+            else []
+        )
+
+        self._register_update_callback(None, sensor)
+        for attribute_field in self._attribute_fields:
+            self._register_update_callback(None, attribute_field)
+
     @property
     def native_value(self):
         return getattr(self._device, self._sensor, None)
 
-    async def async_added_to_hass(self):
-        await super().async_added_to_hass()
-        self._device.register_callback(self.async_write_ha_state, self._sensor)
-
-    async def async_will_remove_from_hass(self):
-        await super().async_will_remove_from_hass()
-        self._device.remove_callback(self.async_write_ha_state, self._sensor)
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        prefix = f"battery_{self._battery_index}_"
+        return {
+            field_name.removeprefix(prefix): getattr(self._device, field_name)
+            for field_name in self._attribute_fields
+            if hasattr(self._device, field_name)
+        }

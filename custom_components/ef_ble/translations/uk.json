@@ -596,6 +596,12 @@
       "cell_temperature": {
         "name": "Температура елементів"
       },
+      "max_cell_voltage": {
+        "name": "Макс. напруга елемента"
+      },
+      "min_cell_voltage": {
+        "name": "Мін. напруга елемента"
+      },
       "dc_port_input_power": {
         "name": "Вхідна потужність порту DC"
       },

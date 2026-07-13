@@ -622,6 +622,12 @@
       "cell_temperature": {
         "name": "Cell Temperature"
       },
+      "max_cell_voltage": {
+        "name": "Max Cell Voltage"
+      },
+      "min_cell_voltage": {
+        "name": "Min Cell Voltage"
+      },
       "dc_port_input_power": {
         "name": "DC Port Input Power"
       },

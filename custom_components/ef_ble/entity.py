@@ -18,6 +18,7 @@ class EcoflowEntity(Entity):
     def __init__(self, device: DeviceBase):
         self._device = device
         self._update_callbacks: list[tuple[str, Callable[[Any], None]]] = []
+        self._write_state_props: list[str] = []
 
     @property
     def device_info(self):
@@ -45,12 +46,25 @@ class EcoflowEntity(Entity):
 
     def _register_update_callback(
         self,
-        entity_attr: str,
+        entity_attr: str | None,
         prop_name: str | None,
         get_state: Callable[[Any], SkipWrite | Any] = lambda x: x,
         default_state: Any = None,
     ):
+        """
+        Bind a device property to this entity for the lifetime of the entity
+
+        With `entity_attr`, every property update is written to that attribute (mapped
+        through `get_state`) and pushed to HA immediately. With `entity_attr=None`, the
+        update only triggers a state write through the device's update-period throttle,
+        for entities that read the property live (e.g. in `native_value` or state
+        attributes).
+        """
         if prop_name is None or not hasattr(self._device, prop_name):
+            return
+
+        if entity_attr is None:
+            self._write_state_props.append(prop_name)
             return
 
         @callback
@@ -72,11 +86,15 @@ class EcoflowEntity(Entity):
     async def async_added_to_hass(self) -> None:
         for prop, state_callback in self._update_callbacks:
             self._device.register_state_update_callback(state_callback, prop)
+        for prop in self._write_state_props:
+            self._device.register_callback(self.async_write_ha_state, prop)
         await super().async_added_to_hass()
 
     async def async_will_remove_from_hass(self) -> None:
         for prop, state_callback in self._update_callbacks:
             self._device.remove_state_update_callback(state_callback, prop)
+        for prop in self._write_state_props:
+            self._device.remove_callback(self.async_write_ha_state, prop)
         await super().async_will_remove_from_hass()
 
 

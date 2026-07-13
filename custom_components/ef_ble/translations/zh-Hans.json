@@ -596,6 +596,12 @@
       "cell_temperature": {
         "name": "电芯温度"
       },
+      "max_cell_voltage": {
+        "name": "最高电芯电压"
+      },
+      "min_cell_voltage": {
+        "name": "最低电芯电压"
+      },
       "dc_port_input_power": {
         "name": "直流端口输入功率"
       },

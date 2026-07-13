@@ -11,7 +11,7 @@ from collections.abc import Awaitable, Callable, Collection, Coroutine, MutableS
 from dataclasses import dataclass
 from enum import StrEnum, auto
 from functools import cached_property
-from typing import Any, Literal
+from typing import Any, Concatenate, Literal
 
 import ecdsa
 from bleak import BleakClient
@@ -186,6 +186,22 @@ class ConnectionState(StrEnum):
         if self in self.step_order:
             return self.step_order.index(self)
         return None
+
+
+def _auth_stage[**P, R](state: ConnectionState):
+    """Enter `state` before running the decorated auth stage method"""
+
+    def decorator(
+        fn: "Callable[Concatenate[Connection, P], Awaitable[R]]",
+    ) -> "Callable[Concatenate[Connection, P], Awaitable[R]]":
+        @functools.wraps(fn)
+        async def wrapper(self: "Connection", *args: P.args, **kwargs: P.kwargs) -> R:
+            self._set_state(state)
+            return await fn(self, *args, **kwargs)
+
+        return wrapper
+
+    return decorator
 
 
 type DisconnectListener = Callable[[Exception | type[Exception] | None], None]
@@ -723,8 +739,8 @@ class Connection:
         await self._request_session_key()
         await self._request_auth_status()
 
+    @_auth_stage(ConnectionState.PUBLIC_KEY_EXCHANGE)
     async def _exchange_public_keys(self):
-        self._set_state(ConnectionState.PUBLIC_KEY_EXCHANGE)
         self._logger.log_filtered(
             LogOptions.CONNECTION_DEBUG, "_exchange_public_keys: Pub key exchange"
         )
@@ -761,8 +777,8 @@ class Connection:
 
         self._use_encryption(Type7Encryption(shared_key[:16], iv))
 
+    @_auth_stage(ConnectionState.REQUESTING_SESSION_KEY)
     async def _request_session_key(self):
-        self._set_state(ConnectionState.REQUESTING_SESSION_KEY)
         self._logger.log_filtered(
             LogOptions.CONNECTION_DEBUG, "_request_session_key: Receiving session key"
         )
@@ -788,8 +804,8 @@ class Connection:
         self._initial_session_key = self._encryption.session_key
         self._use_encryption(Type7Encryption(session_key, self._encryption.iv))
 
+    @_auth_stage(ConnectionState.REQUESTING_AUTH_STATUS)
     async def _request_auth_status(self):
-        self._set_state(ConnectionState.REQUESTING_AUTH_STATUS)
         self._logger.log_filtered(
             LogOptions.CONNECTION_DEBUG, "_request_auth_status: Receiving auth status"
         )
@@ -804,8 +820,8 @@ class Connection:
             packets[0].payload,
         )
 
+    @_auth_stage(ConnectionState.AUTHENTICATING)
     async def _auto_authentication(self):
-        self._set_state(ConnectionState.AUTHENTICATING)
         self._logger.info(
             "_auto_authentication: Sending secretKey consists of user id and device "
             "serial number",

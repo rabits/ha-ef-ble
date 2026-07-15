@@ -1,11 +1,7 @@
 import pytest
 from pytest_mock import MockerFixture
 
-from custom_components.ef_ble.eflib.devices.delta_pro_3 import (
-    ChargeDischargeState,
-    DCPortState,
-    Device,
-)
+from custom_components.ef_ble.eflib.devices.delta_pro_3 import DCPortState, Device
 
 
 @pytest.fixture
@@ -48,9 +44,7 @@ async def test_delta_pro_3_parses_all_packets_successfully(device, packet_sequen
         )
 
 
-async def test_delta_pro_3_processes_all_packets_successfully(
-    device, packet_sequence
-):
+async def test_delta_pro_3_processes_all_packets_successfully(device, packet_sequence):
     for i, hex_packet in enumerate(packet_sequence):
         packet = await device.packet_parse(bytes.fromhex(hex_packet))
         processed = await device.data_parse(packet)
@@ -67,13 +61,10 @@ async def test_delta_pro_3_exact_values_from_known_packets(device, packet_sequen
         Device.battery_level: 59.35,
         Device.battery_level_main: 59.35,
         Device.state_of_health: 100.0,
-        Device.battery_full_energy: 4096,
-        Device.battery_charge_state: ChargeDischargeState.IDLE,
         Device.ac_input_power: 148.0,
         Device.ac_lv_output_power: 0.0,
         Device.ac_hv_output_power: 147.0,
         Device.ac_lv_tt30_output_power: 0.0,
-        Device.ac_output_frequency: 50,
         Device.input_power: 148.0,
         Device.output_power: 147.0,
         Device.dc12v_output_power: 0.0,
@@ -81,11 +72,9 @@ async def test_delta_pro_3_exact_values_from_known_packets(device, packet_sequen
         Device.usba_output_power: 0.0,
         Device.battery_input_power: 0,
         Device.battery_output_power: 0,
-        Device.power_io_port_power: 0.0,
+        Device.ac_5p8_in_power: 0.0,
+        Device.ac_5p8_out_power: 0.0,
         Device.cell_temperature: 29,
-        Device.min_cell_temperature: 26,
-        Device.beeper: True,
-        Device.xboost: False,
         Device.usb_ports: True,
         Device.dc_12v_port: False,
         Device.ac_lv_port: False,

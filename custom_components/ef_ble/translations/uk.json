@@ -647,23 +647,8 @@
       "ac_lv_tt30_output_power": {
         "name": "Вихідна потужність AC LV TT-30"
       },
-      "ac_output_frequency": {
-        "name": "Частота виходу змінного струму (AC)"
-      },
-      "power_io_port_power": {
-        "name": "Потужність порту Power In/Out"
-      },
       "state_of_health": {
         "name": "Стан здоров'я батареї"
-      },
-      "battery_full_energy": {
-        "name": "Ємність батареї"
-      },
-      "battery_charge_state": {
-        "name": "Стан заряду батареї"
-      },
-      "min_cell_temperature": {
-        "name": "Мінімальна температура елементів"
       },
       "engine_state": {
         "name": "Стан двигуна",
@@ -1159,12 +1144,6 @@
       },
       "usb_ports": {
         "name": "Порти USB"
-      },
-      "beeper": {
-        "name": "Звуковий сигнал"
-      },
-      "xboost": {
-        "name": "X-Boost"
       },
       "ac_ports_2": {
         "name": "Порти AC (2)"

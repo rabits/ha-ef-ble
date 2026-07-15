@@ -1,5 +1,7 @@
 from typing import TYPE_CHECKING
 
+from . import devices as _devices
+
 if TYPE_CHECKING:
     from .devicebase import DeviceBase
 
@@ -39,16 +41,13 @@ def extra_battery_indices(device: "DeviceBase") -> list[int]:
 
 def _supported_device_name(sn: str) -> str | None:
     """Model name of the supported device whose serial prefix matches `sn`, if any"""
-    from .devices import devices as device_modules  # noqa: PLC0415 - avoid import cycle
-    from .devices import unsupported  # noqa: PLC0415
-
     try:
         sn_bytes = sn.encode("ASCII")
     except UnicodeEncodeError:
         return None
-    for item in device_modules:
+    for item in _devices.devices:
         device_cls = getattr(item, "Device", None)
-        if device_cls is None or device_cls is unsupported.UnsupportedDevice:
+        if device_cls is None or device_cls is _devices.unsupported.UnsupportedDevice:
             continue
         try:
             matched = device_cls.check(sn_bytes)

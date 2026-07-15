@@ -233,11 +233,6 @@ class Device(DeviceBase, ProtobufProps):
     battery_power = pb_field(pb.pow_get_bp_cms, pround(2))
     pv_power_sum = pb_field(pb.pow_get_pv_sum, pround(2))
 
-    # Batteries attached to the backup channels: `panel_backup_ch{n}_Info.ch_dev_id`
-    # points into the `panel_generate_energy_battery_info_{n}` slots, and the
-    # channel{n}_* fields (named after SHP2's per-channel energy info) resolve
-    # through that indirection. `ac_pwr` is signed: negative while discharging
-    # into the panel, hence `out_power` for the output power reading.
     _battery_slot_sn = pb_field_group(
         pb.panel_generate_energy_battery_info_1.sn,
         match="panel_generate_energy_battery_info_{n}",

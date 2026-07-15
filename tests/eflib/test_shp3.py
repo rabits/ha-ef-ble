@@ -282,7 +282,6 @@ async def test_shp3_channel_is_enabled_state_from_backup_channels(device):
 
 
 async def test_shp3_channel_battery_info_resolves_through_dev_id(device):
-    """Layout mirrors a captured diagnostics dump: channel 1 -> slot 5, channel 2 -> slot 6"""
     msg = dev_apl_comm_pb2.DisplayPropertyUpload()
     msg.panel_backup_ch1_Info.ch_dev_id = 5
     msg.panel_backup_ch2_Info.ch_dev_id = 6
@@ -328,13 +327,6 @@ async def test_shp3_set_channel_enable_writes_backup_ctrl(device):
 
 
 async def test_shp3_config_write_mirrors_post_frame(device, packet_sequence):
-    """
-    After a post, PR #389 mirrors the panel's own v4 frame for the write.
-
-    The transport (addressing, inner header, obfuscation keys) is the post's verbatim
-    via `dataclasses.replace`; only cmd_flags / is_ack / is_rw_cmd and the application
-    payload change. The payload is `serial9 + serial16 + envelope + ConfigWrite`.
-    """
     post = await device.packet_parse(bytes.fromhex(packet_sequence[1]))
     await device.data_parse(post)
 

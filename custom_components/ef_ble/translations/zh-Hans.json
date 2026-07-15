@@ -644,6 +644,27 @@
       "dc_hv_input_state": {
         "name": "高压直流输入端口状态"
       },
+      "ac_lv_tt30_output_power": {
+        "name": "交流 LV TT-30 输出功率"
+      },
+      "ac_output_frequency": {
+        "name": "交流输出频率"
+      },
+      "power_io_port_power": {
+        "name": "Power In/Out 端口功率"
+      },
+      "state_of_health": {
+        "name": "电池健康状态"
+      },
+      "battery_full_energy": {
+        "name": "电池容量"
+      },
+      "battery_charge_state": {
+        "name": "电池充放电状态"
+      },
+      "min_cell_temperature": {
+        "name": "最低电芯温度"
+      },
       "engine_state": {
         "name": "引擎状态",
         "state": {
@@ -1138,6 +1159,12 @@
       },
       "usb_ports": {
         "name": "USB 端口"
+      },
+      "beeper": {
+        "name": "蜂鸣器"
+      },
+      "xboost": {
+        "name": "X-Boost"
       },
       "ac_ports_2": {
         "name": "交流端口 (2)"

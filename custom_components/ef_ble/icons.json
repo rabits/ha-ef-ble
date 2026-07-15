@@ -214,6 +214,16 @@
           "emergency_stop": "mdi:alert-octagon",
           "off_power": "mdi:power-off"
         }
+      },
+      "state_of_health": {
+        "default": "mdi:battery-heart"
+      },
+      "battery_charge_state": {
+        "default": "mdi:battery",
+        "state": {
+          "charging": "mdi:battery-charging",
+          "discharging": "mdi:battery-arrow-down"
+        }
       }
     },
     "switch": {
@@ -338,6 +348,12 @@
         "default": "mdi:battery-arrow-down",
         "state": {
           "off": "mdi:battery-off-outline"
+        }
+      },
+      "beeper": {
+        "default": "mdi:volume-high",
+        "state": {
+          "off": "mdi:volume-off"
         }
       }
     },

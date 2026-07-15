@@ -670,6 +670,27 @@
       "dc_hv_input_state": {
         "name": "HV DC Input Port State"
       },
+      "ac_lv_tt30_output_power": {
+        "name": "AC LV TT-30 Output Power"
+      },
+      "ac_output_frequency": {
+        "name": "AC Output Frequency"
+      },
+      "power_io_port_power": {
+        "name": "Power In/Out Port Power"
+      },
+      "state_of_health": {
+        "name": "State of Health"
+      },
+      "battery_full_energy": {
+        "name": "Battery Capacity"
+      },
+      "battery_charge_state": {
+        "name": "Battery Charge State"
+      },
+      "min_cell_temperature": {
+        "name": "Min Cell Temperature"
+      },
       "engine_state": {
         "name": "Engine State",
         "state": {
@@ -1141,6 +1162,12 @@
       },
       "usb_ports": {
         "name": "USB Ports"
+      },
+      "beeper": {
+        "name": "Beeper"
+      },
+      "xboost": {
+        "name": "X-Boost"
       },
       "ac_ports_2": {
         "name": "AC Ports (2)"

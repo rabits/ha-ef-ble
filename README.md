@@ -344,10 +344,10 @@ Click on any device below to see available sensors, switches, and controls:
 |-------------------------------------|----------------|----------------------|
 | Main Battery Level                  | AC Ports       | Backup Reserve Level |
 | Battery Level                       | DC Ports       | Max Charge Limit     |
-| Extra Battery Level ¹               | Backup Reserve | Min Discharge Limit  |
-| Extra Battery Temperature ¹         |                | AC Charging Speed    |
-| AC Input Power                      |                |                      |
-| AC LV Output Power                  |                |                      |
+| Extra Battery Level ¹               | USB Ports      | Min Discharge Limit  |
+| Extra Battery Temperature ¹         | Backup Reserve | AC Charging Speed    |
+| AC Input Power                      | Beeper         |                      |
+| AC LV Output Power                  | X-Boost        |                      |
 | AC HV Output Power                  |                |                      |
 | DC 12V Output Power                 |                |                      |
 | DC LV Input Power                   |                |                      |
@@ -364,10 +364,20 @@ Click on any device below to see available sensors, switches, and controls:
 | USB C (2) Output Power              |                |                      |
 | AC Plugged In                       |                |                      |
 | Cell Temperature (disabled)         |                |                      |
+| Min Cell Temperature (disabled)     |                |                      |
+| State of Health (disabled)          |                |                      |
+| Battery Capacity (disabled)         |                |                      |
+| Battery Charge State (disabled)     |                |                      |
+| Battery Input Power (disabled)      |                |                      |
+| Battery Output Power (disabled)     |                |                      |
+| Power In/Out Port Power (disabled)  |                |                      |
+| AC LV TT-30 Output Power (disabled) |                |                      |
+| AC Output Frequency (disabled)      |                |                      |
 | Charge Time Remaining (disabled)    |                |                      |
 | Discharge Time Remaining (disabled) |                |                      |
 | Error Occurred (disabled) ²         |                |                      |
 | BMS Run State (disabled)            |                |                      |
+| Fan Running (disabled)              |                |                      |
 
 <sup>¹ Per extra battery (up to 2)</sup>
 <sup>² Includes error code as an extra attribute</sup>

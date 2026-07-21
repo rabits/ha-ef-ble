@@ -386,6 +386,15 @@ class Connection:
                 max_attempts=ble_attempts,
                 timeout=self._options.timeout,
             )
+            self._validate_characteristics()
+        except UnsupportedBluetoothProtocol as e:
+            error = e
+            if not e.available_characteristics:
+                # An empty service table is a host-side GATT cache glitch, not the
+                # device genuinely lacking the protocol - wipe the cache so the
+                # reconnect re-discovers services instead of failing the same way.
+                await self._clear_gatt_cache()
+            self._set_state(ConnectionState.ERROR_BLEAK, e)
         except TimeoutError as e:
             error = e
             self._set_state(
@@ -701,15 +710,35 @@ class Connection:
             f"{c.uuid} {c.description} {c.properties}"
             for c in self._client.services.characteristics.values()
         ]
-        raise UnsupportedBluetoothProtocol("write", characteristic_list)
+        raise UnsupportedBluetoothProtocol(char_type, characteristic_list)
 
-    @cached_property
+    @property
     def _notify_characteristic(self):
         return self._get_characteristics("notify")
 
-    @cached_property
+    @property
     def _write_characteristic(self):
         return self._get_characteristics("write")
+
+    def _validate_characteristics(self) -> None:
+        """Resolve both GATT characteristics against the freshly connected client"""
+        self._get_characteristics("notify")
+        self._get_characteristics("write")
+
+    async def _clear_gatt_cache(self) -> None:
+        # BlueZ can report `ServicesResolved` against an empty or stale cache (typically
+        # right after a bluetoothd restart or host update); without wiping it every
+        # reconnect keeps resolving the same broken service table. `clear_cache` is the
+        # `bleak_retry_connector.BleakClientWithServiceCache` interface, duck-typed via
+        # `getattr` because not every client implements it (plain `BleakClient` doesn't)
+        clear_cache = getattr(self._client, "clear_cache", None)
+        if clear_cache is None:
+            return
+        self._logger.warning("Clearing GATT cache to force service re-discovery")
+        try:
+            await clear_cache()
+        except BleakError as e:
+            self._logger.warning("Failed to clear GATT cache: %s", e)
 
     async def genSessionKey(self, seed: bytes, srand: bytes):
         """Implements the necessary part of the logic, rest is skipped"""

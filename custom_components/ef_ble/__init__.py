@@ -46,7 +46,7 @@ from .eflib.connection import (
     ConnectionTimeout,
     MaxConnectionAttemptsReached,
 )
-from .eflib.exceptions import AuthErrors
+from .eflib.exceptions import AuthErrors, UnsupportedBluetoothProtocol
 from .eflib.logging_util import ConnectionLog
 
 PLATFORMS: list[Platform] = [
@@ -140,7 +140,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: DeviceConfigEntry) -> bo
         )
         async with asyncio.timeout(timeout):
             state = await device.wait_until_authenticated_or_error(raise_on_error=True)
-    except (ConnectionTimeout, BleakError, TimeoutError) as e:
+    except (
+        ConnectionTimeout,
+        BleakError,
+        TimeoutError,
+        UnsupportedBluetoothProtocol,
+    ) as e:
         await device.disconnect()
         raise ConfigEntryNotReady(
             translation_key="could_not_connect",

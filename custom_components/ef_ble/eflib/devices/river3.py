@@ -254,8 +254,6 @@ class Device(DeviceBase, ProtobufProps):
         max=dynamic(max_ac_charging_power),
     )
     async def set_ac_charging_speed(self, value: float):
-        await self.set_battery_charge_limit_max(12)
-
         if (
             self.max_ac_charging_power is None
             or value > self.max_ac_charging_power

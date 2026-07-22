@@ -334,6 +334,12 @@
           "off": "mdi:battery-off"
         }
       },
+      "feed_protect": {
+        "default": "mdi:transmission-tower-off",
+        "state": {
+          "off": "mdi:transmission-tower-export"
+        }
+      },
       "discharging_task_enabled": {
         "default": "mdi:battery-arrow-down",
         "state": {
@@ -367,6 +373,13 @@
           "scheduled": "mdi:calendar-clock",
           "tou": "mdi:clock-time-eight",
           "intelligent_schedule": "mdi:head-lightbulb"
+        }
+      },
+      "power_supply_priority": {
+        "default": "mdi:swap-vertical-bold",
+        "state": {
+          "power_supply": "mdi:home-lightning-bolt",
+          "power_storage": "mdi:battery-charging"
         }
       },
       "operating_submode": {
@@ -421,6 +434,9 @@
         "default": "mdi:transmission-tower"
       },
       "base_load_power": {
+        "default": "mdi:home-lightning-bolt"
+      },
+      "load_power": {
         "default": "mdi:home-lightning-bolt"
       },
       "grid_in_power_limit": {

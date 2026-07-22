@@ -181,6 +181,7 @@ async def test_powerstream_exact_values_from_known_packets(device, packet_sequen
         Device.inverter_current: 0.35,
         Device.inverter_frequency: 49.9,
         Device.inverter_temperature: 0.0,
+        Device.feed_protect: False,
     }
 
     for field_name, expected_value in expected.items():

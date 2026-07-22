@@ -1037,6 +1037,13 @@
           "sleep": "睡眠",
           "eco": "节能"
         }
+      },
+      "power_supply_priority": {
+        "name": "供电优先级",
+        "state": {
+          "power_supply": "供电优先",
+          "power_storage": "储能优先"
+        }
       }
     },
     "number": {
@@ -1060,6 +1067,9 @@
       },
       "base_load_power": {
         "name": "基础负载功率"
+      },
+      "load_power": {
+        "name": "负载功率"
       },
       "grid_in_power_limit": {
         "name": "电网输入功率限制"
@@ -1168,6 +1178,9 @@
       },
       "discharging_task_enabled": {
         "name": "放电任务"
+      },
+      "feed_protect": {
+        "name": "馈网控制"
       }
     }
   }

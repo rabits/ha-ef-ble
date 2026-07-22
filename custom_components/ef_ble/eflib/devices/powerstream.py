@@ -1,6 +1,8 @@
 from google.protobuf.message import Message
 
 from ..devicebase import DeviceBase
+from ..entity import controls
+from ..entity.base import dynamic
 from ..packet import Packet
 from ..pb import wn511_sys_pb2
 from ..props import Field, ProtobufProps, pb_field, proto_attr_mapper
@@ -49,6 +51,7 @@ class Device(DeviceBase, ProtobufProps):
     battery_charge_limit_max = pb_field(pb.upper_limit)
     battery_charge_limit_min = pb_field(pb.lower_limit)
     power_supply_priority = pb_field(pb.supply_priority, PowerSupplyPriority.from_value)
+    feed_protect = pb_field(pb.feed_protect, bool)
 
     llc_temperature = pb_field(pb.llc_temp, pdiv(10, 1))
 
@@ -118,6 +121,7 @@ class Device(DeviceBase, ProtobufProps):
         packet = Packet(0x21, dst, 0x14, cmd_id, payload, version=0x13)
         await self._conn.sendPacket(packet)
 
+    @controls.power(load_power, max=dynamic(load_power_max), step=0.1)
     async def set_load_power(self, watts: float) -> bool:
         await self._send_ble_packet(
             wn511_sys_pb2.permanent_watts_pack(permanent_watts=int(watts * 10)),
@@ -125,12 +129,12 @@ class Device(DeviceBase, ProtobufProps):
         )
         return True
 
-    async def set_supply_priority(self, priority: PowerSupplyPriority) -> bool:
+    @controls.select(power_supply_priority, options=PowerSupplyPriority)
+    async def set_supply_priority(self, priority: PowerSupplyPriority):
         await self._send_ble_packet(
             wn511_sys_pb2.supply_priority_pack(supply_priority=priority.value),
             cmd_id=0x82,
         )
-        return True
 
     async def set_battery_charge_limit_min(self, limit: int) -> bool:
         limit = max(0, min(limit, 30))
@@ -159,12 +163,12 @@ class Device(DeviceBase, ProtobufProps):
         )
         return True
 
-    async def set_feed_protect(self, value: int) -> bool:
+    @controls.switch(feed_protect)
+    async def set_feed_protect(self, enabled: bool):
         await self._send_ble_packet(
-            wn511_sys_pb2.feed_protect_pack(feed_protect=value),
+            wn511_sys_pb2.feed_protect_pack(feed_protect=enabled),
             cmd_id=0x8F,
         )
-        return True
 
     async def set_ac_max_watts(self, max_watts: int) -> bool:
         await self._send_ble_packet(

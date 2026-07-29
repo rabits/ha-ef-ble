@@ -486,6 +486,40 @@ Click on any device below to see available sensors, switches, and controls:
 </details>
 
 <details>
+<summary><b>Power Kits Power Hub</b></summary>
+
+<br>
+
+| *Sensors*                           |
+|-------------------------------------|
+| Battery Level                       |
+| Input Power                         |
+| Output Power                        |
+| Battery Voltage                     |
+| Battery Current                     |
+| PV (1) Power                        |
+| PV (1) Voltage                      |
+| PV (1) Current                      |
+| PV (1) Temperature                  |
+| PV (2) Power                        |
+| PV (2) Voltage                      |
+| PV (2) Current                      |
+| PV (2) Temperature                  |
+| Charge Time Remaining (disabled)    |
+| Discharge Time Remaining (disabled) |
+| Extra Battery (1-3) Level           |
+| Extra Battery (1-3) Temperature     |
+| Extra Battery (1-3) Voltage         |
+| Extra Battery (1-3) Input Power     |
+| Extra Battery (1-3) Output Power    |
+
+> **📝 Note:** Extra batteries are detected when the integration is set up. If you
+> connect or disconnect a battery, you can reconfigure the integration to update
+> the registered devices.
+
+</details>
+
+<details>
 <summary><b>PowerStream</b></summary>
 
 <br>

@@ -177,6 +177,12 @@
             "connectable": true
         },
         {
+            "local_name": "EF-M10*",
+            "manufacturer_id": 46517,
+            "manufacturer_data_start": [18, 77, 49, 48],
+            "connectable": true
+        },
+        {
             "local_name": "EF-DC",
             "manufacturer_id": 46517,
             "manufacturer_data_start": [19, 68, 67]

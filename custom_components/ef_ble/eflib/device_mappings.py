@@ -213,6 +213,12 @@ ECOFLOW_DEVICE_LIST = {
     "HJ37":{"name": "EcoFlow PowerOcean 12kW", "packets": "?"},
 
     # =====================
+    # POWER KITS
+    # =====================
+    "M109":{"name": "EcoFlow Power Kits Power Hub", "packets": "v3"},
+    "M101":{"name": "EcoFlow Power Kits LFP Battery", "packets": "v3"},
+
+    # =====================
     # TRAIL
     # =====================
     "PR51":{"name": "EcoFlow TRAIL 200 DC", "packets": "?"},

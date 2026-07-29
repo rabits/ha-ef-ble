@@ -20,6 +20,7 @@ from .pd_heart import (
     Mr330PdHeartDelta2,
     Mr350PdHeartbeatDelta2Max,
 )
+from .power_hub import PowerHubBatteryData, PowerHubBmsData, PowerHubMpptData
 
 __all__ = [
     "AllKitDetailData",
@@ -39,5 +40,8 @@ __all__ = [
     "Mr330PdHeartDelta2",
     "Mr350MpptHeart",
     "Mr350PdHeartbeatDelta2Max",
+    "PowerHubBatteryData",
+    "PowerHubBmsData",
+    "PowerHubMpptData",
     "RawData",
 ]

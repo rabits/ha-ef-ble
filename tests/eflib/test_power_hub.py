@@ -98,3 +98,8 @@ def test_new_device_selects_power_hub_before_unsupported(mocker: MockerFixture):
     adv_data.manufacturer_data = {0xB5B5: b"\x12M109TEST0000001"}
 
     assert isinstance(eflib.NewDevice(ble_dev, adv_data), Device)
+
+
+def test_power_hub_uses_fast_in_place_reconnect():
+    assert Device.RECONNECT_IN_PLACE is True
+    assert Device.RECONNECT_DELAY == 1.0

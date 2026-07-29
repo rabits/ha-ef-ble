@@ -20,6 +20,8 @@ class Device(DeviceBase, RawDataProps):
 
     SN_PREFIX = (b"M109",)
     NAME_PREFIX = "EF-M10"
+    RECONNECT_IN_PLACE = True
+    RECONNECT_DELAY = 1.0
 
     battery_level = raw_field(bms.soc)
     input_power = raw_field(bms.input_power)
@@ -40,9 +42,7 @@ class Device(DeviceBase, RawDataProps):
     battery_enabled = field_group(
         lambda _: Field[bool](), 3, name_template="battery_{n}_enabled"
     )
-    battery_sn = field_group(
-        lambda _: Field[str](), 3, name_template="battery_{n}_sn"
-    )
+    battery_sn = field_group(lambda _: Field[str](), 3, name_template="battery_{n}_sn")
     battery_battery_level = field_group(
         lambda _: Field[int](), 3, name_template="battery_{n}_battery_level"
     )
@@ -106,9 +106,7 @@ class Device(DeviceBase, RawDataProps):
 
         match packet.src, packet.cmd_set, packet.cmd_id:
             case (0x03, 0x03, 0x1A) if 1 <= packet.dsrc <= 3:
-                battery = self.update_from_bytes(
-                    PowerHubBatteryData, packet.payload
-                )
+                battery = self.update_from_bytes(PowerHubBatteryData, packet.payload)
                 self._update_battery(packet.dsrc, battery)
             case (0x03, 0x03, 0x1C):
                 self.update_from_bytes(PowerHubBmsData, packet.payload)

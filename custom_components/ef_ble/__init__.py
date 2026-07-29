@@ -69,6 +69,85 @@ ConfigEntryError = partial(ConfigEntryError, translation_domain=DOMAIN)
 _REAPPEAR_CALLBACKS_KEY = f"{DOMAIN}_reappear_callbacks"
 
 
+async def _async_reconnect_in_place(
+    hass: HomeAssistant,
+    device: eflib.DeviceBase,
+    address: str,
+    user_id: str,
+    timeout: int,
+) -> None:
+    """Reconnect with a fresh BLE session while preserving entity objects."""
+    await device.disconnect()
+    await asyncio.sleep(device.RECONNECT_DELAY)
+
+    discovery = bluetooth.async_last_service_info(hass, address, connectable=True)
+    if discovery is None:
+        raise BleakError(f"Device {address} is no longer discoverable")
+
+    device.update_ble_device(discovery.device)
+    await device.connect(user_id=user_id, max_attempts=2)
+    async with asyncio.timeout(timeout):
+        reconnect_state = await device.wait_until_authenticated_or_error(
+            raise_on_error=True
+        )
+    if not reconnect_state.authenticated:
+        raise ConnectionError(f"Reconnect ended in state {reconnect_state}")
+
+
+class _ReconnectManager:
+    """Handle device-specific in-place reconnects for a loaded config entry."""
+
+    def __init__(
+        self,
+        hass: HomeAssistant,
+        entry: DeviceConfigEntry,
+        device: eflib.DeviceBase,
+        address: str,
+        user_id: str,
+        timeout: int,
+    ) -> None:
+        self._hass = hass
+        self._entry = entry
+        self._device = device
+        self._address = address
+        self._user_id = user_id
+        self._timeout = timeout
+        self._task: asyncio.Task[None] | None = None
+
+    def on_disconnect(self, _exc: Exception | type[Exception] | None) -> None:
+        if not self._device.RECONNECT_IN_PLACE:
+            self._hass.config_entries.async_schedule_reload(self._entry.entry_id)
+            return
+        if self._task is not None and not self._task.done():
+            return
+        self._task = self._hass.async_create_task(self._async_reconnect())
+
+    async def _async_reconnect(self) -> None:
+        try:
+            await _async_reconnect_in_place(
+                self._hass,
+                self._device,
+                self._address,
+                self._user_id,
+                self._timeout,
+            )
+            _LOGGER.info("Reconnected %s without reloading entities", self._device.name)
+        except asyncio.CancelledError:
+            raise
+        except Exception:
+            _LOGGER.exception(
+                "In-place reconnect failed for %s; reloading config entry",
+                self._device.name,
+            )
+            self._hass.config_entries.async_schedule_reload(self._entry.entry_id)
+        finally:
+            self._task = None
+
+    def cancel(self) -> None:
+        if self._task is not None:
+            self._task.cancel()
+
+
 async def async_setup_entry(hass: HomeAssistant, entry: DeviceConfigEntry) -> bool:
     """Set up EF BLE device from a config entry."""
     _LOGGER.debug("Init EcoFlow BLE Integration")
@@ -192,13 +271,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: DeviceConfigEntry) -> bo
     _LOGGER.debug("Setup done")
     entry.async_on_unload(entry.add_update_listener(_update_listener))
 
-    def _on_disconnect(exc: Exception | type[Exception] | None):
-        async def _disconnect_and_reload():
-            hass.config_entries.async_schedule_reload(entry.entry_id)
-
-        hass.async_create_task(_disconnect_and_reload())
-
-    entry.async_on_unload(device.on_disconnect(_on_disconnect))
+    reconnect_manager = _ReconnectManager(
+        hass, entry, device, address, user_id, timeout
+    )
+    entry.async_on_unload(device.on_disconnect(reconnect_manager.on_disconnect))
+    entry.async_on_unload(reconnect_manager.cancel)
 
     return True
 

@@ -22,6 +22,7 @@ class Device(DeviceBase, RawDataProps):
 
     SN_PREFIX = (b"M109",)
     NAME_PREFIX = "EF-M10"
+    RECONNECT_IN_PLACE = True
 
     battery_level = raw_field(bms.soc)
     input_power = raw_field(bms.input_power)

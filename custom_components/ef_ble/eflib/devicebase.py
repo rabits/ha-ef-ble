@@ -51,6 +51,7 @@ class DeviceBase(abc.ABC):
     """Device Base"""
 
     MANUFACTURER_KEY = 0xB5B5
+    RECONNECT_IN_PLACE = False
 
     NAME_PREFIX: str
     SN_PREFIX: tuple[bytes, ...] | bytes

@@ -4,6 +4,7 @@ import asyncio
 import logging
 from collections.abc import Callable
 from functools import partial
+from time import monotonic
 
 import homeassistant.helpers.issue_registry as ir
 from homeassistant.components import bluetooth
@@ -48,6 +49,7 @@ from .eflib.connection import (
 )
 from .eflib.exceptions import AuthErrors, UnsupportedBluetoothProtocol
 from .eflib.logging_util import ConnectionLog
+from .eflib.reconnect import ReconnectManager
 
 PLATFORMS: list[Platform] = [
     Platform.BUTTON,
@@ -67,6 +69,36 @@ ConfigEntryNotReady = partial(ConfigEntryNotReady, translation_domain=DOMAIN)
 ConfigEntryError = partial(ConfigEntryError, translation_domain=DOMAIN)
 
 _REAPPEAR_CALLBACKS_KEY = f"{DOMAIN}_reappear_callbacks"
+_IN_PLACE_RECONNECT_DELAY = 1.0
+_MAX_RECONNECT_ADVERTISEMENT_AGE = 60.0
+
+
+async def _async_reconnect_in_place(
+    hass: HomeAssistant,
+    device: eflib.DeviceBase,
+    address: str,
+    user_id: str,
+    timeout: int,
+) -> None:
+    """Reconnect with a fresh BLE session while preserving entity objects."""
+    await device.disconnect()
+    await asyncio.sleep(_IN_PLACE_RECONNECT_DELAY)
+
+    discovery = bluetooth.async_last_service_info(hass, address, connectable=True)
+    if (
+        discovery is None
+        or monotonic() - discovery.time > _MAX_RECONNECT_ADVERTISEMENT_AGE
+    ):
+        raise BleakError(f"Device {address} has no recent advertisement")
+
+    device.update_ble_device(discovery.device)
+    await device.connect(user_id=user_id, max_attempts=2)
+    async with asyncio.timeout(timeout):
+        reconnect_state = await device.wait_until_authenticated_or_error(
+            raise_on_error=True
+        )
+    if not reconnect_state.authenticated:
+        raise ConnectionError(f"Reconnect ended in state {reconnect_state}")
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: DeviceConfigEntry) -> bool:
@@ -192,13 +224,34 @@ async def async_setup_entry(hass: HomeAssistant, entry: DeviceConfigEntry) -> bo
     _LOGGER.debug("Setup done")
     entry.async_on_unload(entry.add_update_listener(_update_listener))
 
-    def _on_disconnect(exc: Exception | type[Exception] | None):
-        async def _disconnect_and_reload():
-            hass.config_entries.async_schedule_reload(entry.entry_id)
+    async def _reconnect() -> None:
+        await _async_reconnect_in_place(
+            hass,
+            device,
+            address,
+            user_id,
+            timeout,
+        )
 
-        hass.async_create_task(_disconnect_and_reload())
+    def _fallback_reload() -> None:
+        hass.config_entries.async_schedule_reload(entry.entry_id)
 
-    entry.async_on_unload(device.on_disconnect(_on_disconnect))
+    reconnect_manager = ReconnectManager(
+        device=device,
+        reconnect=_reconnect,
+        fallback=_fallback_reload,
+        create_task=hass.async_create_task,
+        on_success=lambda: _LOGGER.info(
+            "Reconnected %s without reloading entities", device.name
+        ),
+        on_error=lambda exc: _LOGGER.error(
+            "In-place reconnect failed for %s; reloading config entry",
+            device.name,
+            exc_info=exc,
+        ),
+    )
+    entry.async_on_unload(device.on_disconnect(reconnect_manager.on_disconnect))
+    entry.async_on_unload(reconnect_manager.cancel)
 
     return True
 

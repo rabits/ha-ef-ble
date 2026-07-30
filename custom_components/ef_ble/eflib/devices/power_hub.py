@@ -8,7 +8,7 @@ from ..connection import ConnectionState
 from ..devicebase import DeviceBase
 from ..model import PowerHubBatteryData, PowerHubBmsData, PowerHubMpptData
 from ..packet import Packet
-from ..props import Field, RawDataProps, computed_field, field_group
+from ..props import Field, RawDataProps, field_group
 from ..props.raw_data_field import dataclass_attr_mapper, raw_field
 from ..props.transforms import pdiv
 
@@ -26,7 +26,6 @@ class Device(DeviceBase, RawDataProps):
     battery_level = raw_field(bms.soc)
     input_power = raw_field(bms.input_power)
     output_power = raw_field(bms.output_power)
-    _remaining_time_seconds = raw_field(bms.remaining_time)
 
     battery_voltage = raw_field(mppt.battery_voltage, millivolts_to_volts)
     battery_current = raw_field(mppt.battery_current, pdiv(1000, 3))
@@ -104,28 +103,6 @@ class Device(DeviceBase, RawDataProps):
             ):
                 self.set_value(field, None)
         self._notify_updated()
-
-    @computed_field
-    def remaining_time_charging(self) -> float | None:
-        if (
-            self._remaining_time_seconds is None
-            or self.input_power is None
-            or self.output_power is None
-            or self.input_power <= self.output_power
-        ):
-            return None
-        return self._remaining_time_seconds / 60
-
-    @computed_field
-    def remaining_time_discharging(self) -> float | None:
-        if (
-            self._remaining_time_seconds is None
-            or self.input_power is None
-            or self.output_power is None
-            or self.output_power < self.input_power
-        ):
-            return None
-        return self._remaining_time_seconds / 60
 
     @classmethod
     def check(cls, sn: bytes) -> bool:

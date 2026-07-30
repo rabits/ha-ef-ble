@@ -506,8 +506,6 @@ Click on any device below to see available sensors, switches, and controls:
 | PV (2) Current                      |
 | PV (2) Heatsink Temperature         |
 | PCB Temperature                     |
-| Charge Time Remaining (disabled)    |
-| Discharge Time Remaining (disabled) |
 | Extra Battery (1-3) Level           |
 | Extra Battery (1-3) Temperature     |
 | Extra Battery (1-3) Min/Max Cell Temperature (disabled) |

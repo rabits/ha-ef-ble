@@ -55,8 +55,6 @@ async def test_power_hub_bms_total(device):
     assert device.battery_level == 73
     assert device.input_power == 120
     assert device.output_power == 8
-    assert device.remaining_time_charging == 60
-    assert device.remaining_time_discharging is None
 
 
 async def test_power_hub_battery_record(device):

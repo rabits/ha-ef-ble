@@ -895,6 +895,12 @@ _SENSORS: Final[dict[str, SensorEntityDescription]] = {
         translation_placeholders={"name": "PV ({n})"},
         indexed_range=range(1, 3),
     ),
+    "pv_heatsink_temperature_{n}": temperature(
+        translation_key="pv_heatsink_temperature",
+        translation_placeholders={"index": "{n}"},
+        indexed_range=range(1, 3),
+    ),
+    "pcb_temperature": temperature(),
     "llc_temperature": temperature(),
     # PowerPulse EV
     "ac_plug_state": enum(options=powerpulse_ev.AcPlugState),
@@ -912,7 +918,19 @@ SENSOR_TYPES: Final[dict[str, SensorEntityDescription]] = (
 
 _BATTERY_ADDON_SENSORS: Final = {
     "battery_{n}_battery_level": battery(translation_key="battery_level"),
-    "battery_{n}_cell_temperature": temperature(translation_key="cell_temperature"),
+    "battery_{n}_battery_temperature": temperature(
+        translation_key="battery_temperature"
+    ),
+    "battery_{n}_max_cell_temperature": temperature(
+        enabled=False,
+        entity_category=EntityCategory.DIAGNOSTIC,
+        translation_key="max_cell_temperature",
+    ),
+    "battery_{n}_min_cell_temperature": temperature(
+        enabled=False,
+        entity_category=EntityCategory.DIAGNOSTIC,
+        translation_key="min_cell_temperature",
+    ),
     "battery_{n}_voltage": port_voltage(
         "Battery",
         state_attribute_fields=[

@@ -470,6 +470,18 @@
       "port_temperature": {
         "name": "{name} 温度"
       },
+      "pv_heatsink_temperature": {
+        "name": "PV（{index}）散热器温度"
+      },
+      "pcb_temperature": {
+        "name": "PCB 温度"
+      },
+      "max_cell_temperature": {
+        "name": "最高电芯温度"
+      },
+      "min_cell_temperature": {
+        "name": "最低电芯温度"
+      },
       "port_power_factor": {
         "name": "{name} 功率因数"
       },

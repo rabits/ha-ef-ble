@@ -500,15 +500,17 @@ Click on any device below to see available sensors, switches, and controls:
 | PV (1) Power                        |
 | PV (1) Voltage                      |
 | PV (1) Current                      |
-| PV (1) Temperature                  |
+| PV (1) Heatsink Temperature         |
 | PV (2) Power                        |
 | PV (2) Voltage                      |
 | PV (2) Current                      |
-| PV (2) Temperature                  |
+| PV (2) Heatsink Temperature         |
+| PCB Temperature                     |
 | Charge Time Remaining (disabled)    |
 | Discharge Time Remaining (disabled) |
 | Extra Battery (1-3) Level           |
 | Extra Battery (1-3) Temperature     |
+| Extra Battery (1-3) Min/Max Cell Temperature (disabled) |
 | Extra Battery (1-3) Voltage         |
 | Extra Battery (1-3) Input Power     |
 | Extra Battery (1-3) Output Power    |

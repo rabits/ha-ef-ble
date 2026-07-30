@@ -473,6 +473,18 @@
       "port_temperature": {
         "name": "{name} Temperature"
       },
+      "pv_heatsink_temperature": {
+        "name": "PV ({index}) Heatsink Temperature"
+      },
+      "pcb_temperature": {
+        "name": "PCB Temperature"
+      },
+      "max_cell_temperature": {
+        "name": "Maximum Cell Temperature"
+      },
+      "min_cell_temperature": {
+        "name": "Minimum Cell Temperature"
+      },
       "port_power_factor": {
         "name": "{name} Power Factor"
       },

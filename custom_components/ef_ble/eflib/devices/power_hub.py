@@ -4,6 +4,7 @@ from bleak.backends.device import BLEDevice
 from bleak.backends.scanner import AdvertisementData
 
 from ..commands import TimeCommands
+from ..connection import ConnectionState
 from ..devicebase import DeviceBase
 from ..model import PowerHubBatteryData, PowerHubBmsData, PowerHubMpptData
 from ..packet import Packet
@@ -13,6 +14,7 @@ from ..props.transforms import pdiv
 
 bms = dataclass_attr_mapper(PowerHubBmsData)
 mppt = dataclass_attr_mapper(PowerHubMpptData)
+millivolts_to_volts = pdiv(1000, 3)
 
 
 class Device(DeviceBase, RawDataProps):
@@ -20,24 +22,23 @@ class Device(DeviceBase, RawDataProps):
 
     SN_PREFIX = (b"M109",)
     NAME_PREFIX = "EF-M10"
-    RECONNECT_IN_PLACE = True
-    RECONNECT_DELAY = 1.0
 
     battery_level = raw_field(bms.soc)
     input_power = raw_field(bms.input_power)
-    output_power = raw_field(bms.output_power, lambda value: max(0, value))
+    output_power = raw_field(bms.output_power)
     _remaining_time_seconds = raw_field(bms.remaining_time)
 
-    battery_voltage = raw_field(mppt.battery_voltage, pdiv(1000, 3))
+    battery_voltage = raw_field(mppt.battery_voltage, millivolts_to_volts)
     battery_current = raw_field(mppt.battery_current, pdiv(1000, 3))
-    pv_voltage_1 = raw_field(mppt.pv_voltage_1, pdiv(1000, 3))
+    pv_voltage_1 = raw_field(mppt.pv_voltage_1, millivolts_to_volts)
     pv_current_1 = raw_field(mppt.pv_current_1, pdiv(1000, 3))
     pv_power_1 = raw_field(mppt.pv_power_1)
-    pv_voltage_2 = raw_field(mppt.pv_voltage_2, pdiv(1000, 3))
+    pv_voltage_2 = raw_field(mppt.pv_voltage_2, millivolts_to_volts)
     pv_current_2 = raw_field(mppt.pv_current_2, pdiv(1000, 3))
     pv_power_2 = raw_field(mppt.pv_power_2)
-    pv_temperature_1 = raw_field(mppt.pv_temperature_1)
-    pv_temperature_2 = raw_field(mppt.pv_temperature_2)
+    pv_heatsink_temperature_1 = raw_field(mppt.heatsink_temperature_1)
+    pv_heatsink_temperature_2 = raw_field(mppt.heatsink_temperature_2)
+    pcb_temperature = raw_field(mppt.pcb_temperature)
 
     battery_enabled = field_group(
         lambda _: Field[bool](), 3, name_template="battery_{n}_enabled"
@@ -46,8 +47,14 @@ class Device(DeviceBase, RawDataProps):
     battery_battery_level = field_group(
         lambda _: Field[int](), 3, name_template="battery_{n}_battery_level"
     )
-    battery_cell_temperature = field_group(
-        lambda _: Field[int](), 3, name_template="battery_{n}_cell_temperature"
+    battery_pack_temperature = field_group(
+        lambda _: Field[int](), 3, name_template="battery_{n}_battery_temperature"
+    )
+    battery_max_cell_temperature = field_group(
+        lambda _: Field[int](), 3, name_template="battery_{n}_max_cell_temperature"
+    )
+    battery_min_cell_temperature = field_group(
+        lambda _: Field[int](), 3, name_template="battery_{n}_min_cell_temperature"
     )
     extra_battery_voltage = field_group(
         lambda _: Field[float](), 3, name_template="battery_{n}_voltage"
@@ -70,6 +77,33 @@ class Device(DeviceBase, RawDataProps):
     ) -> None:
         super().__init__(ble_dev, adv_data, sn)
         self._time_commands = TimeCommands(self)
+        self._seen_battery_slots: set[int] = set()
+        self.on_connection_state_change(self._track_battery_slots)
+
+    def _track_battery_slots(self, state: ConnectionState) -> None:
+        if state is not ConnectionState.AUTHENTICATED:
+            return
+        self._seen_battery_slots.clear()
+        self.call_later(5, self._expire_missing_batteries, key="power_hub_batteries")
+
+    def _expire_missing_batteries(self) -> None:
+        for index in range(1, 4):
+            if index in self._seen_battery_slots:
+                continue
+            self.set_value(Device.battery_enabled[index], False)
+            for field in (
+                Device.battery_battery_level[index],
+                Device.extra_battery_voltage[index],
+                Device.battery_pack_temperature[index],
+                Device.battery_max_cell_temperature[index],
+                Device.battery_min_cell_temperature[index],
+                Device.battery_max_cell_voltage[index],
+                Device.battery_min_cell_voltage[index],
+                Device.battery_input_power[index],
+                Device.battery_output_power[index],
+            ):
+                self.set_value(field, None)
+        self._notify_updated()
 
     @computed_field
     def remaining_time_charging(self) -> float | None:
@@ -127,19 +161,30 @@ class Device(DeviceBase, RawDataProps):
         return True
 
     def _update_battery(self, index: int, data: PowerHubBatteryData) -> None:
+        self._seen_battery_slots.add(index)
         self.set_value(Device.battery_enabled[index], True)
         self.set_value(
             Device.battery_sn[index],
             data.sn.rstrip(b"\x00").decode("ASCII", errors="replace"),
         )
         self.set_value(Device.battery_battery_level[index], data.soc)
-        self.set_value(Device.extra_battery_voltage[index], data.voltage / 1000)
-        self.set_value(Device.battery_cell_temperature[index], data.cell_temperature)
         self.set_value(
-            Device.battery_max_cell_voltage[index], data.max_cell_voltage / 1000
+            Device.extra_battery_voltage[index], millivolts_to_volts(data.voltage)
+        )
+        self.set_value(Device.battery_pack_temperature[index], data.battery_temperature)
+        self.set_value(
+            Device.battery_max_cell_temperature[index], data.max_cell_temperature
         )
         self.set_value(
-            Device.battery_min_cell_voltage[index], data.min_cell_voltage / 1000
+            Device.battery_min_cell_temperature[index], data.min_cell_temperature
+        )
+        self.set_value(
+            Device.battery_max_cell_voltage[index],
+            millivolts_to_volts(data.max_cell_voltage),
+        )
+        self.set_value(
+            Device.battery_min_cell_voltage[index],
+            millivolts_to_volts(data.min_cell_voltage),
         )
         self.set_value(Device.battery_input_power[index], data.input_power)
-        self.set_value(Device.battery_output_power[index], max(0, data.output_power))
+        self.set_value(Device.battery_output_power[index], data.output_power)

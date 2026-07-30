@@ -44,12 +44,7 @@ def NewDevice(ble_dev: BLEDevice, adv_data: AdvertisementData) -> DeviceBase | N
 
     # Check if known devices fits the found serial number
     for item in devices.devices:
-        device = getattr(item, "Device", None)
-        if (
-            device is not None
-            and device is not unsupported.UnsupportedDevice
-            and device.check(sn)
-        ):
+        if (device := getattr(item, "Device", None)) is not None and device.check(sn):
             return item.Device(ble_dev, adv_data, sn.decode("ASCII"))
 
     return unsupported.UnsupportedDevice(ble_dev, adv_data, sn.decode("ASCII"))

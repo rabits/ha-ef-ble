@@ -470,6 +470,18 @@
       "port_temperature": {
         "name": "Температура {name}"
       },
+      "pv_heatsink_temperature": {
+        "name": "Температура радіатора PV ({index})"
+      },
+      "pcb_temperature": {
+        "name": "Температура PCB"
+      },
+      "max_cell_temperature": {
+        "name": "Максимальна температура комірки"
+      },
+      "min_cell_temperature": {
+        "name": "Мінімальна температура комірки"
+      },
       "port_power_factor": {
         "name": "Коефіцієнт потужності {name}"
       },

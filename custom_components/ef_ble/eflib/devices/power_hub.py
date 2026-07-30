@@ -64,10 +64,10 @@ class Device(DeviceBase, RawDataProps):
     battery_min_cell_voltage = field_group(
         lambda _: Field[float](), 3, name_template="battery_{n}_min_cell_voltage"
     )
-    battery_input_power = field_group(
+    battery_pack_input_power = field_group(
         lambda _: Field[int](), 3, name_template="battery_{n}_input_power"
     )
-    battery_output_power = field_group(
+    battery_pack_output_power = field_group(
         lambda _: Field[int](), 3, name_template="battery_{n}_output_power"
     )
 
@@ -98,8 +98,8 @@ class Device(DeviceBase, RawDataProps):
                 Device.battery_min_cell_temperature[index],
                 Device.battery_max_cell_voltage[index],
                 Device.battery_min_cell_voltage[index],
-                Device.battery_input_power[index],
-                Device.battery_output_power[index],
+                Device.battery_pack_input_power[index],
+                Device.battery_pack_output_power[index],
             ):
                 self.set_value(field, None)
         self._notify_updated()
@@ -163,5 +163,5 @@ class Device(DeviceBase, RawDataProps):
             Device.battery_min_cell_voltage[index],
             millivolts_to_volts(data.min_cell_voltage),
         )
-        self.set_value(Device.battery_input_power[index], data.input_power)
-        self.set_value(Device.battery_output_power[index], data.output_power)
+        self.set_value(Device.battery_pack_input_power[index], data.input_power)
+        self.set_value(Device.battery_pack_output_power[index], data.output_power)

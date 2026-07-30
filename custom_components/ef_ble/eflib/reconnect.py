@@ -34,6 +34,7 @@ class ReconnectManager:
             return
         if self._task is not None and not self._task.done():
             return
+        self._device.set_reconnecting(True)
         self._task = self._create_task(self._run())
 
     async def _run(self) -> None:
@@ -42,10 +43,12 @@ class ReconnectManager:
         except asyncio.CancelledError:
             raise
         except Exception as exc:  # noqa: BLE001
+            self._device.set_reconnecting(False)
             if self._on_error is not None:
                 self._on_error(exc)
             self._fallback()
         else:
+            self._device.set_reconnecting(False)
             if self._on_success is not None:
                 self._on_success()
         finally:
@@ -54,4 +57,5 @@ class ReconnectManager:
     def cancel(self) -> None:
         """Cancel an active reconnect during config-entry unload."""
         if self._task is not None:
+            self._device.set_reconnecting(False)
             self._task.cancel()

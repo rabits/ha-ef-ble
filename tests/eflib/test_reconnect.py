@@ -30,6 +30,7 @@ def test_reconnect_manager_preserves_default_reload(callbacks, mocker: MockerFix
 
     callbacks["fallback"].assert_called_once_with()
     create_task.assert_not_called()
+    device.set_reconnecting.assert_not_called()
 
 
 async def test_reconnect_manager_starts_only_one_task(callbacks, mocker: MockerFixture):
@@ -58,6 +59,10 @@ async def test_reconnect_manager_starts_only_one_task(callbacks, mocker: MockerF
     assert manager._task is first_task
     release.set()
     await first_task
+    assert device.set_reconnecting.call_args_list == [
+        mocker.call(True),
+        mocker.call(False),
+    ]
     callbacks["on_success"].assert_called_once_with()
     callbacks["fallback"].assert_not_called()
 
@@ -81,6 +86,10 @@ async def test_reconnect_manager_falls_back_after_failure(
     task = manager._task
     await task
 
+    assert device.set_reconnecting.call_args_list == [
+        mocker.call(True),
+        mocker.call(False),
+    ]
     callbacks["on_error"].assert_called_once_with(error)
     callbacks["fallback"].assert_called_once_with()
     callbacks["on_success"].assert_not_called()
@@ -101,6 +110,10 @@ async def test_reconnect_manager_cancels_active_task(callbacks, mocker: MockerFi
     await asyncio.sleep(0)
     manager.cancel()
 
+    assert device.set_reconnecting.call_args_list == [
+        mocker.call(True),
+        mocker.call(False),
+    ]
     with pytest.raises(asyncio.CancelledError):
         await task
     callbacks["fallback"].assert_not_called()

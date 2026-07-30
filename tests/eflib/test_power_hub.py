@@ -166,3 +166,15 @@ def test_power_hub_field_groups_do_not_shadow_main_sensors(device):
     assert not hasattr(device, "battery_input_power")
     assert not hasattr(device, "battery_output_power")
     assert not hasattr(device, "battery_temperature")
+
+
+def test_power_hub_stays_available_during_transient_reconnect(device):
+    device._conn.is_connected = False
+
+    assert device.is_available is False
+
+    device.set_reconnecting(True)
+    assert device.is_available is True
+
+    device.set_reconnecting(False)
+    assert device.is_available is False

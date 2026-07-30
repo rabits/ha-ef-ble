@@ -39,8 +39,8 @@ class EcoflowEntity(Entity):
 
     @property
     def available(self) -> bool:
-        """Return True if device is connected"""
-        return self._device.is_connected
+        """Keep the last state available during an in-place reconnect."""
+        return self._device.is_available
 
     class SkipWrite:
         """Sentinel value for skipping write in update callback"""

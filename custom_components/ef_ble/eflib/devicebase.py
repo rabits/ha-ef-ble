@@ -96,6 +96,7 @@ class DeviceBase(abc.ABC):
         self._packet_version = 0x03
 
         self._reconnect_disabled = False
+        self._reconnect_in_progress = False
         self._options = Connection.Options()
         self._diagnostics = DeviceDiagnosticsCollector(self)
 
@@ -131,6 +132,20 @@ class DeviceBase(abc.ABC):
     @property
     def is_connected(self) -> bool:
         return self._conn is not None and self._conn.is_connected
+
+    @property
+    def is_reconnecting(self) -> bool:
+        """Return whether an entity-preserving reconnect is in progress."""
+        return self._reconnect_in_progress
+
+    @property
+    def is_available(self) -> bool:
+        """Return whether the device can keep exposing its last known values."""
+        return self.is_connected or self.is_reconnecting
+
+    def set_reconnecting(self, in_progress: bool) -> None:
+        """Track a short reconnect without changing the last entity values."""
+        self._reconnect_in_progress = in_progress
 
     def update_ble_device(self, ble_dev: BLEDevice):
         self._ble_dev = ble_dev

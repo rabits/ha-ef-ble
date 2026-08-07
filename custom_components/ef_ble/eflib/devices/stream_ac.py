@@ -139,6 +139,11 @@ class Device(DeviceBase, ProtobufProps):
     SN_PREFIX = (b"BK51",)
     NAME_PREFIX = "EF-6"
 
+    @property
+    def uses_native_reconnect(self) -> bool:
+        """Keep the supported STREAM AC models alive without reloading HA entries."""
+        return self.device in {"STREAM AC", "STREAM AC PRO"}
+
     _timer_task_chains: ClassVar[dict[frozenset[str], _TimerTaskChain]] = {}
 
     battery_level = pb_field(pb.cms_batt_soc)

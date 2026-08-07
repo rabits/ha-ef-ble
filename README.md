@@ -463,6 +463,8 @@ Click on any device below to see available sensors, switches, and controls:
 
 </details>
 
+> **STREAM multi-device BLE (MrChurch fork):** This fork adds reconnect handling for multiple STREAM AC and STREAM AC Pro devices, including per-device backoff/jitter so devices do not all reconnect at the same time. STREAM telemetry is explicitly enabled after authentication and the setting is reapplied after reconnect. The reconnect state handling was also fixed so a scheduled reconnect starts a fresh BLE attempt instead of stopping in the `RECONNECTING` state. Version `1.0.5` has been tested with three STREAM devices and is designed to support up to five devices, subject to the Bluetooth adapter and radio environment.
+
 <details>
 <summary><b>STREAM Microinverter</b></summary>
 

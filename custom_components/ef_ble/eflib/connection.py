@@ -348,7 +348,11 @@ class Connection:
         self,
         max_attempts: int | None = None,
     ):
-        if self._state.is_connecting:
+        # The native reconnect loop marks the state as RECONNECTING immediately
+        # before calling connect().  That state must enter a fresh BLE attempt;
+        # otherwise this guard returns early and reconnect() waits forever for
+        # authentication that can never happen.
+        if self._state.is_connecting and self._state is not ConnectionState.RECONNECTING:
             return
 
         max_attempts = (

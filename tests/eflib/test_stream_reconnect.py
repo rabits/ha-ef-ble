@@ -76,3 +76,23 @@ async def test_reconnect_retries_failed_rebuild_until_authenticated(mocker):
     assert connect_calls == 3
     assert sleep.await_count == 3
     assert connection._state is ConnectionState.AUTHENTICATED
+
+
+@pytest.mark.asyncio
+async def test_connect_is_allowed_from_reconnecting_state(mocker):
+    connection = _connection(mocker)
+    client = mocker.Mock(is_connected=True)
+    client.services.get_characteristic.return_value = mocker.Mock()
+    establish_connection = mocker.patch(
+        "custom_components.ef_ble.eflib.connection.establish_connection",
+        new_callable=AsyncMock,
+        return_value=client,
+    )
+    connection.initBleSessionKey = AsyncMock()
+    connection._set_state(ConnectionState.RECONNECTING)
+
+    await connection.connect()
+
+    establish_connection.assert_awaited_once()
+    connection.initBleSessionKey.assert_awaited_once()
+    assert connection._state is ConnectionState.CONNECTED

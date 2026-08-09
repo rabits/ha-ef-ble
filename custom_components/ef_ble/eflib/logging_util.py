@@ -275,6 +275,7 @@ class DeviceDiagnostics:
     iv: bytes
     session_key: bytes
     initial_session_key: bytes
+    session_keys: list[tuple[float, bytes, bytes]]
 
     def _encode_bytes(self, value: bytes, session: Session | None) -> str:
         if session is not None:
@@ -300,6 +301,10 @@ class DeviceDiagnostics:
             iv=self._encode_bytes(self.iv, session),
             session_key=self._encode_bytes(self.session_key, session),
             initial_session_key=self._encode_bytes(self.initial_session_key, session),
+            session_keys=[
+                (t, self._encode_bytes(key, session), self._encode_bytes(iv, session))
+                for (t, key, iv) in self.session_keys
+            ],
         )
 
     def as_dict(self):
@@ -322,6 +327,8 @@ class DeviceDiagnosticsCollector:
         self._raw_data_connection: list[tuple[float, bytes]] = []
         self._raw_data_messages: deque[tuple[float, bytes]] = deque(maxlen=1000)
         self._raw_data_send: deque[tuple[float, bytes]] = deque(maxlen=1000)
+
+        self._session_keys: deque[tuple[float, bytes, bytes]] = deque(maxlen=10)
 
         self._disconnect_times: deque[float] = deque(maxlen=buffer_size)
         self._skip_first_messages: int = 8
@@ -372,6 +379,9 @@ class DeviceDiagnosticsCollector:
             raw_data_connection=self._raw_data_connection,
             raw_data_messages=list(self._raw_data_messages),
             raw_data_send=list(self._raw_data_send),
+            session_keys=[
+                (t - self._start_time, key, iv) for (t, key, iv) in self._session_keys
+            ],
             iv=encryption.iv if encryption is not None else b"",
             session_key=encryption.session_key if encryption is not None else b"",
             initial_session_key=conn._initial_session_key,
@@ -410,8 +420,10 @@ class DeviceDiagnosticsCollector:
                     self._device.on_packet_parsed(self._on_packet_parsed),
                     self._device.on_data_received(self._on_data_received),
                     self._device.on_data_send(self._on_data_send),
+                    self._device.on_session_key_derived(self._on_session_key_derived),
                 ]
             )
+            self._record_current_session_key()
             return self
 
         return self
@@ -575,7 +587,17 @@ class DeviceDiagnosticsCollector:
 
         task.add_done_callback(_log_result)
 
+    def _on_session_key_derived(self, session_key: bytes, iv: bytes) -> None:
+        self._session_keys.append((time.time(), session_key, iv))
+
+    def _record_current_session_key(self) -> None:
+        conn = self._device._conn
+        encryption = None if conn is None else conn._encryption
+        if encryption is not None:
+            self._on_session_key_derived(encryption.session_key, encryption.iv)
+
     def _clear_buffers(self):
+        self._session_keys.clear()
         self._last_packets.clear()
         self._last_errors.clear()
         self._connect_times.clear()

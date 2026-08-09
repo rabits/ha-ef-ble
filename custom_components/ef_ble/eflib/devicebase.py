@@ -19,6 +19,7 @@ from .connection import (
     DisconnectListener,
     PacketParsedListener,
     PacketReceivedListener,
+    SessionKeyDerivedListener,
 )
 from .exceptions import NotConnectedError
 from .listeners import ListenerGroup, ListenerRegistry
@@ -46,6 +47,7 @@ class _Listeners(ListenerRegistry):
     on_packet_parsed: ListenerGroup[PacketParsedListener]
     on_data_received: ListenerGroup[DataReceivedListener]
     on_data_send: ListenerGroup[DataSendListener]
+    on_session_key_derived: ListenerGroup[SessionKeyDerivedListener]
 
 
 class DeviceBase(abc.ABC):
@@ -341,6 +343,7 @@ class DeviceBase(abc.ABC):
             self._conn.on_state_change(self._append_state_to_log)
             self._conn.on_data_received(self._listeners.on_data_received)
             self._conn.on_data_send(self._listeners.on_data_send)
+            self._conn.on_session_key_derived(self._listeners.on_session_key_derived)
 
         elif self._conn._user_id != user_id:
             self._conn._user_id = user_id
@@ -432,6 +435,9 @@ class DeviceBase(abc.ABC):
 
     def on_data_send(self, listener: DataSendListener):
         return self._listeners.on_data_send.add(listener)
+
+    def on_session_key_derived(self, listener: SessionKeyDerivedListener):
+        return self._listeners.on_session_key_derived.add(listener)
 
     def on_connection_state_change(
         self, connection_state_listener: ConnectionStateListener

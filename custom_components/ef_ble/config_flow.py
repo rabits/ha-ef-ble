@@ -387,7 +387,7 @@ class EFBLEConfigFlow(ConfigFlow, domain=DOMAIN):
         entry_data[CONF_ADDRESS] = device.address
         # Persist the validated user ID explicitly - the form field is optional, so
         # relying on it round-tripping through user_input can produce an entry
-        # without a user ID that then silently fails to set up (issue #403)
+        # without a user ID that then fails to set up
         entry_data[CONF_USER_ID] = self._user_id
         entry_data["local_name"] = self._local_names.get(device.address, None)
         entry_data.pop("login", None)

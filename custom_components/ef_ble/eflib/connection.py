@@ -46,7 +46,7 @@ from .frame_assembler import (
 )
 from .listeners import ListenerGroup, ListenerRegistry
 from .logging_util import ConnectionLogger, LogOptions, caller_chain
-from .packet import Packet
+from .packet import InvalidPacket, Packet
 from .props.utils import classproperty
 
 MAX_RECONNECT_ATTEMPTS = 2
@@ -217,6 +217,11 @@ class Connection:
 
     _listeners = _ConnectionListeners.create()
 
+    # Consecutive undecodable frames tolerated before the session is treated as lost.
+    # A handful can follow a reconnect while stale notifications drain; a stream of them
+    # means the key no longer matches.
+    _UNDECRYPTABLE_FRAME_LIMIT = 10
+
     def __init__(
         self,
         ble_dev: BLEDevice,
@@ -244,6 +249,7 @@ class Connection:
         self._options = Connection.Options()
 
         self._errors = 0
+        self._undecryptable_frames = 0
         self._last_errors = deque(maxlen=10)
         self._disconnect_log: deque[dict[str, Any]] = deque(maxlen=10)
         self._client = None
@@ -371,13 +377,10 @@ class Connection:
 
             self._set_state(ConnectionState.ESTABLISHING_CONNECTION)
             self._logger.info("Connecting to device")
-            # Clear any ghost connection BlueZ is still holding for this
-            # device (e.g. left over from a bad disconnect); otherwise new
-            # connection attempts can be refused until the adapter is reset.
+            # Clear any ghost connection BlueZ is still holding for this device (e.g.
+            # left over from a bad disconnect); otherwise new connection attempts can be
+            # refused until the adapter is reset.
             await close_stale_connections_by_address(self.ble_dev().address)
-            # max_attempts=0 means unlimited at Connection level, but
-            # establish_connection needs a real retry count for BLE-level
-            # attempts (e.g. when adapter slots are contested).
             ble_attempts = max_attempts if max_attempts != 0 else MAX_CONNECT_ATTEMPTS
             self._client = await establish_connection(
                 BleakClient,
@@ -660,6 +663,25 @@ class Connection:
                 self._logger.warning("Client disconnected after encountering 5 errors")
                 await self._disconnect_client()
 
+    async def _handle_undecryptable_frame(self, packet: InvalidPacket):
+        # A frame that passes the outer CRC but not the parser decrypted to noise, so
+        # our key no longer matches the device's. Nothing re-derives it mid-session,
+        # which is why the link has to be dropped for the handshake to run again.
+        self._undecryptable_frames += 1
+        if self._undecryptable_frames < self._UNDECRYPTABLE_FRAME_LIMIT:
+            return
+
+        self._undecryptable_frames = 0
+        self._logger.warning(
+            "Session lost - %d consecutive frames could not be decoded (%s), "
+            "reconnecting to renegotiate the session key",
+            self._UNDECRYPTABLE_FRAME_LIMIT,
+            packet.error_message,
+        )
+        self._set_state(ConnectionState.ERROR_TOO_MANY_ERRORS)
+        if self._client is not None and self._client.is_connected:
+            await self._disconnect_client()
+
     def _reset_error_counter(self):
         self._errors = 0
 
@@ -828,7 +850,10 @@ class Connection:
                     "Parsed packet: %s",
                     packet,
                 )
-                if not Packet.is_invalid(packet):
+                if Packet.is_invalid(packet):
+                    await self._handle_undecryptable_frame(packet)
+                else:
+                    self._undecryptable_frames = 0
                     packets.append(packet)
             except Exception as e:  # noqa: BLE001
                 await self.add_error(e)
@@ -958,6 +983,7 @@ class Connection:
         # Clear it so the next use rebuilds it against this attempt's encryption rather
         # than reusing a previous attempt's session key.
         self._frame_assembler = None
+        self._undecryptable_frames = 0
 
     async def _type_0_session(self):
         self._encryption = None

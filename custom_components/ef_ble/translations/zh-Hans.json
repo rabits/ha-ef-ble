@@ -70,11 +70,13 @@
             "data": {
               "connection_timeout": "连接超时",
               "connection_delay": "连接延迟",
+              "preferred_proxy": "首选蓝牙代理",
               "bluez_start_notify": "使用 BlueZ start notify"
             },
             "data_description": {
               "connection_timeout": "等待设备连接和认证的秒数。",
               "connection_delay": "当另一台 EcoFlow 设备刚刚连接完成时，本设备在连接前等待的秒数。Home Assistant 会自行选择每个连接使用哪个蓝牙代理，并会降低正在建立连接的代理的评分，因此同时启动的设备可能在整个会话期间都连接在较远的代理上。将它们错开可以让每台设备更有机会通过距离最近的代理连接。未与其他设备同时启动的设备不会被延迟。设为 0 可为该设备禁用此功能。",
+              "preferred_proxy": "尽可能通过指定的蓝牙适配器或代理连接此设备，例如就在设备旁边的那一个。Home Assistant 自行选择连接路径，无法被指定使用某一个，因此集成改为最多等待 20 秒，直到您选择的代理正好也是 Home Assistant 会选择的那一个，然后在此刻连接。因此，信号弱于其他代理的代理可能永远不会被选中。该列表在打开此页面时读取，且只包含当前在线的适配器和代理，如果缺少某一个，请将其重新上线后再次打开此页面。除非设备总是通过错误的代理连接，否则请留空。",
               "bluez_start_notify": "如果在连接多个 BLE 设备时经常断开连接，或者您在日志中看到 `AcquireNotify: Read error` / `Unexpected EOF on notification file handle`，请尝试启用此选项。"
             }
           }
@@ -129,11 +131,13 @@
             "data": {
               "connection_timeout": "连接超时",
               "connection_delay": "连接延迟",
+              "preferred_proxy": "首选蓝牙代理",
               "bluez_start_notify": "使用 BlueZ start notify"
             },
             "data_description": {
               "connection_timeout": "等待设备连接和认证的秒数。",
               "connection_delay": "当另一台 EcoFlow 设备刚刚连接完成时，本设备在连接前等待的秒数。Home Assistant 会自行选择每个连接使用哪个蓝牙代理，并会降低正在建立连接的代理的评分，因此同时启动的设备可能在整个会话期间都连接在较远的代理上。将它们错开可以让每台设备更有机会通过距离最近的代理连接。未与其他设备同时启动的设备不会被延迟。设为 0 可为该设备禁用此功能。",
+              "preferred_proxy": "尽可能通过指定的蓝牙适配器或代理连接此设备，例如就在设备旁边的那一个。Home Assistant 自行选择连接路径，无法被指定使用某一个，因此集成改为最多等待 20 秒，直到您选择的代理正好也是 Home Assistant 会选择的那一个，然后在此刻连接。因此，信号弱于其他代理的代理可能永远不会被选中。该列表在打开此页面时读取，且只包含当前在线的适配器和代理，如果缺少某一个，请将其重新上线后再次打开此页面。除非设备总是通过错误的代理连接，否则请留空。",
               "bluez_start_notify": "如果在连接多个 BLE 设备时经常断开连接，或者您在日志中看到 `AcquireNotify: Read error` / `Unexpected EOF on notification file handle`，请尝试启用此选项。"
             }
           }
@@ -183,11 +187,13 @@
             "data": {
               "connection_timeout": "连接超时",
               "connection_delay": "连接延迟",
+              "preferred_proxy": "首选蓝牙代理",
               "bluez_start_notify": "使用 BlueZ start notify"
             },
             "data_description": {
               "connection_timeout": "等待设备连接和认证的秒数。",
               "connection_delay": "当另一台 EcoFlow 设备刚刚连接完成时，本设备在连接前等待的秒数。Home Assistant 会自行选择每个连接使用哪个蓝牙代理，并会降低正在建立连接的代理的评分，因此同时启动的设备可能在整个会话期间都连接在较远的代理上。将它们错开可以让每台设备更有机会通过距离最近的代理连接。未与其他设备同时启动的设备不会被延迟。设为 0 可为该设备禁用此功能。",
+              "preferred_proxy": "尽可能通过指定的蓝牙适配器或代理连接此设备，例如就在设备旁边的那一个。Home Assistant 自行选择连接路径，无法被指定使用某一个，因此集成改为最多等待 20 秒，直到您选择的代理正好也是 Home Assistant 会选择的那一个，然后在此刻连接。因此，信号弱于其他代理的代理可能永远不会被选中。该列表在打开此页面时读取，且只包含当前在线的适配器和代理，如果缺少某一个，请将其重新上线后再次打开此页面。除非设备总是通过错误的代理连接，否则请留空。",
               "bluez_start_notify": "如果在连接多个 BLE 设备时经常断开连接，或者您在日志中看到 `AcquireNotify: Read error` / `Unexpected EOF on notification file handle`，请尝试启用此选项。"
             }
           }
@@ -255,11 +261,13 @@
             "data": {
               "connection_timeout": "连接超时",
               "connection_delay": "连接延迟",
+              "preferred_proxy": "首选蓝牙代理",
               "bluez_start_notify": "使用 BlueZ start notify"
             },
             "data_description": {
               "connection_timeout": "等待设备连接和认证的秒数。",
               "connection_delay": "当另一台 EcoFlow 设备刚刚连接完成时，本设备在连接前等待的秒数。Home Assistant 会自行选择每个连接使用哪个蓝牙代理，并会降低正在建立连接的代理的评分，因此同时启动的设备可能在整个会话期间都连接在较远的代理上。将它们错开可以让每台设备更有机会通过距离最近的代理连接。未与其他设备同时启动的设备不会被延迟。设为 0 可为该设备禁用此功能。",
+              "preferred_proxy": "尽可能通过指定的蓝牙适配器或代理连接此设备，例如就在设备旁边的那一个。Home Assistant 自行选择连接路径，无法被指定使用某一个，因此集成改为最多等待 20 秒，直到您选择的代理正好也是 Home Assistant 会选择的那一个，然后在此刻连接。因此，信号弱于其他代理的代理可能永远不会被选中。该列表在打开此页面时读取，且只包含当前在线的适配器和代理，如果缺少某一个，请将其重新上线后再次打开此页面。除非设备总是通过错误的代理连接，否则请留空。",
               "bluez_start_notify": "如果在连接多个 BLE 设备时经常断开连接，或者您在日志中看到 `AcquireNotify: Read error` / `Unexpected EOF on notification file handle`，请尝试启用此选项。"
             }
           }

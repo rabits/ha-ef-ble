@@ -14,6 +14,7 @@ CONF_EXTRA_BATTERY = "extra_battery"
 CONF_ADVANCED_CONNECTION_OPTIONS = "advanced_connection_options"
 CONF_BLUEZ_START_NOTIFY = "bluez_start_notify"
 CONF_CONNECTION_DELAY = "connection_delay"
+CONF_PREFERRED_PROXY = "preferred_proxy"
 
 CONF_DIAGNOSTICS_OPTIONS = "diagnostics_options"
 CONF_DIAGNOSTICS_ENCRYPT = "diagnostics_encrypt"

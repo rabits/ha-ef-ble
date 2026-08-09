@@ -29,6 +29,7 @@ from .const import (
     CONF_ADVANCED_CONNECTION_OPTIONS,
     CONF_BLUEZ_START_NOTIFY,
     CONF_COLLECT_PACKETS_AMOUNT,
+    CONF_CONNECTION_DELAY,
     CONF_CONNECTION_TIMEOUT,
     CONF_DIAGNOSTICS_ON_EXCEPTION,
     CONF_DIAGNOSTICS_OPTIONS,
@@ -36,6 +37,7 @@ from .const import (
     CONF_PACKET_VERSION,
     CONF_UPDATE_PERIOD,
     CONF_USER_ID,
+    DEFAULT_CONNECTION_DELAY,
     DEFAULT_CONNECTION_TIMEOUT,
     DEFAULT_UPDATE_PERIOD,
     DOMAIN,
@@ -48,6 +50,7 @@ from .eflib.connection import (
 )
 from .eflib.exceptions import AuthErrors, UnsupportedBluetoothProtocol
 from .eflib.logging_util import ConnectionLog
+from .proxy import connect_gate
 
 PLATFORMS: list[Platform] = [
     Platform.BUTTON,
@@ -118,6 +121,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: DeviceConfigEntry) -> bo
 
     advanced = merged_options.get(CONF_ADVANCED_CONNECTION_OPTIONS, {})
     timeout = advanced.get(CONF_CONNECTION_TIMEOUT, DEFAULT_CONNECTION_TIMEOUT)
+    connection_delay = advanced.get(CONF_CONNECTION_DELAY, DEFAULT_CONNECTION_DELAY)
     options = Connection.Options(
         timeout=timeout,
         bluez_start_notify=advanced.get(CONF_BLUEZ_START_NOTIFY, False),
@@ -125,19 +129,20 @@ async def async_setup_entry(hass: HomeAssistant, entry: DeviceConfigEntry) -> bo
     issue_id = f"{entry.entry_id}_max_connection_attempts"
 
     try:
-        await (
-            device.with_update_period(update_period)
-            .with_logging_options(ConfLogOptions.from_config(merged_options))
-            .with_disabled_reconnect()
-            .with_packet_version(packet_version.to_num())
-            .with_enabled_packet_diagnostics(packet_collection_enabled)
-            .with_diagnostics_on_exception(diagnostics_on_exception)
-            .with_connection_options(options)
-            .connect(
-                user_id=user_id,
-                max_attempts=0 if eflib.is_solar_only(device) else None,
+        async with connect_gate(hass, device.name, connection_delay):
+            await (
+                device.with_update_period(update_period)
+                .with_logging_options(ConfLogOptions.from_config(merged_options))
+                .with_disabled_reconnect()
+                .with_packet_version(packet_version.to_num())
+                .with_enabled_packet_diagnostics(packet_collection_enabled)
+                .with_diagnostics_on_exception(diagnostics_on_exception)
+                .with_connection_options(options)
+                .connect(
+                    user_id=user_id,
+                    max_attempts=0 if eflib.is_solar_only(device) else None,
+                )
             )
-        )
         async with asyncio.timeout(timeout):
             state = await device.wait_until_authenticated_or_error(raise_on_error=True)
     except (

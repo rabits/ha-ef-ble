@@ -6,7 +6,7 @@ Diese Notiz hält die für den MrChurch-Fork relevanten Ergebnisse aus der EcoFl
 
 ## Lokale Beweisdateien
 
-Die APKs und Rohlogs liegen lokal unter `C:\Users\matth\Downloads` und werden wegen Größe, proprietärer Inhalte und möglicher Zugangsdaten nicht in dieses öffentliche Repository kopiert.
+Die APKs und Rohlogs bleiben wegen Größe, proprietärer Inhalte und möglicher Zugangsdaten lokal und werden nicht in dieses öffentliche Repository kopiert.
 
 | Datei | SHA-256 | Verwendung |
 |---|---|---|
@@ -33,7 +33,7 @@ Das erklärt den Zustand „BLE authentifiziert, aber keine aktuellen Werte“. 
 - Die Aktivierung wird regelmäßig aufgefrischt und nach einer neuen Verbindung erneut gesendet.
 - Der Reconnect wird pro Gerät verzögert und mit Jitter verteilt, damit mehrere STREAM-Geräte nicht gleichzeitig den Bluetooth-Adapter belasten.
 - Der Zustand `RECONNECTING` blockiert keinen neuen BLE-Verbindungsversuch mehr.
-- Die Änderungen sind in Version `1.0.5` enthalten.
+- Die Änderungen sind in diesem PR enthalten.
 
 Relevante Implementierung:
 

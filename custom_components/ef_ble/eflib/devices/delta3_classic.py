@@ -9,7 +9,7 @@ from ._delta3_base import Delta3Base, pb
 class Device(Delta3Base):
     """Delta 3 Classic"""
 
-    SN_PREFIX = (b"P321",)
+    SN_PREFIX = (b"P321", b"P322")
     NAME_PREFIX = "EF-P3"
 
     energy_backup_battery_level = pb_field(pb.backup_reverse_soc)

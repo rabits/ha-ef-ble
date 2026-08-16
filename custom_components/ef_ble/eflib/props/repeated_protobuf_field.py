@@ -62,10 +62,6 @@ class ProtobufRepeatedField[T_ITEM, T_OUT](ProtobufField[T_OUT]):
     def get_item(self, value: Sequence[T_ITEM]) -> T_OUT | None:
         """Process item from sequence returned from `get_list`"""
 
-    def __set_name__(self, owner: type["ProtobufProps"], name: str):
-        super().__set_name__(owner, name)
-        owner.add_repeated_field(self)
-
     def __set__(self, instance: "ProtobufProps", value: Sequence[Any]):
         if (item := self.get_item(value)) is None:
             return

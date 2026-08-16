@@ -45,18 +45,20 @@ class ProtobufProps(UpdatableProps):
 
     """
 
-    _repeated_field_map: dict[type[Message], dict[str, list[ProtobufRepeatedField]]] = (
-        defaultdict(lambda: defaultdict(list))
-    )
     _proto_listeners = _Listeners.create()
 
-    @classmethod
-    def add_repeated_field(cls, repeated_field: ProtobufRepeatedField):
-        updated_field_map = cls._repeated_field_map.copy()
-        updated_field_map[repeated_field.pb_field.message_type][
-            repeated_field.pb_field.name
-        ].append(repeated_field)
-        cls._repeated_field_map = updated_field_map
+    @cached_property
+    def _repeated_field_map(
+        self,
+    ) -> dict[type[Message], dict[str, list[ProtobufRepeatedField]]]:
+        field_map: dict[type[Message], dict[str, list[ProtobufRepeatedField]]]
+        field_map = defaultdict(lambda: defaultdict(list))
+        for field in self._fields:
+            if isinstance(field, ProtobufRepeatedField):
+                field_map[field.pb_field.message_type][field.pb_field.name].append(
+                    field
+                )
+        return field_map
 
     @cached_property
     def message_to_field(self) -> dict[type[Message], list[ProtobufField]]:

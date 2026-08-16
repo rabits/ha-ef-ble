@@ -121,7 +121,8 @@ ECOFLOW_DEVICE_LIST = {
     # DELTA 3 FAMILY
     # =====================
     "P231":{"name": "EcoFlow DELTA 3", "packets": "v3"},
-    "D361":{"name": "EcoFlow DELTA 3 (1500)", "packets": "v3"},
+    "D361":{"name": "EcoFlow DELTA 3 (1500)", "packets": "v2"},
+    "D365":{"name": "EcoFlow DELTA 3 (1500)", "packets": "v2"},
     "P351":{"name": "EcoFlow DELTA 3 Plus", "packets": "v3"},
     "D3N1":{"name": "EcoFlow DELTA 3 Classic", "packets": "v3"},
     "D3M1":{"name": "EcoFlow DELTA 3 Max", "packets": "v3"},

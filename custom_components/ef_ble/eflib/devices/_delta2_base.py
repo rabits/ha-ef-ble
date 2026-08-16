@@ -121,7 +121,7 @@ class Delta2Base(DeviceBase, RawDataProps):
     def device(self):
         model = "2"
         match self._sn[:4]:
-            case "D361":
+            case "D361" | "D365":
                 model = "3 1500"
             case "R351" | "R354":
                 model = "2 Max"

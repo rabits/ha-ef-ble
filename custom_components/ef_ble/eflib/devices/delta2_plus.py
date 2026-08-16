@@ -5,7 +5,7 @@ from . import delta2
 class Device(delta2.Device):
     """Delta 3 1500"""
 
-    SN_PREFIX = (b"D361",)
+    SN_PREFIX = (b"D361", b"D365")
     NAME_PREFIX = "EF-D3"
 
     @computed_field

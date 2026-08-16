@@ -208,7 +208,7 @@ class _ConnectionListeners(ListenerRegistry):
 
 
 class Connection:
-    """Manages client creation, authentification and sends the packets to parse back"""
+    """Manages client creation, authentication and sends the packets to parse back"""
 
     @dataclass
     class Options:
@@ -263,6 +263,8 @@ class Connection:
 
         self._tasks: set[asyncio.Task] = set()
         self._call_later_handles: dict[str, asyncio.TimerHandle] = {}
+        self._auth_task: asyncio.Task | None = None
+        self._notification_queue: asyncio.Queue[bytes] | None = None
 
         self._logger = ConnectionLogger(self)
         self._state_changed = asyncio.Event()
@@ -281,6 +283,30 @@ class Connection:
     @property
     def is_connected(self) -> bool:
         return self._client is not None and self._client.is_connected
+
+    def ble_dev(self) -> BLEDevice:
+        return self._ble_dev
+
+    def update_ble_device(self, ble_dev: BLEDevice):
+        self._ble_dev = ble_dev
+
+    def with_logging_options(self, options: LogOptions):
+        self._logger.set_options(options)
+        return self
+
+    def with_disabled_reconnect(self, is_disabled: bool = True):
+        self._reconnect = not is_disabled
+        return self
+
+    def with_options(self, options: "Connection.Options"):
+        """Set connection options."""
+        self._options = options
+        return self
+
+    @property
+    def disconnect_log(self) -> list[dict[str, Any]]:
+        """Recent BLE client disconnect outcomes, for diagnostics"""
+        return list(self._disconnect_log)
 
     def _add_listener(self, collection: MutableSequence[Callable], listener: Callable):
         collection.append(listener)
@@ -330,30 +356,13 @@ class Connection:
 
         self._listeners.on_disconnect(exception)
 
-    def ble_dev(self) -> BLEDevice:
-        return self._ble_dev
-
-    def with_logging_options(self, options: LogOptions):
-        self._logger.set_options(options)
-        return self
-
-    def with_disabled_reconnect(self, is_disabled: bool = True):
-        self._reconnect = not is_disabled
-        return self
-
-    def update_ble_device(self, ble_dev: BLEDevice):
-        self._ble_dev = ble_dev
-
-    def with_options(self, options: "Connection.Options"):
-        """Set connection options."""
-        self._options = options
-        return self
-
     async def connect(
         self,
         max_attempts: int | None = None,
     ):
-        if self._state.is_connecting:
+        # `_reconnect` sets RECONNECTING before calling in, and that counts as
+        # connecting, so it has to be let through.
+        if self._state.is_connecting and self._state != ConnectionState.RECONNECTING:
             return
 
         max_attempts = (
@@ -386,6 +395,9 @@ class Connection:
             # left over from a bad disconnect); otherwise new connection attempts can be
             # refused until the adapter is reset.
             await close_stale_connections_by_address(self.ble_dev().address)
+            # max_attempts=0 means unlimited at Connection level, but
+            # establish_connection needs a real retry count for BLE-level attempts (e.g.
+            # when adapter slots are contested).
             ble_attempts = max_attempts if max_attempts != 0 else MAX_CONNECT_ATTEMPTS
             self._client = await establish_connection(
                 BleakClient,
@@ -433,12 +445,15 @@ class Connection:
 
         self._logger.info("Init completed, starting auth routine...")
 
+        # Not inside the auth task: a device can answer while that task is still queued.
+        self._reset_assemblers()
+
         try:
             await self._start_notify(self._on_notification)
         except Exception as e:  # noqa: BLE001 - any subscribe failure is fatal here
             # BlueZ can raise synchronously from start_notify (e.g. "Remote peer
-            # disconnected") without bleak firing its disconnected callback, so
-            # drive the reconnect ourselves.
+            # disconnected") without bleak firing its disconnected callback, so drive
+            # the reconnect ourselves.
             self._logger.warning(
                 "Failed to subscribe to notifications (%s); reconnecting", e
             )
@@ -446,7 +461,9 @@ class Connection:
             self.disconnected()
             return
 
-        await self._init_ble_session_key()
+        if self._auth_task is not None and not self._auth_task.done():
+            self._auth_task.cancel()
+        self._auth_task = self._add_task(self._run_auth())
 
     def disconnected(self, *args, **kwargs) -> None:
         # Traces the trigger: an unsolicited bleak drop shows bleak/asyncio frames here,
@@ -460,6 +477,10 @@ class Connection:
         # manages its own retries and will raise on final failure)
         if self._state is ConnectionState.ESTABLISHING_CONNECTION:
             return
+
+        # Auth can't proceed without the link; any new attempt starts its own run
+        if self._auth_task is not None and not self._auth_task.done():
+            self._auth_task.cancel()
 
         if not self._retry_on_disconnect:
             if self._reconnect_task:
@@ -523,6 +544,21 @@ class Connection:
         self._set_state(ConnectionState.RECONNECTING)
         await self.connect()
 
+    async def disconnect(self, reason: str | None = None) -> None:
+        self._logger.info("Disconnecting from device (%s)", reason or "no reason given")
+        self._retry_on_disconnect = False
+
+        self._reconnect_attempt = 0
+        self._cancel_tasks()
+
+        if self._client is not None and self._client.is_connected:
+            self._set_state(ConnectionState.DISCONNECTING, reason=reason)
+            await self._disconnect_client()
+
+        self._client = None
+        if self._state == ConnectionState.DISCONNECTING:
+            self._set_state(ConnectionState.DISCONNECTED, reason=reason)
+
     async def _disconnect_client(self) -> None:
         if self._client is None or not self._client.is_connected:
             return
@@ -555,31 +591,6 @@ class Connection:
         self._disconnect_log.append(
             {"time": time.time(), "trigger": trigger, "outcome": outcome}
         )
-
-    @property
-    def disconnect_log(self) -> list[dict[str, Any]]:
-        """Recent BLE client disconnect outcomes, for diagnostics"""
-        return list(self._disconnect_log)
-
-    async def disconnect(self, reason: str | None = None) -> None:
-        self._logger.info("Disconnecting from device (%s)", reason or "no reason given")
-        self._retry_on_disconnect = False
-
-        self._reconnect_attempt = 0
-        self._cancel_tasks()
-
-        if self._client is not None and self._client.is_connected:
-            self._set_state(ConnectionState.DISCONNECTING, reason=reason)
-            await self._disconnect_client()
-
-        self._client = None
-        if self._state == ConnectionState.DISCONNECTING:
-            self._set_state(ConnectionState.DISCONNECTED, reason=reason)
-
-    async def _disconnect_error(self, state: ConnectionState, exc: Exception):
-        self._set_state(state, exc)
-        await self._disconnect_client()
-        raise exc
 
     async def wait_connected(self, timeout: int = 20):
         """Will release when connection is happened and authenticated"""
@@ -642,99 +653,209 @@ class Connection:
 
         await self._disconnected.wait()
 
-    async def add_error(self, exception: Exception):
-        tb = traceback.format_tb(exception.__traceback__)
-        self._logger.error("Captured exception: %s:\n%s", exception, "".join(tb))
-        self._errors += 1
-        self._last_exception = exception
-        if self._errors > 5:
-            # Too much errors happened - let's reconnect
-            self._errors = 0
-            self._set_state(ConnectionState.ERROR_TOO_MANY_ERRORS, exception)
-            if self._client is not None and self._client.is_connected:
-                self._logger.warning("Client disconnected after encountering 5 errors")
-                await self._disconnect_client()
+    async def _run_auth(self) -> None:
+        """
+        Drive the whole authentication procedure for this connection
 
-    async def _handle_undecryptable_frame(self, packet: InvalidPacket):
-        # A frame that passes the outer CRC but not the parser decrypted to noise, so
-        # our key no longer matches the device's. Nothing re-derives it mid-session,
-        # which is why the link has to be dropped for the handshake to run again.
-        self._undecryptable_frames += 1
-        if self._undecryptable_frames < self._UNDECRYPTABLE_FRAME_LIMIT:
+        Each stage sends its request and awaits the device response through the
+        notification waiter, so the exchange reads top to bottom. The final auth reply
+        (or first data packet) is confirmed asynchronously by the data handler.
+        """
+        client = self._client
+        try:
+            match self._encrypt_type:
+                case 0:
+                    await self._type_0_session()
+                case 1:
+                    await self._type_1_session()
+                case _:
+                    await self._ecdh_session()
+
+            await self._auto_authentication()
+            await self._wait_authenticated()
+        except TimeoutError as e:
+            await self._auth_failed(ConnectionState.ERROR_TIMEOUT, e, client)
+        except Exception as e:  # noqa: BLE001 - any auth stage failure ends the session
+            await self._auth_failed(ConnectionState.ERROR_AUTH_FAILED, e, client)
+
+    async def _wait_authenticated(self) -> None:
+        # The reply is confirmed by the data handler, so nothing else bounds this stage.
+        async with asyncio.timeout(self._options.timeout):
+            while not self._state.authenticated:
+                if self._state.is_error:
+                    return
+                await self._state_changed.wait()
+
+    async def _auth_failed(
+        self, state: ConnectionState, exc: Exception, client: BleakClient | None
+    ) -> None:
+        if self._client is not client or not self.is_connected:
+            self._logger.warning(
+                "Auth stage failed after its link was gone (%r); "
+                "leaving the current connection alone",
+                exc,
+            )
+            await self.add_error(exc)
             return
 
-        self._undecryptable_frames = 0
-        self._logger.warning(
-            "Session lost - %d consecutive frames could not be decoded (%s), "
-            "reconnecting to renegotiate the session key",
-            self._UNDECRYPTABLE_FRAME_LIMIT,
-            packet.error_message,
-        )
-        self._set_state(ConnectionState.ERROR_TOO_MANY_ERRORS)
-        if self._client is not None and self._client.is_connected:
-            await self._disconnect_client()
-
-    def _reset_error_counter(self):
-        self._errors = 0
-
-    @property
-    def _state(self) -> ConnectionState:
-        return self._connection_state
-
-    @_state.setter
-    def _state(self, value: ConnectionState):
-        self._last_state = self._connection_state
-        self._connection_state = value
-        self._state_changed.set()
-        self._state_changed.clear()
-        self._listeners.on_connection_state_change(value)
-
-    @property
-    def state_reason(self) -> str | None:
-        return self._state_reason
-
-    def _set_state(
-        self,
-        state: ConnectionState,
-        exc: Exception | type[Exception] | None = None,
-        reason: str | None = None,
-    ):
-        self._state_exception = exc
-        if exc is not None:
-            self._last_exception = exc
-
-        self._state_reason = reason
-        self._state = state
-
-        if state.is_error:
-            self._notify_disconnect(exc)
-
-    def set_state(
-        self, state: ConnectionState, exc: Exception | type[Exception] | None = None
-    ) -> None:
         self._set_state(state, exc)
+        await self._disconnect_client()
 
-    def _get_characteristics(self, char_type: Literal["write", "notify"]):
-        assert self._client is not None
+    async def _type_0_session(self):
+        self._use_encryption(None)
 
-        for uuids in _BT_PROTOCOL_UUIDS.values():
-            if (
-                uuid := self._client.services.get_characteristic(uuids[char_type])
-            ) is not None:
-                return uuid
-        characteristic_list = [
-            f"{c.uuid} {c.description} {c.properties}"
-            for c in self._client.services.characteristics.values()
-        ]
-        raise UnsupportedBluetoothProtocol(char_type, characteristic_list)
+        await self.send_auth_status_packet()
 
-    @property
-    def _notify_characteristic(self):
-        return self._get_characteristics("notify")
+    async def _type_1_session(self):
+        session_key = hashlib.md5(self._dev_sn.encode()).digest()
+        iv = hashlib.md5(self._dev_sn[::-1].encode()).digest()
+        self._use_encryption(Type1Encryption(session_key, iv))
 
-    @property
-    def _write_characteristic(self):
-        return self._get_characteristics("write")
+        await self.send_auth_status_packet()
+
+    async def _ecdh_session(self):
+        """
+        Establish the encrypted session
+
+        ECDH public key exchange, then session key derivation and auth status query.
+        """
+        await self._exchange_public_keys()
+        await self._request_session_key()
+        await self._request_auth_status()
+
+    async def _exchange_public_keys(self):
+        self._set_state(ConnectionState.PUBLIC_KEY_EXCHANGE)
+        self._logger.log_filtered(
+            LogOptions.CONNECTION_DEBUG, "_exchange_public_keys: Pub key exchange"
+        )
+        self._private_key = ecdsa.SigningKey.generate(curve=ecdsa.SECP160r1)
+        self._public_key: ecdsa.VerifyingKey = self._private_key.get_verifying_key()  # pyright: ignore[reportAttributeAccessIssue]
+
+        async with self._expecting_response():
+            # Payload contains some weird prefix and generated public key
+            await self.send_request(
+                SimplePacketAssembler.encode(b"\x01\x00" + self._public_key.to_string())
+            )
+            data = await self._read_simple_response()
+        self._set_state(ConnectionState.PUBLIC_KEY_RECEIVED)
+
+        if len(data) < 3:
+            raise PacketParseError(
+                "Incorrect size of the returned pub key data: " + data.hex()
+            )
+        # status = data[1]
+        ecdh_type_size = _get_ecdh_type_size(data[2])
+        self._dev_pub_key = ecdsa.VerifyingKey.from_string(
+            data[3 : ecdh_type_size + 3], curve=ecdsa.SECP160r1
+        )
+
+        # Generating shared key from our private key and received device public key
+        # NOTE: The device will do the same with it's private key and our public key to
+        # generate the # same shared key value and use it to encrypt/decrypt using
+        # symmetric encryption algorithm
+        shared_key = ecdsa.ECDH(
+            ecdsa.SECP160r1, self._private_key, self._dev_pub_key
+        ).generate_sharedsecret_bytes()
+        # Set Initialization Vector from digest of the original shared key
+        iv = hashlib.md5(shared_key).digest()
+
+        self._use_encryption(Type7Encryption(shared_key[:16], iv))
+
+    async def _request_session_key(self):
+        self._set_state(ConnectionState.REQUESTING_SESSION_KEY)
+        self._logger.log_filtered(
+            LogOptions.CONNECTION_DEBUG, "_request_session_key: Receiving session key"
+        )
+        async with self._expecting_response():
+            # Command to get key info to make the shared key
+            await self.send_request(SimplePacketAssembler.encode(b"\x02"))
+            encrypted_data = await self._read_simple_response()
+        self._set_state(ConnectionState.SESSION_KEY_RECEIVED)
+
+        if encrypted_data[0] != 0x02:
+            raise AuthErrors.KeyInfoReqFailed(
+                "Received type of KeyInfo is != 0x02, need to dig into: "
+                f"{encrypted_data.hex()}"
+            )
+
+        assert self._encryption is not None
+
+        # Skipping the first byte - type of the payload (0x02)
+        data = await self._encryption.decrypt(encrypted_data[1:])
+
+        # Parse the data that contains sRand (first 16 bytes) & seed (last 2 bytes)
+        session_key = await self._gen_session_key(data[16:18], data[:16])
+        self._initial_session_key = self._encryption.session_key
+        self._use_encryption(Type7Encryption(session_key, self._encryption.iv))
+
+    async def _request_auth_status(self):
+        self._set_state(ConnectionState.REQUESTING_AUTH_STATUS)
+        self._logger.log_filtered(
+            LogOptions.CONNECTION_DEBUG, "_request_auth_status: Receiving auth status"
+        )
+        async with self._expecting_response():
+            await self.send_auth_status_packet()
+            packets = await self._read_packet_response()
+        self._set_state(ConnectionState.AUTH_STATUS_RECEIVED)
+
+        self._logger.log_filtered(
+            LogOptions.CONNECTION_DEBUG,
+            "_request_auth_status: data: %r",
+            packets[0].payload,
+        )
+
+    async def _auto_authentication(self):
+        self._set_state(ConnectionState.AUTHENTICATING)
+        self._logger.info(
+            "_auto_authentication: Sending secretKey consists of user id and device "
+            "serial number",
+        )
+
+        # Building payload for auth
+        md5_data = hashlib.md5((self._user_id + self._dev_sn).encode("ASCII")).digest()
+        # We need upper case in MD5 data here
+        payload = ("".join(f"{c:02X}" for c in md5_data)).encode("ASCII")
+
+        # Forming packet - use detected protocol version (V2 or V3)
+        packet = Packet(
+            0x21,
+            self._auth_header_dst,
+            0x35,
+            0x86,
+            payload,
+            0x01,
+            0x01,
+            self._packet_version,
+        )
+
+        # The auth reply (and everything after) arrives through `_on_notification`
+        await self.send_packet(packet)
+
+    async def _check_auth(self, packet: Packet):
+        exc = AuthErrors.from_payload(packet.payload)
+        if not exc:
+            return
+        exc = exc(f"Authentication failed with response: {packet.payload.hex()}")
+
+        self._logger.error("Authentication failed, packet: %s", packet, exc_info=exc)
+        self._set_state(ConnectionState.ERROR_AUTH_FAILED, exc)
+
+        await self._disconnect_client()
+        raise exc
+
+    async def send_auth_status_packet(self):
+        """Send the auth status packet used for initial auth wake-up."""
+        pkt = Packet(
+            0x21,
+            self._auth_header_dst,
+            0x35,
+            0x89,
+            b"",
+            0x01,
+            0x01,
+            self._packet_version,
+        )
+        await self.send_packet(pkt)
 
     def _validate_characteristics(self) -> None:
         """Resolve both GATT characteristics against the freshly connected client"""
@@ -787,6 +908,156 @@ class Connection:
 
         # Hashing data to get the session key
         return hashlib.md5(data).digest()
+
+    async def _start_notify(self, callback: Callable):
+        kwargs = {}
+        if self._options.bluez_start_notify:
+            kwargs["bluez"] = {"use_start_notify": True}
+        await self._client.start_notify(self._notify_characteristic, callback, **kwargs)
+
+    async def _on_notification(
+        self, characteristic: BleakGATTCharacteristic, recv_data: bytearray
+    ):
+        """
+        Dispatch every BLE notification for the whole connection lifetime
+
+        While an auth stage awaits its response the data is routed to the pending
+        waiter, anything else is device data.
+        """
+        if self._client is None or not self._client.is_connected:
+            return
+
+        data = bytes(recv_data)
+        if (queue := self._notification_queue) is not None:
+            queue.put_nowait(data)
+            return
+
+        await self._listen_for_data_handler(data)
+
+    @contextlib.asynccontextmanager
+    async def _expecting_response(self):
+        """
+        Buffer notifications for an auth stage instead of handing them to `_handle_data`
+
+        The buffer has to exist before the request goes out: a device can answer faster
+        than this coroutine is scheduled again after the write, and a reply that arrives
+        with nothing expecting it is parsed as device data and lost, which strands the
+        stage until it times out.
+        """
+        queue: asyncio.Queue[bytes] = asyncio.Queue()
+        self._notification_queue = queue
+        try:
+            yield
+        finally:
+            self._notification_queue = None
+            # Unread notifications are still device data, and the assembler needs
+            # every byte in order.
+            while not queue.empty():
+                await self._listen_for_data_handler(queue.get_nowait())
+
+    async def _wait_notification(self) -> bytes:
+        queue = self._notification_queue
+        if queue is None:
+            raise RuntimeError(
+                "auth stages must read responses inside `_expecting_response()`"
+            )
+        return await queue.get()
+
+    async def _read_simple_response(self) -> bytes:
+        """Await notifications until the simple assembler yields a complete payload"""
+        # One deadline for the whole read, not per notification.
+        async with asyncio.timeout(self._options.timeout):
+            while (
+                data := await self._parse_simple(await self._wait_notification())
+            ) is None:
+                pass
+            return data
+
+    async def _read_packet_response(self) -> list[Packet]:
+        """Await notifications until the frame assembler yields complete packets"""
+        async with asyncio.timeout(self._options.timeout):
+            while not (
+                packets := await self._parse_enc_packets(
+                    await self._wait_notification()
+                )
+            ):
+                pass
+            return packets
+
+    async def _listen_for_data_handler(self, data: bytes):
+        try:
+            packets = await self._parse_enc_packets(data)
+        except Exception as e:  # noqa: BLE001
+            await self.add_error(e)
+            return
+
+        self._reset_error_counter()
+
+        for packet in packets:
+            if self._client is None:
+                self._logger.log_filtered(
+                    LogOptions.CONNECTION_DEBUG,
+                    "Dropping buffered packet after disconnect: %r",
+                    packet,
+                )
+                return
+
+            processed = False
+
+            is_auth_reply = (
+                packet.src == self._auth_header_dst
+                and packet.cmd_set == 0x35
+                and packet.cmd_id == 0x86
+            )
+            authenticating = self._state == ConnectionState.AUTHENTICATING
+
+            if is_auth_reply and authenticating:
+                await self._check_auth(packet)
+                self._connection_attempt = 0
+                self._reconnect_attempt = 0
+                processed = True
+                self._logger.info("Auth completed, everything is fine")
+                self._set_state(ConnectionState.AUTHENTICATED)
+                self._connected.set()
+            else:
+                if authenticating and not is_auth_reply:
+                    self._connection_attempt = 0
+                    self._reconnect_attempt = 0
+                    self._logger.info("Auth completed - first data packet received")
+                    self._set_state(ConnectionState.AUTHENTICATED)
+                    self._connected.set()
+
+                try:
+                    # Processing the packet with specific device
+                    processed = await self._data_parse(packet)
+                except Exception as e:  # noqa: BLE001
+                    await self.add_error(e)
+                    continue
+
+            if not processed:
+                self._logger.log_filtered(
+                    LogOptions.CONNECTION_DEBUG, "_listen_for_data_handler: %r", packet
+                )
+
+    async def reply_packet(self, packet: Packet):
+        """Copy and change the packet to be reply packet and sends it back to device"""
+        # Found it's necesary to send back the packets, otherwise device will not send
+        # moar info then strict minimum - which just about power params, but not configs
+        # & advanced params
+        reply_packet = Packet(
+            packet.dst,  # Switching src to dst
+            packet.src,  # Switching dst to src
+            packet.cmd_set,
+            packet.cmd_id,
+            packet.payload,
+            0x01,
+            0x01,  # Replacing 0 with 1
+            packet.version,
+            packet.seq,
+            packet.product_id,
+        )
+        # Running reply asynchroneously
+        self._add_task(self.send_packet(reply_packet))
 
     async def _parse_simple(self, data: bytes) -> bytes | None:
         """Deserializes bytes stream into the simple bytes"""
@@ -852,6 +1123,84 @@ class Connection:
 
         return packets
 
+    def _use_encryption(self, encryption: EncryptionStrategy | None) -> None:
+        self._encryption = encryption
+        if encryption is not None:
+            self._listeners.on_session_key_derived(
+                encryption.session_key, encryption.iv
+            )
+
+    def _create_frame_assembler(self):
+        match self._encrypt_type:
+            case 0:
+                return PassthroughAssembler()
+            case 1:
+                return RawHeaderAssembler(self._encryption)
+            case 7:
+                return EncPacketAssembler(self._encryption)
+            case _:
+                raise ValueError(f"Unsupported encryption type: {self._encrypt_type}")
+
+    def _get_frame_assembler(self) -> FrameAssembler:
+        if self._frame_assembler is None:
+            self._frame_assembler = self._create_frame_assembler()
+        return self._frame_assembler
+
+    def _reset_assemblers(self) -> None:
+        """Drop buffered frame data and rebuild assemblers for a fresh auth routine"""
+        self._simple_assembler = SimplePacketAssembler()
+        # Clear it so the next use rebuilds it against this attempt's encryption rather
+        # than reusing a previous attempt's session key.
+        self._frame_assembler = None
+        self._undecryptable_frames = 0
+
+    async def _handle_undecryptable_frame(self, packet: InvalidPacket):
+        # A frame that passes the outer CRC but not the parser decrypted to noise, so
+        # our key no longer matches the device's. Nothing re-derives it mid-session,
+        # which is why the link has to be dropped for the handshake to run again.
+        self._undecryptable_frames += 1
+        if self._undecryptable_frames < self._UNDECRYPTABLE_FRAME_LIMIT:
+            return
+
+        self._undecryptable_frames = 0
+        self._logger.warning(
+            "Session lost - %d consecutive frames could not be decoded (%s), "
+            "reconnecting to renegotiate the session key",
+            self._UNDECRYPTABLE_FRAME_LIMIT,
+            packet.error_message,
+        )
+        self._set_state(ConnectionState.ERROR_TOO_MANY_ERRORS)
+        if self._client is not None and self._client.is_connected:
+            await self._disconnect_client()
+
+    async def send_packet(
+        self,
+        packet: Packet,
+        *,
+        wait_for_response: bool = True,
+        raise_on_failure: bool = False,
+    ):
+        self._logger.log_filtered(
+            LogOptions.CONNECTION_DEBUG, "Sending packet: %r", packet
+        )
+
+        frame_assembler = (
+            self._get_frame_assembler()
+            if self._connection_state.received_session_key
+            else self._create_frame_assembler()
+        )
+
+        to_send = await frame_assembler.encode(packet)
+
+        if frame_assembler.write_with_response and wait_for_response:
+            await self.send_request(to_send, raise_on_failure=raise_on_failure)
+        elif self._client is not None and self._client.is_connected:
+            await self._client.write_gatt_char(
+                self._write_characteristic, bytearray(to_send), response=False
+            )
+        elif raise_on_failure:
+            raise NotConnectedError("Cannot send command: device is not connected")
+
     async def send_request(self, send_data: bytes, *, raise_on_failure: bool = False):
         self._logger.log_filtered(LogOptions.CONNECTION_DEBUG, "Sending: %r", send_data)
         self._listeners.on_data_send(send_data)
@@ -901,12 +1250,6 @@ class Connection:
             # reached the device, so surface it instead of reporting success
             raise err
 
-    async def _start_notify(self, callback: Callable):
-        kwargs = {}
-        if self._options.bluez_start_notify:
-            kwargs["bluez"] = {"use_start_notify": True}
-        await self._client.start_notify(self._notify_characteristic, callback, **kwargs)
-
     async def _send_request(self, send_data: bytes, *, raise_on_failure: bool = False):
         # Make sure the connection is here, otherwise just skipping
         if self._client is None or not self._client.is_connected:
@@ -923,364 +1266,80 @@ class Connection:
             self._write_characteristic, bytearray(send_data)
         )
 
-    async def send_packet(
+    def _get_characteristics(self, char_type: Literal["write", "notify"]):
+        assert self._client is not None
+
+        for uuids in _BT_PROTOCOL_UUIDS.values():
+            if (
+                uuid := self._client.services.get_characteristic(uuids[char_type])
+            ) is not None:
+                return uuid
+        characteristic_list = [
+            f"{c.uuid} {c.description} {c.properties}"
+            for c in self._client.services.characteristics.values()
+        ]
+        raise UnsupportedBluetoothProtocol(char_type, characteristic_list)
+
+    @property
+    def _notify_characteristic(self):
+        return self._get_characteristics("notify")
+
+    @property
+    def _write_characteristic(self):
+        return self._get_characteristics("write")
+
+    async def add_error(self, exception: Exception):
+        tb = traceback.format_tb(exception.__traceback__)
+        self._logger.error("Captured exception: %s:\n%s", exception, "".join(tb))
+        self._errors += 1
+        self._last_exception = exception
+        if self._errors > 5:
+            # Too much errors happened - let's reconnect
+            self._errors = 0
+            self._set_state(ConnectionState.ERROR_TOO_MANY_ERRORS, exception)
+            if self._client is not None and self._client.is_connected:
+                self._logger.warning("Client disconnected after encountering 5 errors")
+                await self._disconnect_client()
+
+    def _reset_error_counter(self):
+        self._errors = 0
+
+    @property
+    def _state(self) -> ConnectionState:
+        return self._connection_state
+
+    @_state.setter
+    def _state(self, value: ConnectionState):
+        self._last_state = self._connection_state
+        self._connection_state = value
+        self._state_changed.set()
+        self._state_changed.clear()
+        self._listeners.on_connection_state_change(value)
+
+    @property
+    def state_reason(self) -> str | None:
+        return self._state_reason
+
+    def _set_state(
         self,
-        packet: Packet,
-        *,
-        wait_for_response: bool = True,
-        raise_on_failure: bool = False,
+        state: ConnectionState,
+        exc: Exception | type[Exception] | None = None,
+        reason: str | None = None,
     ):
-        self._logger.log_filtered(
-            LogOptions.CONNECTION_DEBUG, "Sending packet: %r", packet
-        )
+        self._state_exception = exc
+        if exc is not None:
+            self._last_exception = exc
 
-        frame_assembler = (
-            self._get_frame_assembler()
-            if self._connection_state.received_session_key
-            else self._create_frame_assembler()
-        )
+        self._state_reason = reason
+        self._state = state
 
-        to_send = await frame_assembler.encode(packet)
+        if state.is_error:
+            self._notify_disconnect(exc)
 
-        if frame_assembler.write_with_response and wait_for_response:
-            await self.send_request(to_send, raise_on_failure=raise_on_failure)
-        elif self._client is not None and self._client.is_connected:
-            await self._client.write_gatt_char(
-                self._write_characteristic, bytearray(to_send), response=False
-            )
-        elif raise_on_failure:
-            raise NotConnectedError("Cannot send command: device is not connected")
-
-    async def reply_packet(self, packet: Packet):
-        """Copy and change the packet to be reply packet and sends it back to device"""
-        # Found it's necesary to send back the packets, otherwise device will not send
-        # moar info then strict minimum - which just about power params, but not configs
-        # & advanced params
-        reply_packet = Packet(
-            packet.dst,  # Switching src to dst
-            packet.src,  # Switching dst to src
-            packet.cmd_set,
-            packet.cmd_id,
-            packet.payload,
-            0x01,
-            0x01,  # Replacing 0 with 1
-            packet.version,
-            packet.seq,
-            packet.product_id,
-        )
-        # Running reply asynchroneously
-        self._add_task(self.send_packet(reply_packet))
-
-    async def _init_ble_session_key(self):
-        self._reset_assemblers()
-
-        match self._encrypt_type:
-            case 0:
-                await self._type_0_session()
-            case 1:
-                await self._type_1_session()
-            case _:
-                await self._ecdh_key_exchange()
-
-    def _reset_assemblers(self) -> None:
-        """Drop buffered frame data and rebuild assemblers for a fresh auth routine"""
-        self._simple_assembler = SimplePacketAssembler()
-        # Clear it so the next use rebuilds it against this attempt's encryption rather
-        # than reusing a previous attempt's session key.
-        self._frame_assembler = None
-        self._undecryptable_frames = 0
-
-    async def _type_0_session(self):
-        self._use_encryption(None)
-
-        await self.send_auth_status_packet()
-        await self._auto_authentication()
-
-    async def _type_1_session(self):
-        session_key = hashlib.md5(self._dev_sn.encode()).digest()
-        iv = hashlib.md5(self._dev_sn[::-1].encode()).digest()
-        self._use_encryption(Type1Encryption(session_key, iv))
-
-        await self.send_auth_status_packet()
-        await self._auto_authentication()
-
-    async def _ecdh_key_exchange(self):
-        self._set_state(ConnectionState.PUBLIC_KEY_EXCHANGE)
-        self._logger.log_filtered(
-            LogOptions.CONNECTION_DEBUG, "_ecdh_key_exchange: Pub key exchange"
-        )
-        self._private_key = ecdsa.SigningKey.generate(curve=ecdsa.SECP160r1)
-        self._public_key: ecdsa.VerifyingKey = self._private_key.get_verifying_key()  # pyright: ignore[reportAttributeAccessIssue]
-
-        to_send = SimplePacketAssembler.encode(
-            # Payload contains some weird prefix and generated public key
-            b"\x01\x00" + self._public_key.to_string(),
-        )
-
-        # Device public key is sent as response, process continues when
-        # `_on_notification` dispatches it to `_init_ble_session_key_handler`
-        await self.send_request(to_send)
-
-    async def _init_ble_session_key_handler(self, recv_data: bytes):
-        data = await self._parse_simple(recv_data)
-        if data is None:
-            return
-
-        self._set_state(ConnectionState.PUBLIC_KEY_RECEIVED)
-
-        if len(data) < 3:
-            raise PacketParseError(
-                "Incorrect size of the returned pub key data: " + data.hex()
-            )
-        # status = data[1]
-        ecdh_type_size = getEcdhTypeSize(data[2])
-        self._dev_pub_key = ecdsa.VerifyingKey.from_string(
-            data[3 : ecdh_type_size + 3], curve=ecdsa.SECP160r1
-        )
-
-        # Generating shared key from our private key and received device public key
-        # NOTE: The device will do the same with it's private key and our public key to
-        # generate the # same shared key value and use it to encrypt/decrypt using
-        # symmetric encryption algorithm
-        shared_key = ecdsa.ECDH(
-            ecdsa.SECP160r1, self._private_key, self._dev_pub_key
-        ).generate_sharedsecret_bytes()
-        # Set Initialization Vector from digest of the original shared key
-        iv = hashlib.md5(shared_key).digest()
-
-        self._use_encryption(Type7Encryption(shared_key[:16], iv))
-
-        await self._get_key_info_req()
-
-    async def _get_key_info_req(self):
-        self._set_state(ConnectionState.REQUESTING_SESSION_KEY)
-        self._logger.log_filtered(
-            LogOptions.CONNECTION_DEBUG, "_get_key_info_req: Receiving session key"
-        )
-        to_send = SimplePacketAssembler.encode(
-            b"\x02",  # command to get key info to make the shared key
-        )
-
-        await self.send_request(to_send)
-
-    async def _get_key_info_req_handler(self, recv_data: bytes):
-        encrypted_data = await self._parse_simple(recv_data)
-        if encrypted_data is None:
-            return
-
-        self._set_state(ConnectionState.SESSION_KEY_RECEIVED)
-
-        if encrypted_data[0] != 0x02:
-            raise AuthErrors.KeyInfoReqFailed(
-                "Received type of KeyInfo is != 0x02, need to dig into: "
-                f"{encrypted_data.hex()}"
-            )
-
-        assert self._encryption is not None
-
-        # Skipping the first byte - type of the payload (0x02)
-        data = await self._encryption.decrypt(encrypted_data[1:])
-
-        # Parse the data that contains sRand (first 16 bytes) & seed (last 2 bytes)
-        session_key = await self._gen_session_key(data[16:18], data[:16])
-        self._initial_session_key = self._encryption.session_key
-        self._use_encryption(Type7Encryption(session_key, self._encryption.iv))
-
-        await self._get_auth_status()
-
-    async def _get_auth_status(self):
-        self._set_state(ConnectionState.REQUESTING_AUTH_STATUS)
-        self._logger.log_filtered(
-            LogOptions.CONNECTION_DEBUG, "_get_auth_status: Receiving auth status"
-        )
-
-        packet = Packet(
-            0x21,
-            self._auth_header_dst,
-            0x35,
-            0x89,
-            b"",
-            0x01,
-            0x01,
-            self._packet_version,
-        )
-
-        await self.send_packet(packet)
-
-    async def _get_auth_status_handler(self, recv_data: bytes):
-        packets = await self._parse_enc_packets(recv_data)
-        if not packets:
-            return
-
-        self._set_state(ConnectionState.AUTH_STATUS_RECEIVED)
-        data = packets[0].payload
-
-        self._logger.log_filtered(
-            LogOptions.CONNECTION_DEBUG,
-            "_get_auth_status_handler: data: %r",
-            data,
-        )
-        await self._auto_authentication()
-
-    async def _auto_authentication(self):
-        self._set_state(ConnectionState.AUTHENTICATING)
-        self._logger.info(
-            "_auto_authentication: Sending secretKey consists of user id and device "
-            "serial number",
-        )
-
-        # Building payload for auth
-        md5_data = hashlib.md5((self._user_id + self._dev_sn).encode("ASCII")).digest()
-        # We need upper case in MD5 data here
-        payload = ("".join(f"{c:02X}" for c in md5_data)).encode("ASCII")
-
-        # Forming packet - use detected protocol version (V2 or V3)
-        packet = Packet(
-            0x21,
-            self._auth_header_dst,
-            0x35,
-            0x86,
-            payload,
-            0x01,
-            0x01,
-            self._packet_version,
-        )
-
-        # The auth reply (and everything after) arrives through `_on_notification`
-        await self.send_packet(packet)
-
-    async def _check_auth(self, packet: Packet):
-        exc = AuthErrors.from_payload(packet.payload)
-        if not exc:
-            return
-        exc = exc(f"Authentication failed with response: {packet.payload.hex()}")
-
-        self._logger.error("Authentication failed, packet: %s", packet, exc_info=exc)
-        self._set_state(ConnectionState.ERROR_AUTH_FAILED, exc)
-
-        await self._disconnect_client()
-        raise exc
-
-    async def send_auth_status_packet(self):
-        """Send the auth status packet used for initial auth wake-up."""
-        pkt = Packet(
-            0x21,
-            self._auth_header_dst,
-            0x35,
-            0x89,
-            b"",
-            0x01,
-            0x01,
-            self._packet_version,
-        )
-        await self.send_packet(pkt)
-
-    async def _on_notification(
-        self, characteristic: BleakGATTCharacteristic, recv_data: bytearray
-    ):
-        """
-        Dispatch every BLE notification based on the current connection state
-
-        Single notify subscription lives for the whole connection; auth stage
-        responses are routed to their handler, anything else is device data.
-        """
-        if self._client is None or not self._client.is_connected:
-            return
-
-        data = bytes(recv_data)
-        match self._state:
-            case ConnectionState.PUBLIC_KEY_EXCHANGE:
-                stage_handler = self._init_ble_session_key_handler
-            case ConnectionState.REQUESTING_SESSION_KEY:
-                stage_handler = self._get_key_info_req_handler
-            case ConnectionState.REQUESTING_AUTH_STATUS:
-                stage_handler = self._get_auth_status_handler
-            case _:
-                await self._listen_for_data_handler(data)
-                return
-
-        try:
-            await stage_handler(data)
-        except Exception as e:  # noqa: BLE001 - any auth stage failure ends the session
-            await self._disconnect_error(ConnectionState.ERROR_AUTH_FAILED, e)
-
-    async def _listen_for_data_handler(self, data: bytes):
-        try:
-            packets = await self._parse_enc_packets(data)
-        except Exception as e:  # noqa: BLE001
-            await self.add_error(e)
-            return
-
-        self._reset_error_counter()
-
-        for packet in packets:
-            if self._client is None:
-                self._logger.log_filtered(
-                    LogOptions.CONNECTION_DEBUG,
-                    "Dropping buffered packet after disconnect: %r",
-                    packet,
-                )
-                return
-
-            processed = False
-
-            is_auth_reply = (
-                packet.src == self._auth_header_dst
-                and packet.cmd_set == 0x35
-                and packet.cmd_id == 0x86
-            )
-            authenticating = self._state == ConnectionState.AUTHENTICATING
-
-            if is_auth_reply and authenticating:
-                await self._check_auth(packet)
-                self._connection_attempt = 0
-                self._reconnect_attempt = 0
-                processed = True
-                self._logger.info("Auth completed, everything is fine")
-                self._set_state(ConnectionState.AUTHENTICATED)
-                self._connected.set()
-            else:
-                if authenticating and not is_auth_reply:
-                    self._connection_attempt = 0
-                    self._reconnect_attempt = 0
-                    self._logger.info("Auth completed - first data packet received")
-                    self._set_state(ConnectionState.AUTHENTICATED)
-                    self._connected.set()
-
-                try:
-                    # Processing the packet with specific device
-                    processed = await self._data_parse(packet)
-                except Exception as e:  # noqa: BLE001
-                    await self.add_error(e)
-                    continue
-
-            if not processed:
-                self._logger.log_filtered(
-                    LogOptions.CONNECTION_DEBUG, "_listen_for_data_handler: %r", packet
-                )
-
-    def _use_encryption(self, encryption: EncryptionStrategy | None) -> None:
-        self._encryption = encryption
-        if encryption is not None:
-            self._listeners.on_session_key_derived(
-                encryption.session_key, encryption.iv
-            )
-
-    def _create_frame_assembler(self):
-        match self._encrypt_type:
-            case 0:
-                return PassthroughAssembler()
-            case 1:
-                return RawHeaderAssembler(self._encryption)
-            case 7:
-                return EncPacketAssembler(self._encryption)
-            case _:
-                raise ValueError(f"Unsupported encryption type: {self._encrypt_type}")
-
-    def _get_frame_assembler(self) -> FrameAssembler:
-        if self._frame_assembler is None:
-            self._frame_assembler = self._create_frame_assembler()
-        return self._frame_assembler
+    def set_state(
+        self, state: ConnectionState, exc: Exception | type[Exception] | None = None
+    ) -> None:
+        self._set_state(state, exc)
 
     def _cancel_tasks(self):
         for task in self._tasks:
@@ -1345,7 +1404,7 @@ class Connection:
         )
 
 
-def getEcdhTypeSize(curve_num: int):
+def _get_ecdh_type_size(curve_num: int):
     """Return size of ecdh based on type"""
     match curve_num:
         case 1:

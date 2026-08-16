@@ -33,6 +33,7 @@ from .exceptions import (
     FailedToAuthenticate,
     MaxConnectionAttemptsReached,
     MaxReconnectAttemptsReached,
+    NotConnectedError,
     PacketParseError,
     PacketReceiveError,
     UnsupportedBluetoothProtocol,
@@ -860,7 +861,9 @@ class Connection:
 
         return packets
 
-    async def sendRequest(self, send_data: bytes, response_handler=None):
+    async def sendRequest(
+        self, send_data: bytes, response_handler=None, *, raise_on_failure: bool = False
+    ):
         self._logger.log_filtered(LogOptions.CONNECTION_DEBUG, "Sending: %r", send_data)
         self._listeners.on_data_send(send_data)
 
@@ -868,8 +871,10 @@ class Connection:
         err = None
         for retry in range(4):
             try:
-                await self._sendRequest(send_data, response_handler)
-            except Exception as e:  # noqa: BLE001
+                await self._sendRequest(
+                    send_data, response_handler, raise_on_failure=raise_on_failure
+                )
+            except Exception as e:
                 if self._client is None or not self._client.is_connected:
                     # The BLE link dropped mid-request - e.g. BlueZ raising "Remote peer
                     # disconnected" synchronously from start_notify. bleak does not
@@ -880,6 +885,10 @@ class Connection:
                         "BLE link lost while sending request (%s); reconnecting", e
                     )
                     self.disconnected()
+                    if raise_on_failure:
+                        raise NotConnectedError(
+                            "BLE link lost while sending command"
+                        ) from e
                     return
                 self._logger.log_filtered(
                     LogOptions.CONNECTION_DEBUG,
@@ -900,6 +909,10 @@ class Connection:
                 return
 
         await self.add_error(err)
+        if raise_on_failure and err is not None:
+            # Retries exhausted while still nominally connected - the command never
+            # reached the device, so surface it instead of reporting success
+            raise err
 
     async def _start_notify(self, callback: Callable):
         kwargs = {}
@@ -907,9 +920,13 @@ class Connection:
             kwargs["bluez"] = {"use_start_notify": True}
         await self._client.start_notify(self._notify_characteristic, callback, **kwargs)
 
-    async def _sendRequest(self, send_data: bytes, response_handler=None):
+    async def _sendRequest(
+        self, send_data: bytes, response_handler=None, *, raise_on_failure: bool = False
+    ):
         # Make sure the connection is here, otherwise just skipping
         if self._client is None or not self._client.is_connected:
+            if raise_on_failure:
+                raise NotConnectedError("Cannot send command: device is not connected")
             self._logger.log_filtered(
                 LogOptions.CONNECTION_DEBUG,
                 "Skip sending: disconnected: %r",
@@ -925,7 +942,12 @@ class Connection:
         )
 
     async def sendPacket(
-        self, packet: Packet, response_handler=None, wait_for_response: bool = True
+        self,
+        packet: Packet,
+        response_handler=None,
+        wait_for_response: bool = True,
+        *,
+        raise_on_failure: bool = False,
     ):
         self._logger.log_filtered(
             LogOptions.CONNECTION_DEBUG, "Sending packet: %r", packet
@@ -940,11 +962,15 @@ class Connection:
         to_send = await frame_assembler.encode(packet)
 
         if frame_assembler.write_with_response and wait_for_response:
-            await self.sendRequest(to_send, response_handler)
+            await self.sendRequest(
+                to_send, response_handler, raise_on_failure=raise_on_failure
+            )
         elif self._client is not None and self._client.is_connected:
             await self._client.write_gatt_char(
                 self._write_characteristic, bytearray(to_send), response=False
             )
+        elif raise_on_failure:
+            raise NotConnectedError("Cannot send command: device is not connected")
 
     async def replyPacket(self, packet: Packet):
         """Copy and change the packet to be reply packet and sends it back to device"""

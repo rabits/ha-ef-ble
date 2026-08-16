@@ -20,6 +20,7 @@ from .connection import (
     PacketParsedListener,
     PacketReceivedListener,
 )
+from .exceptions import NotConnectedError
 from .listeners import ListenerGroup, ListenerRegistry
 from .logging_util import (
     ConnectionLog,
@@ -81,7 +82,7 @@ class DeviceBase(abc.ABC):
             sn,
         )
 
-        self._conn: Connection = None
+        self._conn: Connection | None = None
         self._connection_event = asyncio.Event()
         self._callbacks = set()
         self._callbacks_map = {}
@@ -177,6 +178,47 @@ class DeviceBase(abc.ABC):
 
         self.on_connection_state_change(_register_timer_task)
 
+    async def send_packet(
+        self,
+        packet: Packet,
+        *,
+        wait_for_response: bool = True,
+        raise_on_failure: bool = False,
+    ) -> None:
+        """
+        Send `packet` to the device, tolerating a link that is down
+
+        `_conn` is `None` for the whole disconnect/reconnect window, so every send has
+        to cope with it. Background traffic (time sync, heartbeat polls, auto-replies)
+        is best-effort and silently dropped, which is the default here. A user-initiated
+        command must not be lost without notice, so those pass `raise_on_failure=True`:
+        `NotConnectedError` when there is no live link or it drops mid-send, and the
+        underlying `BleakError` when the write fails after retries, so a swallowed write
+        is never reported as success. A command whose write and response both completed
+        counts as delivered even if the link drops immediately afterwards.
+
+        Parameters
+        ----------
+        packet
+            Packet to deliver.
+        wait_for_response
+            Forwarded to `Connection.sendPacket`.
+        raise_on_failure
+            Raise instead of dropping the packet when it cannot be delivered.
+        """
+        conn = self._conn
+        if conn is None:
+            if raise_on_failure:
+                raise NotConnectedError(
+                    f"{self.name}: cannot send packet, device is not connected"
+                )
+            return
+        await conn.sendPacket(
+            packet,
+            wait_for_response=wait_for_response,
+            raise_on_failure=raise_on_failure,
+        )
+
     def call_later(
         self,
         delay: float,
@@ -200,6 +242,10 @@ class DeviceBase(abc.ABC):
             Optional deduplication key. When set, a new call with the same key cancels
             the previous one.
         """
+        # `_conn` is None during a disconnect/reconnect window; any pending callback
+        # would be cancelled on disconnect anyway, so there is nothing to schedule
+        if self._conn is None:
+            return
         self._conn.call_later(delay, callback, key)
 
     def with_update_period(self, period: int):

@@ -10,6 +10,10 @@ class PacketReceiveError(Exception):
     """Error during receiving packet"""
 
 
+class NotConnectedError(Exception):
+    """Raised when a command cannot be delivered because the BLE link is unavailable"""
+
+
 class FailedToAuthenticate(Exception):
     """Failed to connect"""
 

@@ -171,7 +171,7 @@ class Device(DeviceBase, ProtobufProps):
     async def _send_config_packet(self, message: ac517_apl_comm_pb2.ConfigWrite):
         payload = message.SerializeToString()
         packet = Packet(0x20, 0x42, 0xFE, 0x11, payload, 0x01, 0x01, 0x13)
-        await self._conn.sendPacket(packet)
+        await self.send_packet(packet, raise_on_failure=True)
 
     async def set_battery_charge_limit_min(self, limit: int):
         if (

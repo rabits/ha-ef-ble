@@ -158,7 +158,7 @@ class Device(DeviceBase, RawDataProps):
             version=self.packet_version,
         )
 
-        await self._conn.sendPacket(packet)
+        await self.send_packet(packet, raise_on_failure=True)
 
     @computed_field
     def _climate_main_mode(self) -> MainMode | None:

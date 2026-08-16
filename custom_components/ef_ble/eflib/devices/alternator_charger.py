@@ -127,7 +127,7 @@ class Device(DeviceBase, ProtobufProps):
     async def _send_config_packet(self, message: dc009_apl_comm_pb2.ConfigWrite):
         payload = message.SerializeToString()
         packet = Packet(0x20, 0x14, 0xFE, 0x11, payload, 0x01, 0x01, 0x13)
-        await self._conn.sendPacket(packet)
+        await self.send_packet(packet, raise_on_failure=True)
 
     async def enable_charger_open(self, enable: bool):
         await self._send_config_packet(

@@ -101,6 +101,7 @@ class Device(DeviceBase, ProtobufProps):
                     await self._send_ble_packet(
                         wn511_sys_pb2.inv_power_pack_ack(sys_seq=msg.sys_seq),
                         cmd_id=0x88,
+                        raise_on_failure=False,
                     )
             case _:
                 return False
@@ -115,11 +116,16 @@ class Device(DeviceBase, ProtobufProps):
         return True
 
     async def _send_ble_packet(
-        self, message: Message, cmd_id: int, dst: int = _DST_INVERTER
+        self,
+        message: Message,
+        cmd_id: int,
+        dst: int = _DST_INVERTER,
+        *,
+        raise_on_failure: bool = True,
     ) -> None:
         payload = message.SerializeToString()
         packet = Packet(0x21, dst, 0x14, cmd_id, payload, version=0x13)
-        await self._conn.sendPacket(packet)
+        await self.send_packet(packet, raise_on_failure=raise_on_failure)
 
     @controls.power(load_power, max=dynamic(load_power_max), step=0.1)
     async def set_load_power(self, watts: float) -> bool:

@@ -275,7 +275,7 @@ class Device(DeviceBase, ProtobufProps):
     async def _send_config_packet(self, message):
         payload = message.SerializeToString()
         packet = Packet(0x21, 0x0B, 0x0C, 0x21, payload, 0x01, 0x01, 0x13)
-        await self._conn.sendPacket(packet)
+        await self.send_packet(packet, raise_on_failure=True)
 
     async def set_config_flag(self, enable):
         """Send command to enable/disable sending config data from device to the host"""

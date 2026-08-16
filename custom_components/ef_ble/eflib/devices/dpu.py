@@ -378,11 +378,19 @@ class Device(DeviceBase, ProtobufProps):
 
         return processed
 
-    async def _send_command_packet(self, dst: int, cmd_func: int, cmd_id: int, message):
+    async def _send_module_command(
+        self,
+        dst: int,
+        cmd_func: int,
+        cmd_id: int,
+        message,
+        *,
+        raise_on_failure: bool = True,
+    ):
         payload = message.SerializeToString()
         p = Packet(0x21, dst, cmd_func, cmd_id, payload, 0x01, 0x01, 0x13)
 
-        await self._conn.sendPacket(p)
+        await self.send_packet(p, raise_on_failure=raise_on_failure)
 
     async def enable_wireless_4g(self, enable: bool):
         """Send command to enable/disable wireless 4G"""
@@ -391,7 +399,7 @@ class Device(DeviceBase, ProtobufProps):
         # Current value from pb_heartbeat.wireless_4g_on
         message = yj751_sys_pb2.Switch4GEnable(en_4G_open=int(enable))
 
-        await self._send_command_packet(
+        await self._send_module_command(
             dst=0x35, cmd_func=0x35, cmd_id=0x75, message=message
         )
         return True
@@ -404,7 +412,7 @@ class Device(DeviceBase, ProtobufProps):
         # Current value from pb_heartbeat.show_flag bit 1
         message = yj751_sys_pb2.DCSwitchSet(enable=int(enable))
 
-        await self._send_command_packet(
+        await self._send_module_command(
             dst=0x02, cmd_func=0x02, cmd_id=0x44, message=message
         )
 
@@ -420,7 +428,7 @@ class Device(DeviceBase, ProtobufProps):
 
         message = yj751_sys_pb2.ACDsgSet(enable=int(enable))
 
-        await self._send_command_packet(
+        await self._send_module_command(
             dst=0x02, cmd_func=0x02, cmd_id=0x48, message=message
         )
 
@@ -431,7 +439,7 @@ class Device(DeviceBase, ProtobufProps):
         # Current value from pb_app_para_heartbeat.ac_xboost
         message = yj751_sys_pb2.ACDsgSet(xboost=int(enable))
 
-        await self._send_command_packet(
+        await self._send_module_command(
             dst=0x02, cmd_func=0x02, cmd_id=0x48, message=message
         )
         return True
@@ -443,7 +451,7 @@ class Device(DeviceBase, ProtobufProps):
         # Current value from pb_app_para_heartbeat.bms_mode_set
         message = yj751_sys_pb2.BpHeatSet(en_bp_heat=int(enable))
 
-        await self._send_command_packet(
+        await self._send_module_command(
             dst=0x02, cmd_func=0x02, cmd_id=0x59, message=message
         )
         return True
@@ -463,7 +471,7 @@ class Device(DeviceBase, ProtobufProps):
             ac_often_open_min_soc=0,
         )
 
-        await self._send_command_packet(
+        await self._send_module_command(
             dst=0x02, cmd_func=0x02, cmd_id=0x5D, message=message
         )
         return True
@@ -476,7 +484,7 @@ class Device(DeviceBase, ProtobufProps):
         # Current value from pb_display_property_upload.plug_in_info_pv_weak_source_flag
         message = yj751_sys_pb2.ConfigWrite(unlock_pv_weak=True)
 
-        await self._send_command_packet(
+        await self._send_module_command(
             dst=0x02, cmd_func=0xFE, cmd_id=0x11, message=message
         )
         return True
@@ -493,7 +501,7 @@ class Device(DeviceBase, ProtobufProps):
         cfg.operate_scheduled_open = mode == OperatingMode.SCHEDULED
         cfg.operate_tou_mode_open = mode == OperatingMode.TIME_OF_USE
 
-        await self._send_command_packet(
+        await self._send_module_command(
             dst=0x02, cmd_func=0xFE, cmd_id=0x11, message=message
         )
 
@@ -511,7 +519,7 @@ class Device(DeviceBase, ProtobufProps):
         # Current value from pb_app_para_heartbeat.chg_c20_set_watts
         message = yj751_sys_pb2.ACChgSet(chg_c20_watts=int(watts))
 
-        await self._send_command_packet(
+        await self._send_module_command(
             dst=0x02, cmd_func=0x02, cmd_id=0x49, message=message
         )
         return True
@@ -524,7 +532,7 @@ class Device(DeviceBase, ProtobufProps):
         # Current value from pb_app_para_heartbeat.chg_5p8_set_watts
         message = yj751_sys_pb2.ACChgSet(chg_5p8_watts=int(watts))
 
-        await self._send_command_packet(
+        await self._send_module_command(
             dst=0x02, cmd_func=0x02, cmd_id=0x49, message=message
         )
         return True
@@ -537,7 +545,7 @@ class Device(DeviceBase, ProtobufProps):
         # Current value from pb_app_para_heartbeat.dsg_min_soc
         message = yj751_sys_pb2.DsgSocMinSet(min_dsg_soc=int(soc))
 
-        await self._send_command_packet(
+        await self._send_module_command(
             dst=0x02, cmd_func=0x02, cmd_id=0x58, message=message
         )
         return True
@@ -550,7 +558,7 @@ class Device(DeviceBase, ProtobufProps):
         # Current value from pb_app_para_heartbeat.chg_max_soc
         message = yj751_sys_pb2.ChgSocMaxSet(max_chg_soc=int(soc))
 
-        await self._send_command_packet(
+        await self._send_module_command(
             dst=0x02, cmd_func=0x02, cmd_id=0x57, message=message
         )
         return True
@@ -563,7 +571,7 @@ class Device(DeviceBase, ProtobufProps):
         # Current value from pb_app_para_heartbeat.sys_backup_soc
         message = yj751_sys_pb2.ConfigWrite(cfg_backup_reverse_soc=int(soc))
 
-        await self._send_command_packet(
+        await self._send_module_command(
             dst=0x02, cmd_func=0xFE, cmd_id=0x11, message=message
         )
         return True
@@ -577,7 +585,7 @@ class Device(DeviceBase, ProtobufProps):
             power_standby_min=_bracket(0, minutes, 1440)
         )
 
-        await self._send_command_packet(
+        await self._send_module_command(
             dst=0x02, cmd_func=0x02, cmd_id=0x51, message=message
         )
         return True
@@ -591,7 +599,7 @@ class Device(DeviceBase, ProtobufProps):
             screen_standby_sec=_bracket(0, seconds, 1800)
         )
 
-        await self._send_command_packet(
+        await self._send_module_command(
             dst=0x02, cmd_func=0x02, cmd_id=0x52, message=message
         )
         return True
@@ -603,7 +611,7 @@ class Device(DeviceBase, ProtobufProps):
         # Current value from pb_app_para_heartbeat.dc_standby_mins
         message = yj751_sys_pb2.DCStandbySet(dc_standby_min=_bracket(0, minutes, 1440))
 
-        await self._send_command_packet(
+        await self._send_module_command(
             dst=0x02, cmd_func=0x02, cmd_id=0x54, message=message
         )
         return True
@@ -615,7 +623,7 @@ class Device(DeviceBase, ProtobufProps):
         # Current value from pb_app_para_heartbeat.ac_standby_mins
         message = yj751_sys_pb2.ACStandbySet(ac_standby_min=_bracket(0, minutes, 1440))
 
-        await self._send_command_packet(
+        await self._send_module_command(
             dst=0x02, cmd_func=0x02, cmd_id=0x53, message=message
         )
         return True
@@ -627,7 +635,11 @@ class Device(DeviceBase, ProtobufProps):
 
         message = yj751_sys_pb2.SystemParamGet(get_param_type=param_type)
 
-        await self._send_command_packet(
-            dst=0x02, cmd_func=0x02, cmd_id=0x67, message=message
+        await self._send_module_command(
+            dst=0x02,
+            cmd_func=0x02,
+            cmd_id=0x67,
+            message=message,
+            raise_on_failure=False,
         )
         return True

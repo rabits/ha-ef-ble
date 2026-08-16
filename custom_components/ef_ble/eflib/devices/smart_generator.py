@@ -150,7 +150,7 @@ class Device(DeviceBase, ProtobufProps):
     async def _send_config_packet(self, message: ge305_sys_pb2.ConfigWrite):
         payload = message.SerializeToString()
         packet = Packet(0x20, 0x08, 0xFE, 0x11, payload, 0x01, 0x01, 0x13)
-        await self._conn.sendPacket(packet)
+        await self.send_packet(packet, raise_on_failure=True)
 
     async def enable_ac_port(self, enabled: bool):
         await self._send_config_packet(

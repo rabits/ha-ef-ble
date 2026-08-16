@@ -146,23 +146,23 @@ class Device(DeviceBase, RawDataProps):
     async def enable_ac_ports(self, enabled: bool):
         payload = bytes([1 if enabled else 0, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF])
         packet = Packet(0x21, 0x05, 0x20, 0x42, payload, version=2)
-        await self._conn.sendPacket(packet)
+        await self.send_packet(packet, raise_on_failure=True)
 
     @controls.switch(dc_12v_port)
     async def enable_dc_12v_port(self, enabled: bool):
         payload = bytes([0x01 if enabled else 0x00])
         packet = Packet(0x21, 0x05, 0x20, 0x51, payload, version=2)
-        await self._conn.sendPacket(packet)
+        await self.send_packet(packet, raise_on_failure=True)
 
     async def enable_ac_xboost(self, enabled: bool):
         payload = bytes([0xFF, 0x01 if enabled else 0x00, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF])
         packet = Packet(0x21, 0x05, 0x20, 0x42, payload, version=2)
-        await self._conn.sendPacket(packet)
+        await self.send_packet(packet, raise_on_failure=True)
 
     async def enable_ac_always_on(self, enabled: bool):
         payload = bytes([0x01 if enabled else 0x00, 0x05])
         packet = Packet(0x21, 0x02, 0x20, 0x5F, payload, version=2)
-        await self._conn.sendPacket(packet)
+        await self.send_packet(packet, raise_on_failure=True)
 
     @controls.switch(energy_backup)
     async def enable_energy_backup(self, enabled: bool):
@@ -175,7 +175,7 @@ class Device(DeviceBase, RawDataProps):
 
         payload = bytes([0x01 if enabled else 0x00, reserve, 0x00, 0x00])
         packet = Packet(0x21, 0x02, 0x20, 0x5E, payload, version=2)
-        await self._conn.sendPacket(packet)
+        await self.send_packet(packet, raise_on_failure=True)
 
     @controls.battery(
         energy_backup_battery_level,
@@ -187,7 +187,7 @@ class Device(DeviceBase, RawDataProps):
         percent = max(0, min(int(value), 100))
         payload = bytes([0x01, percent, 0x00, 0x00])
         packet = Packet(0x21, 0x02, 0x20, 0x5E, payload, version=2)
-        await self._conn.sendPacket(packet)
+        await self.send_packet(packet, raise_on_failure=True)
         return True
 
     @controls.battery(battery_charge_limit_min, max=dynamic(battery_charge_limit_max))
@@ -200,7 +200,7 @@ class Device(DeviceBase, RawDataProps):
             return False
 
         packet = Packet(0x21, 0x03, 0x20, 0x33, limit.to_bytes(), version=2)
-        await self._conn.sendPacket(packet)
+        await self.send_packet(packet, raise_on_failure=True)
         return True
 
     @controls.battery(battery_charge_limit_max, min=dynamic(battery_charge_limit_min))
@@ -213,20 +213,20 @@ class Device(DeviceBase, RawDataProps):
             return False
 
         packet = Packet(0x21, 0x03, 0x20, 0x31, limit.to_bytes(), version=2)
-        await self._conn.sendPacket(packet)
+        await self.send_packet(packet, raise_on_failure=True)
         return True
 
     @controls.current(dc_charging_max_amps, max=dynamic(dc_charging_current_max))
     async def set_dc_charging_amps_max(self, value: float) -> bool:
         payload = (int(value) * 1000).to_bytes(4, "little")
         packet = Packet(0x21, 0x05, 0x20, 0x47, payload, version=2)
-        await self._conn.sendPacket(packet)
+        await self.send_packet(packet, raise_on_failure=True)
         return True
 
     @controls.select(dc_mode, options=DCMode)
     async def set_dc_mode(self, value: DCMode):
         packet = Packet(0x21, 0x05, 0x20, 0x52, value.to_bytes(), version=2)
-        await self._conn.sendPacket(packet)
+        await self.send_packet(packet, raise_on_failure=True)
 
     @controls.power(
         ac_charging_speed,
@@ -236,5 +236,5 @@ class Device(DeviceBase, RawDataProps):
     async def set_ac_charging_speed(self, value: float) -> bool:
         payload = int(value).to_bytes(2, "little") + b"\xff"
         packet = Packet(0x21, 0x05, 0x20, 0x45, payload, version=2)
-        await self._conn.sendPacket(packet)
+        await self.send_packet(packet, raise_on_failure=True)
         return True

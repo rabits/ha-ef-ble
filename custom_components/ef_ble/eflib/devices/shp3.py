@@ -371,7 +371,7 @@ class Device(DeviceBase, ProtobufProps):
             ddst=0x01,
             version=0x03,
         )
-        await self._conn.sendPacket(packet, wait_for_response=False)
+        await self.send_packet(packet, wait_for_response=False)
 
     async def packet_parse(self, data: bytes):
         return Packet.from_bytes(data, xor_payload=True)
@@ -543,7 +543,7 @@ class Device(DeviceBase, ProtobufProps):
 
     async def _send_config_packet(self, message: Message):
         packet = self._routing.write_packet(message.SerializeToString())
-        await self._conn.sendPacket(packet)
+        await self.send_packet(packet, raise_on_failure=True)
 
     async def _write_energy_strategy(
         self, mode: OperatingMode | None, eps_enable: bool

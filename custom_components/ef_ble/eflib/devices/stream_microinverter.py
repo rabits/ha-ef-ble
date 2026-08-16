@@ -68,7 +68,7 @@ class Device(DeviceBase, ProtobufProps):
         payload = message.SerializeToString()
         message.cfg_utc_time = round(time.time())
         packet = Packet(0x20, 0x02, 0xFE, 0x11, payload, 0x01, 0x01, 0x13)
-        await self._conn.sendPacket(packet)
+        await self.send_packet(packet, raise_on_failure=True)
 
     async def set_inverter_target_power(self, power: int):
         if power < 0:

@@ -67,14 +67,16 @@ class Device(Delta2Base):
             min(value, self.battery_charge_limit_max),
         )
         payload = bytes([0x01 if enabled else 0, value, 0x00, 0x00])
-        await self._conn.sendPacket(
-            Packet(0x21, 0x02, 0x20, 0x5E, payload, version=0x02)
+        await self.send_packet(
+            Packet(0x21, 0x02, 0x20, 0x5E, payload, version=0x02),
+            raise_on_failure=True,
         )
 
     @controls.power(ac_charging_speed, min=1, max=dynamic(max_ac_charging_power))
     async def set_ac_charging_speed(self, value: float):
         payload = bytes([0xFF, 0xFF]) + int(value).to_bytes(2, "little") + bytes([0xFF])
-        await self._conn.sendPacket(
-            Packet(0x20, 0x04, 0x20, 0x45, payload, version=0x02)
+        await self.send_packet(
+            Packet(0x20, 0x04, 0x20, 0x45, payload, version=0x02),
+            raise_on_failure=True,
         )
         return True

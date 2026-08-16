@@ -30,7 +30,7 @@ class TimeCommands:
         payload = utcs.SerializeToString()
         packet = Packet(0x21, 0x0B, 0x01, 0x55, payload, 0x01, 0x01, 0x13)
 
-        await self.device._conn.sendPacket(packet)
+        await self.device.send_packet(packet)
 
     async def sendRTCRespond(self):
         """Send RTC timestamp seconds and TZ as respond to device's request"""
@@ -64,7 +64,7 @@ class TimeCommands:
             0x03,
         )
 
-        await self.device._conn.sendPacket(packet)
+        await self.device.send_packet(packet)
 
     async def sendRTCCheck(self):
         """Send command to check RTC of the device"""
@@ -98,7 +98,7 @@ class TimeCommands:
             0x03,
         )
 
-        await self.device._conn.sendPacket(packet)
+        await self.device.send_packet(packet)
 
     def async_send_all(self):
         now = time.monotonic()

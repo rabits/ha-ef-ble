@@ -340,6 +340,9 @@
       "plugged_in_ac": {
         "name": "AC Plugged In"
       },
+      "ac_in_flow": {
+        "name": "AC Input Flowing"
+      },
       "fan_running": {
         "name": "Fan Running"
       },

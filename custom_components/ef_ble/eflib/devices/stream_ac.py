@@ -138,6 +138,12 @@ class Device(DeviceBase, ProtobufProps):
 
     SN_PREFIX = (b"BK51",)
     NAME_PREFIX = "EF-6"
+    _PROPERTY_UPLOAD_REFRESH_INTERVAL = 300.0
+
+    @property
+    def uses_native_reconnect(self) -> bool:
+        """Keep the supported STREAM AC models alive without reloading HA entries."""
+        return self.device in {"STREAM AC", "STREAM AC PRO"}
 
     _timer_task_chains: ClassVar[dict[frozenset[str], _TimerTaskChain]] = {}
 
@@ -190,6 +196,22 @@ class Device(DeviceBase, ProtobufProps):
     ) -> None:
         super().__init__(ble_dev, adv_data, sn)
         self._timer_task_chain: _TimerTaskChain | None = None
+        self.add_timer_task(
+            self._enable_property_upload,
+            interval=self._PROPERTY_UPLOAD_REFRESH_INTERVAL,
+        )
+
+    async def _enable_property_upload(self) -> None:
+        """
+        Enable the STREAM display-property stream after authentication.
+
+        The EcoFlow app sends this write before it starts consuming
+        DisplayPropertyUpload packets.  The setting is session-scoped on the
+        devices, so the timer also reapplies it after every reconnect.
+        """
+        await self._send_config_packet(
+            bk_series_pb2.ConfigWrite(active_display_property_full_upload=True)
+        )
 
     async def packet_parse(self, data: bytes):
         return Packet.from_bytes(data, xor_payload=True)

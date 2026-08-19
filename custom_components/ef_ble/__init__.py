@@ -121,6 +121,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: DeviceConfigEntry) -> bo
     options = Connection.Options(
         timeout=timeout,
         bluez_start_notify=advanced.get(CONF_BLUEZ_START_NOTIFY, False),
+        max_connection_attempts=0 if device.uses_native_reconnect else 10,
+        max_reconnect_attempts=0 if device.uses_native_reconnect else 2,
+        reconnect_delay=5 if device.uses_native_reconnect else 10,
+        reconnect_delay_max=60,
+        reconnect_jitter=0.25 if device.uses_native_reconnect else 0,
     )
     issue_id = f"{entry.entry_id}_max_connection_attempts"
 
@@ -128,7 +133,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: DeviceConfigEntry) -> bo
         await (
             device.with_update_period(update_period)
             .with_logging_options(ConfLogOptions.from_config(merged_options))
-            .with_disabled_reconnect()
+            .with_disabled_reconnect(not device.uses_native_reconnect)
             .with_packet_version(packet_version.to_num())
             .with_enabled_packet_diagnostics(packet_collection_enabled)
             .with_diagnostics_on_exception(diagnostics_on_exception)

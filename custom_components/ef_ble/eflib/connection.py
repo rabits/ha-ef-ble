@@ -216,6 +216,14 @@ class Connection:
 
         timeout: int = 20
         bluez_start_notify: bool = False
+        # A value of 0 means unlimited attempts.  The integration keeps the
+        # historical defaults for regular devices and opts STREAM into a more
+        # persistent reconnect policy.
+        max_connection_attempts: int = MAX_CONNECTION_ATTEMPTS
+        max_reconnect_attempts: int = MAX_RECONNECT_ATTEMPTS
+        reconnect_delay: float = 10
+        reconnect_delay_max: float = 60
+        reconnect_jitter: float = 0
 
     _listeners = _ConnectionListeners.create()
 
@@ -353,11 +361,17 @@ class Connection:
         self,
         max_attempts: int | None = None,
     ):
-        if self._state.is_connecting:
+        # The native reconnect loop marks the state as RECONNECTING immediately
+        # before calling connect().  That state must enter a fresh BLE attempt;
+        # otherwise this guard returns early and reconnect() waits forever for
+        # authentication that can never happen.
+        if self._state.is_connecting and self._state is not ConnectionState.RECONNECTING:
             return
 
         max_attempts = (
-            max_attempts if max_attempts is not None else MAX_CONNECT_ATTEMPTS
+            max_attempts
+            if max_attempts is not None
+            else self._options.max_connection_attempts
         )
 
         self._connection_attempt += 1
@@ -368,7 +382,6 @@ class Connection:
                 attempts=MAX_CONNECTION_ATTEMPTS,
             )
             self._set_state(ConnectionState.ERROR_MAX_RECONNECT_ATTEMPTS_REACHED, err)
-            self._notify_disconnect(self._last_exception)
             raise err
 
         self._connected.clear()
@@ -486,42 +499,79 @@ class Connection:
 
         self._reconnect_task.add_done_callback(_reconnect_done)
 
-    async def reconnect(self) -> None:
-        # Wait before reconnect
-        if self._reconnect_attempt == 0:
-            self._retry_on_disconnect_delay = 10
-
-        self._reconnect_attempt += 1
-        if self._reconnect_attempt > MAX_RECONNECT_ATTEMPTS:
-            self._logger.error(
-                "Could not reconnect after %d attempts", MAX_RECONNECT_ATTEMPTS
-            )
-            self._set_state(
-                ConnectionState.ERROR_MAX_RECONNECT_ATTEMPTS_REACHED,
-                MaxReconnectAttemptsReached(
-                    attempts=MAX_RECONNECT_ATTEMPTS,
-                    last_error=self._last_exception,
-                ),
-            )
-            self._notify_disconnect(self._last_exception)
-
-            self._reconnect_attempt = 0
-            return
-
-        self._logger.warning(
-            "Reconnecting to the device in %d seconds, attempt: %d/%d...",
-            self._retry_on_disconnect_delay,
-            self._reconnect_attempt,
-            MAX_RECONNECT_ATTEMPTS,
+    def _reconnect_delay(self) -> float:
+        """Return the current backoff delay with a stable per-device offset."""
+        delay = min(
+            self._options.reconnect_delay * 2 ** max(self._reconnect_attempt - 1, 0),
+            self._options.reconnect_delay_max,
         )
-        await asyncio.sleep(self._retry_on_disconnect_delay)
-        if not self._retry_on_disconnect:
-            self._logger.warning("Reconnect is aborted")
-            return
+        if not self._options.reconnect_jitter:
+            return delay
 
-        self._retry_on_disconnect_delay += 10
-        self._set_state(ConnectionState.RECONNECTING)
-        await self.connect()
+        # A stable offset keeps the three STREAM devices separated without making
+        # reconnect timing non-deterministic from one drop to the next.
+        device_hash = int.from_bytes(
+            hashlib.sha1(self._address.encode()).digest()[:4], "big"
+        )
+        jitter = (device_hash / 0xFFFFFFFF) * self._options.reconnect_jitter
+        return delay * (1 + jitter)
+
+    async def reconnect(self) -> None:
+        """Reconnect until the link is restored or the configured limit is reached."""
+        while self._retry_on_disconnect:
+            self._reconnect_attempt += 1
+            max_attempts = self._options.max_reconnect_attempts
+            if max_attempts != 0 and self._reconnect_attempt > max_attempts:
+                self._logger.error(
+                    "Could not reconnect after %d attempts", max_attempts
+                )
+                self._retry_on_disconnect = False
+                self._set_state(
+                    ConnectionState.ERROR_MAX_RECONNECT_ATTEMPTS_REACHED,
+                    MaxReconnectAttemptsReached(
+                        attempts=max_attempts,
+                        last_error=self._last_exception,
+                    ),
+                )
+                self._reconnect_attempt = 0
+                return
+
+            delay = self._reconnect_delay()
+            attempt_limit = str(max_attempts) if max_attempts else "unlimited"
+            self._logger.warning(
+                "Reconnecting to the device in %.1f seconds, attempt: %d/%s...",
+                delay,
+                self._reconnect_attempt,
+                attempt_limit,
+            )
+            await asyncio.sleep(delay)
+            if not self._retry_on_disconnect:
+                self._logger.warning("Reconnect is aborted")
+                return
+
+            self._set_state(ConnectionState.RECONNECTING)
+            try:
+                await self.connect()
+            except AuthErrors.BaseException as e:
+                # Authentication errors are configuration/device-state errors, not
+                # transport errors.  Retrying them forever only creates a BLE storm.
+                self._retry_on_disconnect = False
+                self._set_state(ConnectionState.ERROR_AUTH_FAILED, e)
+                return
+            except Exception as e:  # noqa: BLE001
+                # Keep the native reconnect loop alive for transient auth/transport
+                # exceptions that happen before `connect()` can classify the error.
+                self._last_exception = e
+                self._logger.warning("Reconnect attempt failed: %s", e)
+                continue
+
+            state = await self.wait_until_authenticated_or_error()
+            if state.authenticated:
+                return
+            if state is ConnectionState.ERROR_AUTH_FAILED:
+                self._retry_on_disconnect = False
+                self._notify_disconnect(self._state_exception)
+                return
 
     async def _disconnect_client(self) -> None:
         if self._client is None or not self._client.is_connected:
@@ -706,7 +756,10 @@ class Connection:
         self._state_reason = reason
         self._state = state
 
-        if state.is_error:
+        if state.is_error and not (
+            self._retry_on_disconnect
+            and state is not ConnectionState.ERROR_MAX_RECONNECT_ATTEMPTS_REACHED
+        ):
             self._notify_disconnect(exc)
 
     def set_state(

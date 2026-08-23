@@ -17,6 +17,7 @@ class Device(Delta2Base):
 
     ac_input_power = raw_field(pb_inv.input_watts)
     ac_charging_speed = raw_field(pb_inv.cfg_slow_chg_watts)
+    ac_charging = raw_field(pb_inv.cfg_pause_flag, lambda x: x == 0)
     ac_chg_rated_power = raw_field(pb_inv.ac_chg_rated_power)
     dc_output_power = raw_field(pb_pd.car_watts)
     energy_backup = raw_field(pb_pd.watthisconfig, lambda x: x == 1)
@@ -84,3 +85,11 @@ class Device(Delta2Base):
             raise_on_failure=True,
         )
         return True
+
+    @controls.switch(ac_charging)
+    async def enable_ac_charging(self, enabled: bool):
+        payload = bytes([0xFF, 0xFF, 0xFF, 0xFF, 0 if enabled else 1])
+        await self.send_packet(
+            Packet(0x20, 0x04, 0x20, 0x45, payload, version=0x02),
+            raise_on_failure=True,
+        )

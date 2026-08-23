@@ -1176,6 +1176,9 @@
       "ac_ports": {
         "name": "交流端口"
       },
+      "ac_charging": {
+        "name": "交流充电"
+      },
       "ac_lv_port": {
         "name": "交流低压端口"
       },

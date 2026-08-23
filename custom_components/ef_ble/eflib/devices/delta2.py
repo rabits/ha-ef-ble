@@ -24,6 +24,7 @@ class Device(Delta2Base):
     energy_backup_battery_level = raw_field(pb_pd.bp_power_soc)
     dc_output_power = raw_field(pb_pd.dc_pv_output_watts)
     ac_charging_speed = raw_field(pb_mppt.cfg_chg_watts)
+    ac_charging = raw_field(pb_mppt.chg_pause_flag, lambda x: x == 0)
 
     disable_grid_bypass = raw_field(pb_pd.reverser, lambda x: ((x >> 8) & 0xFF) == 1)
 
@@ -89,6 +90,12 @@ class Device(Delta2Base):
         packet = Packet(0x21, self.ac_commands_dst, 0x20, 0x45, payload, version=0x02)
         await self.send_packet(packet, raise_on_failure=True)
         return True
+
+    @controls.switch(ac_charging)
+    async def enable_ac_charging(self, enabled: bool):
+        payload = bytes([0xFF, 0xFF, 0 if enabled else 1])
+        packet = Packet(0x21, self.ac_commands_dst, 0x20, 0x45, payload, version=0x02)
+        await self.send_packet(packet, raise_on_failure=True)
 
     @controls.switch(disable_grid_bypass, enabled=False)
     async def enable_disable_grid_bypass(self, disabled: bool):

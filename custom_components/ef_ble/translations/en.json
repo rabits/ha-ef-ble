@@ -1186,6 +1186,9 @@
       "ac_ports": {
         "name": "AC Ports"
       },
+      "ac_charging": {
+        "name": "AC Charging"
+      },
       "ac_lv_port": {
         "name": "AC LV Port"
       },

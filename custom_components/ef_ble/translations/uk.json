@@ -1176,6 +1176,9 @@
       "ac_ports": {
         "name": "Порти AC"
       },
+      "ac_charging": {
+        "name": "Заряджання AC"
+      },
       "ac_lv_port": {
         "name": "Порт AC LV"
       },

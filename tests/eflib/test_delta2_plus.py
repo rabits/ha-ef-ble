@@ -232,7 +232,7 @@ async def test_delta2_plus_exact_values_from_known_packets(device, packet_sequen
         Device.ac_ports: True,
         Device.usb_ports: False,
         Device.dc_12v_port: False,
-        Device.max_ac_charging_power: 1500,
+        Device.ac_charging_power_max: 1500,
         Device.remaining_time_charging: 5939,
         Device.remaining_time_discharging: 5939,
         Device.dc_input_voltage: 1.5,

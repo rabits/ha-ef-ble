@@ -26,7 +26,7 @@ class Device(Delta2Base):
     xt60_2_input_power = raw_field(pb_pd.pv2_charge_watts)
 
     @computed_field
-    def max_ac_charging_power(self) -> int:
+    def ac_charging_power_max(self) -> int:
         return self.ac_chg_rated_power or 1800
 
     @property
@@ -72,7 +72,7 @@ class Device(Delta2Base):
             raise_on_failure=True,
         )
 
-    @controls.power(ac_charging_speed, min=1, max=dynamic(max_ac_charging_power))
+    @controls.power(ac_charging_speed, min=1, max=dynamic(ac_charging_power_max))
     async def set_ac_charging_speed(self, value: float):
         payload = bytes([0xFF, 0xFF]) + int(value).to_bytes(2, "little") + bytes([0xFF])
         await self.send_packet(

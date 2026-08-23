@@ -66,7 +66,7 @@ async def test_delta3_max_plus_exact_values_from_known_packets(device, packet_se
         Device.battery_level_main: 99.0,
         Device.ac_charging_speed: 800,
         Device.cell_temperature: 22,
-        Device.max_ac_charging_power: 2400,
+        Device.ac_charging_power_max: 2400,
         Device.battery_charge_limit_min: 0,
         Device.battery_charge_limit_max: 100,
         Device.remaining_time_charging: 12927,

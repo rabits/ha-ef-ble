@@ -310,8 +310,8 @@ class Device(DeviceBase, ProtobufProps):
     )
 
     ac_charging_speed = pb_field(pb.panel_max_charge_pow_set)
-    min_ac_charging_power = 600
-    max_ac_charging_power = 12000
+    ac_charging_power_min = 600
+    ac_charging_power_max = 12000
     ac_charging_speed_step = 100
 
     storm_guard = pb_field(pb.storm_pattern_enable)
@@ -433,8 +433,8 @@ class Device(DeviceBase, ProtobufProps):
 
     @controls.power(
         ac_charging_speed,
-        min=min_ac_charging_power,
-        max=max_ac_charging_power,
+        min=ac_charging_power_min,
+        max=ac_charging_power_max,
         step=ac_charging_speed_step,
     )
     async def set_ac_charging_speed(self, value: float):

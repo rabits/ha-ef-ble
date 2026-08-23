@@ -8,5 +8,5 @@ class Device(delta3.Device):
     SN_PREFIX = (b"D751",)
 
     @computed_field
-    def max_ac_charging_power(self) -> int:
+    def ac_charging_power_max(self) -> int:
         return 1800

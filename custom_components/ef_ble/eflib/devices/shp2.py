@@ -198,8 +198,8 @@ class Device(DeviceBase, ProtobufProps):
         pb_push_set.foce_charge_hight, lambda v: v is not None
     )
     eps_mode = pb_field(pb_push_set.eps_mode_info)
-    min_ac_charging_power = 500
-    max_ac_charging_power = 7200
+    ac_charging_power_min = 500
+    ac_charging_power_max = 7200
     ac_charging_speed_step = 100
     ac_charging_speed = pb_field(pb_push_set.charge_watt_power)
 
@@ -467,8 +467,8 @@ class Device(DeviceBase, ProtobufProps):
 
     @controls.power(
         ac_charging_speed,
-        min=min_ac_charging_power,
-        max=max_ac_charging_power,
+        min=ac_charging_power_min,
+        max=ac_charging_power_max,
         step=ac_charging_speed_step,
     )
     async def set_ac_charging_speed(self, value: float):
@@ -479,10 +479,10 @@ class Device(DeviceBase, ProtobufProps):
         # Round to nearest 100 and limit to allowed range
         value = min(
             max(
-                self.min_ac_charging_power,
+                self.ac_charging_power_min,
                 int(value / self.ac_charging_speed_step) * self.ac_charging_speed_step,
             ),
-            self.max_ac_charging_power,
+            self.ac_charging_power_max,
         )
         ppas.charge_watt_power = value
 

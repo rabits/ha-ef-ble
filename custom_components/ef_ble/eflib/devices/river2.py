@@ -74,16 +74,16 @@ class Device(DeviceBase, RawDataProps):
     dc_charging_current_max = Field[int]()
 
     ac_charging_speed = raw_field(pb_mppt.cfg_chg_watts)
-    max_ac_charging_power = Field[int]()
-    min_ac_charging_power = Field[int]()
+    ac_charging_power_max = Field[int]()
+    ac_charging_power_min = Field[int]()
 
     def __init__(
         self, ble_dev: BLEDevice, adv_data: AdvertisementData, sn: str
     ) -> None:
         super().__init__(ble_dev, adv_data, sn)
         self.dc_charging_current_max = 8
-        self.min_ac_charging_power = 100
-        self.max_ac_charging_power = 940
+        self.ac_charging_power_min = 100
+        self.ac_charging_power_max = 940
 
     @classmethod
     def check(cls, sn: bytes):
@@ -230,8 +230,8 @@ class Device(DeviceBase, RawDataProps):
 
     @controls.power(
         ac_charging_speed,
-        min=dynamic(min_ac_charging_power),
-        max=dynamic(max_ac_charging_power),
+        min=dynamic(ac_charging_power_min),
+        max=dynamic(ac_charging_power_max),
     )
     async def set_ac_charging_speed(self, value: float) -> bool:
         payload = int(value).to_bytes(2, "little") + b"\xff"

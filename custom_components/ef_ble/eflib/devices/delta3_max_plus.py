@@ -27,13 +27,13 @@ class Device(delta3_plus.Device):
     ac_power_2 = _ACPortPower(3)
 
     usbc3_output_power = pb_field(pb.pow_get_typec3, out_power)
-    _max_ac_charging_power = pb_field(pb.plug_in_info_ac_in_chg_hal_pow_max)
+    _ac_charging_power_max = pb_field(pb.plug_in_info_ac_in_chg_hal_pow_max)
 
     @computed_field
-    def max_ac_charging_power(self) -> int:
+    def ac_charging_power_max(self) -> int:
         return (
-            self._max_ac_charging_power
-            if self._max_ac_charging_power is not None
+            self._ac_charging_power_max
+            if self._ac_charging_power_max is not None
             else 2400
         )
 

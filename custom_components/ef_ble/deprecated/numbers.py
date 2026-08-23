@@ -100,8 +100,8 @@ NUMBER_TYPES: list[EcoflowNumberEntityDescription] = [
         native_unit_of_measurement=UnitOfPower.WATT,
         native_step=1,
         step_value_prop="ac_charging_speed_step",
-        min_value_prop="min_ac_charging_power",
-        max_value_prop="max_ac_charging_power",
+        min_value_prop="ac_charging_power_min",
+        max_value_prop="ac_charging_power_max",
         async_set_native_value=(
             lambda device, value: device.set_ac_charging_speed(int(value))
         ),
@@ -246,7 +246,7 @@ NUMBER_TYPES: list[EcoflowNumberEntityDescription] = [
         native_unit_of_measurement=UnitOfPower.WATT,
         native_step=1,
         native_min_value=0,
-        max_value_prop="max_ac_in_power",
+        max_value_prop="ac_in_power_max",
         async_set_native_value=(
             lambda device, value: device.set_grid_in_pow_limit(int(value))
         ),
@@ -258,7 +258,7 @@ NUMBER_TYPES: list[EcoflowNumberEntityDescription] = [
         native_unit_of_measurement=UnitOfPower.WATT,
         native_step=100,
         native_min_value=0,
-        max_value_prop="max_bp_input",
+        max_value_prop="bp_input_max",
         async_set_native_value=(
             lambda device, value: device.set_charging_grid_power_limit(int(value))
         ),

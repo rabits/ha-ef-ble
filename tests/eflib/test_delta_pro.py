@@ -190,7 +190,7 @@ async def test_delta_pro_exact_values_from_known_packets(device, packet_sequence
         Device.ac_input_current: 0.0,
         Device.ac_ports: True,
         Device.ac_charging_speed: 500,
-        Device.max_ac_charging_power: 2900,
+        Device.ac_charging_power_max: 2900,
         Device.input_power: 0,
         Device.output_power: 200,
         Device.dc_output_power: 0,

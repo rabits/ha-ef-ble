@@ -71,7 +71,7 @@ class Device(DeviceBase, ProtobufProps):
     usba_output_energy = _StatField(pr705_pb2.STATISTICS_OBJECT_USBA_OUT_ENERGY)
 
     ac_charging_speed = pb_field(pb.plug_in_info_ac_in_chg_pow_max)
-    max_ac_charging_power = pb_field(pb.plug_in_info_ac_in_chg_hal_pow_max)
+    ac_charging_power_max = pb_field(pb.plug_in_info_ac_in_chg_hal_pow_max)
 
     plugged_in_ac = pb_field(pb.plug_in_info_ac_charger_flag)
     energy_backup = pb_field(pb.energy_backup_en)
@@ -251,12 +251,12 @@ class Device(DeviceBase, ProtobufProps):
 
     @controls.power(
         ac_charging_speed,
-        max=dynamic(max_ac_charging_power),
+        max=dynamic(ac_charging_power_max),
     )
     async def set_ac_charging_speed(self, value: float):
         if (
-            self.max_ac_charging_power is None
-            or value > self.max_ac_charging_power
+            self.ac_charging_power_max is None
+            or value > self.ac_charging_power_max
             or value < 0
         ):
             return False

@@ -110,7 +110,7 @@ class Delta3Base(DeviceBase, ProtobufProps):
         return self._pcs_fan_level > 0
 
     @computed_field
-    def max_ac_charging_power(self) -> int:
+    def ac_charging_power_max(self) -> int:
         return 1500
 
     @computed_field
@@ -190,7 +190,7 @@ class Delta3Base(DeviceBase, ProtobufProps):
         )
         return True
 
-    @controls.power(ac_charging_speed, max=dynamic(max_ac_charging_power))
+    @controls.power(ac_charging_speed, max=dynamic(ac_charging_power_max))
     async def set_ac_charging_speed(self, value: float):
         await self._send_config_packet(
             pd335_sys_pb2.ConfigWrite(

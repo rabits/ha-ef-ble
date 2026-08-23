@@ -233,6 +233,18 @@
           "update_period": "处理下一次设备更新前等待的秒数。值为 0 表示立即处理所有更新（会导致大量数据库写入）。"
         },
         "sections": {
+          "device_options": {
+            "name": "设备选项",
+            "description": "特定于此设备型号的高级选项。请仅在您清楚其作用时更改。",
+            "data": {
+              "unlock_ac_charging_minimum": "解锁交流充电速度最低值",
+              "unlock_dc_charging_minimum": "解锁直流充电速度最低值"
+            },
+            "data_description": {
+              "unlock_ac_charging_minimum": "允许将交流充电速度设置为低于 EcoFlow 应用强制的最低值。设为 1 W 可在不拔掉线缆的情况下停止从电网取电，这正是光伏余电自动化所需；以该速度充电效率较低，并可能产生额外热量。",
+              "unlock_dc_charging_minimum": "允许将直流充电速度设置为低于 EcoFlow 应用强制的最低值。该值限制设备从直流输入抽取的电流，因此较低的设置可让设备保持在弱电源的供给能力内——保险丝受限的车载插座、小型电源或单块光伏板——而不会因索取过多而中断。"
+            }
+          },
           "diagnostics_options": {
             "name": "诊断",
             "description": "配置诊断数据收集和加密。",

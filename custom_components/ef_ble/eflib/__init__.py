@@ -37,6 +37,22 @@ def is_solar_only(device: DeviceBase | None):
     return isinstance(device, (stream_microinverter.Device, powerstream.Device))
 
 
+def device_class_from_sn(sn: str | bytes) -> type[DeviceBase] | None:
+    """
+    Return the device class a serial number belongs to, without a live device
+
+    `NewDevice` needs an advertisement, so it cannot answer for a device that is not
+    currently connected. Anything that only reads class-level declarations - the
+    advanced options a model offers, say - can use this instead.
+    """
+    raw = sn.encode("ASCII") if isinstance(sn, str) else sn
+    for item in devices.devices:
+        device = getattr(item, "Device", None)
+        if device is not None and device.check(raw):
+            return device
+    return None
+
+
 def NewDevice(ble_dev: BLEDevice, adv_data: AdvertisementData) -> DeviceBase | None:
     """Return Device if ble dev fits the requirements otherwise None"""
     if (sn := sn_from_advertisement(adv_data)) is None:
@@ -79,6 +95,7 @@ __all__ = [
     "DeviceBase",
     "NewDevice",
     "controls",
+    "device_class_from_sn",
     "get_controls",
     "get_fixed_length_coding_device",
     "get_protobuf_device",

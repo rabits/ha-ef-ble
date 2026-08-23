@@ -1,5 +1,6 @@
 from collections.abc import Sequence
 
+from ..device_options import UNLOCK_AC_CHARGING_MINIMUM, option_field
 from ..entity import controls
 from ..pb import pd335_sys_pb2
 from ..props import computed_field, pb_field, repeated_pb_field_type
@@ -28,6 +29,9 @@ class Device(delta3_plus.Device):
 
     usbc3_output_power = pb_field(pb.pow_get_typec3, out_power)
     _ac_charging_power_max = pb_field(pb.plug_in_info_ac_in_chg_hal_pow_max)
+    ac_charging_speed_min = option_field(
+        UNLOCK_AC_CHARGING_MINIMUM, enabled=1, disabled=200
+    )
 
     @computed_field
     def ac_charging_power_max(self) -> int:

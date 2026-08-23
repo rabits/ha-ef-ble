@@ -3,6 +3,11 @@ from bleak.backends.scanner import AdvertisementData
 from google.protobuf.message import Message
 
 from ..commands import TimeCommands
+from ..device_options import (
+    UNLOCK_AC_CHARGING_MINIMUM,
+    UNLOCK_DC_CHARGING_MINIMUM,
+    option_field,
+)
 from ..devicebase import DeviceBase
 from ..entity import controls
 from ..entity.base import dynamic
@@ -96,6 +101,9 @@ class Delta3Base(DeviceBase, ProtobufProps):
     error_code = pb_field(pb.errcode)
 
     ac_charging_speed = pb_field(pb.plug_in_info_ac_in_chg_pow_max)
+    ac_charging_speed_min = option_field(
+        UNLOCK_AC_CHARGING_MINIMUM, enabled=1, disabled=200
+    )
 
     _pcs_fan_level = pb_field(pb.pcs_fan_level)
 
@@ -126,6 +134,9 @@ class Delta3Base(DeviceBase, ProtobufProps):
         pd335_sys_pb2.PV_CHG_VOL_SPEC_12V, pd335_sys_pb2.PV_PLUG_INDEX_1
     )
     dc_charging_current_max = _DcChargingMaxField(pd335_sys_pb2.PV_CHG_VOL_SPEC_12V)
+    dc_charging_amps_min = option_field(
+        UNLOCK_DC_CHARGING_MINIMUM, enabled=1, disabled=4
+    )
 
     def __init__(
         self, ble_dev: BLEDevice, adv_data: AdvertisementData, sn: str
@@ -190,7 +201,11 @@ class Delta3Base(DeviceBase, ProtobufProps):
         )
         return True
 
-    @controls.power(ac_charging_speed, max=dynamic(ac_charging_power_max))
+    @controls.power(
+        ac_charging_speed,
+        min=dynamic(ac_charging_speed_min),
+        max=dynamic(ac_charging_power_max),
+    )
     async def set_ac_charging_speed(self, value: float):
         await self._send_config_packet(
             pd335_sys_pb2.ConfigWrite(
@@ -200,7 +215,11 @@ class Delta3Base(DeviceBase, ProtobufProps):
         )
         return True
 
-    @controls.current(dc_charging_max_amps, max=dynamic(dc_charging_current_max))
+    @controls.current(
+        dc_charging_max_amps,
+        min=dynamic(dc_charging_amps_min),
+        max=dynamic(dc_charging_current_max),
+    )
     async def set_dc_charging_amps_max(
         self,
         value: float,

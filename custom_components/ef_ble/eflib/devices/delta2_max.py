@@ -72,7 +72,11 @@ class Device(Delta2Base):
             raise_on_failure=True,
         )
 
-    @controls.power(ac_charging_speed, min=1, max=dynamic(ac_charging_power_max))
+    @controls.power(
+        ac_charging_speed,
+        min=dynamic(Delta2Base.ac_charging_speed_min),
+        max=dynamic(ac_charging_power_max),
+    )
     async def set_ac_charging_speed(self, value: float):
         payload = bytes([0xFF, 0xFF]) + int(value).to_bytes(2, "little") + bytes([0xFF])
         await self.send_packet(

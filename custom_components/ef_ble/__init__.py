@@ -31,6 +31,7 @@ from .const import (
     CONF_COLLECT_PACKETS_AMOUNT,
     CONF_CONNECTION_DELAY,
     CONF_CONNECTION_TIMEOUT,
+    CONF_DEVICE_OPTIONS,
     CONF_DIAGNOSTICS_ON_EXCEPTION,
     CONF_DIAGNOSTICS_OPTIONS,
     CONF_EXTRA_BATTERY,
@@ -150,6 +151,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: DeviceConfigEntry) -> bo
             await (
                 device.with_update_period(update_period)
                 .with_logging_options(ConfLogOptions.from_config(merged_options))
+                .with_advanced_options(merged_options.get(CONF_DEVICE_OPTIONS, {}))
                 .with_disabled_reconnect()
                 .with_packet_version(packet_version.to_num())
                 .with_enabled_packet_diagnostics(packet_collection_enabled)
@@ -338,6 +340,7 @@ async def _update_listener(hass: HomeAssistant, entry: DeviceConfigEntry):
     (
         device.with_update_period(period=update_period)
         .with_logging_options(ConfLogOptions.from_config(merged_options))
+        .with_advanced_options(merged_options.get(CONF_DEVICE_OPTIONS, {}))
         .with_enabled_packet_diagnostics(
             enabled=packet_collection,
             buffer_size=diagnostics_buffer_size,

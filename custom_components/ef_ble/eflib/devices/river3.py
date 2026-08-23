@@ -2,6 +2,11 @@ from bleak.backends.device import BLEDevice
 from bleak.backends.scanner import AdvertisementData
 
 from ..commands import TimeCommands
+from ..device_options import (
+    UNLOCK_AC_CHARGING_MINIMUM,
+    UNLOCK_DC_CHARGING_MINIMUM,
+    option_field,
+)
 from ..devicebase import DeviceBase
 from ..entity import controls
 from ..entity.base import dynamic
@@ -45,6 +50,7 @@ class Device(DeviceBase, ProtobufProps):
     """River 3"""
 
     SN_PREFIX = (b"R651", b"R653", b"R654", b"R655")
+
     NAME_PREFIX = "EF-R3"
 
     battery_level = pb_field(pb.cms_batt_soc)
@@ -72,6 +78,9 @@ class Device(DeviceBase, ProtobufProps):
 
     ac_charging_speed = pb_field(pb.plug_in_info_ac_in_chg_pow_max)
     ac_charging_power_max = pb_field(pb.plug_in_info_ac_in_chg_hal_pow_max)
+    ac_charging_speed_min = option_field(
+        UNLOCK_AC_CHARGING_MINIMUM, enabled=1, disabled=50
+    )
 
     plugged_in_ac = pb_field(pb.plug_in_info_ac_charger_flag)
     energy_backup = pb_field(pb.energy_backup_en)
@@ -89,6 +98,9 @@ class Device(DeviceBase, ProtobufProps):
 
     dc_charging_type = pb_field(pb.pv_chg_type, DcChargingType.from_value)
     dc_charging_max_amps = pb_field(pb.plug_in_info_pv_dc_amp_max)
+    dc_charging_amps_min = option_field(
+        UNLOCK_DC_CHARGING_MINIMUM, enabled=1, disabled=4
+    )
 
     remaining_time_charging = pb_field(pb.cms_chg_rem_time)
     remaining_time_discharging = pb_field(pb.cms_dsg_rem_time)
@@ -251,6 +263,7 @@ class Device(DeviceBase, ProtobufProps):
 
     @controls.power(
         ac_charging_speed,
+        min=dynamic(ac_charging_speed_min),
         max=dynamic(ac_charging_power_max),
     )
     async def set_ac_charging_speed(self, value: float):
@@ -272,7 +285,7 @@ class Device(DeviceBase, ProtobufProps):
             pr705_pb2.ConfigWrite(cfg_pv_chg_type=state.value)
         )
 
-    @controls.current(dc_charging_max_amps, max=8)
+    @controls.current(dc_charging_max_amps, min=dynamic(dc_charging_amps_min), max=8)
     async def set_dc_charging_amps_max(self, value: float):
         await self._send_config_packet(
             pr705_pb2.ConfigWrite(cfg_plug_in_info_pv_dc_amp_max=int(value))

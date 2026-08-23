@@ -2,10 +2,10 @@ import abc
 import asyncio
 import time
 from collections import defaultdict
-from collections.abc import Callable, Coroutine
+from collections.abc import Callable, Coroutine, Mapping
 from dataclasses import dataclass, field
 from functools import cached_property
-from typing import Any, overload
+from typing import Any, ClassVar, overload
 
 from bleak.backends.device import BLEDevice
 from bleak.backends.scanner import AdvertisementData
@@ -40,6 +40,19 @@ from .props.updatable_props import Field, UpdatableProps
 MISSING_DEFAULT_GRACE = 10
 
 
+@dataclass(frozen=True)
+class DeviceOption[T]:
+    """
+    Advanced per-device option a device class can declare in `ADVANCED_OPTIONS`
+
+    Values come from the caller via `with_advanced_options` and are read back with
+    `DeviceBase.advanced_option`; `key` identifies the option to whoever supplies it.
+    """
+
+    key: str
+    default: T
+
+
 class _Listeners(ListenerRegistry):
     on_packet_received: ListenerGroup[PacketReceivedListener]
     on_disconnect: ListenerGroup[DisconnectListener]
@@ -57,6 +70,8 @@ class DeviceBase(abc.ABC):
 
     NAME_PREFIX: str
     SN_PREFIX: tuple[bytes, ...] | bytes
+
+    ADVANCED_OPTIONS: ClassVar[tuple[DeviceOption, ...]] = ()
 
     _listeners = _Listeners.create()
 
@@ -98,6 +113,7 @@ class DeviceBase(abc.ABC):
         self._packet_version = 0x03
 
         self._reconnect_disabled = False
+        self._advanced_options: dict[str, Any] = {}
         self._options = Connection.Options()
         self._diagnostics = DeviceDiagnosticsCollector(self)
 
@@ -272,6 +288,15 @@ class DeviceBase(abc.ABC):
         if self._conn is not None:
             self._conn.with_options(options)
         return self
+
+    def with_advanced_options(self, options: Mapping[str, Any]):
+        """Set values for the advanced options declared in `ADVANCED_OPTIONS`"""
+        self._advanced_options = dict(options)
+        return self
+
+    def advanced_option[T](self, option: "DeviceOption[T]") -> T:
+        """Return the configured value of `option`, or its default when unset"""
+        return self._advanced_options.get(option.key, option.default)
 
     def with_packet_version(self, packet_version: int | None = None):
         self._packet_version = (

@@ -4,7 +4,13 @@ from ..pb import pd335_sys_pb2
 from ..props import computed_field, pb_field
 from ..props.transforms import pround
 from . import delta3
-from ._delta3_base import DCPortState, _DcAmpSettingField, _DcChargingMaxField, pb
+from ._delta3_base import (
+    DCPortState,
+    Delta3Base,
+    _DcAmpSettingField,
+    _DcChargingMaxField,
+    pb,
+)
 
 
 class Device(delta3.Device):
@@ -29,7 +35,11 @@ class Device(delta3.Device):
             return round(self.dc_port_2_input_power, 2)
         return 0
 
-    @controls.current(dc_charging_max_amps_2, max=dynamic(dc_charging_current_max_2))
+    @controls.current(
+        dc_charging_max_amps_2,
+        min=dynamic(Delta3Base.dc_charging_amps_min),
+        max=dynamic(dc_charging_current_max_2),
+    )
     async def set_dc_charging_amps_max_2(self, value: float) -> bool:
         return await self.set_dc_charging_amps_max(
             value, plug_index=pd335_sys_pb2.PV_PLUG_INDEX_2

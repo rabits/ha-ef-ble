@@ -10,6 +10,7 @@ CONF_PACKET_VERSION = "packet_version"
 CONF_COLLECT_PACKETS = "collect_packets"
 CONF_COLLECT_PACKETS_AMOUNT = "collect_packets_amount"
 CONF_EXTRA_BATTERY = "extra_battery"
+CONF_DEVICE_OPTIONS = "device_options"
 
 CONF_ADVANCED_CONNECTION_OPTIONS = "advanced_connection_options"
 CONF_BLUEZ_START_NOTIFY = "bluez_start_notify"

@@ -1,3 +1,4 @@
+from ..device_options import UNLOCK_AC_CHARGING_MINIMUM, option_field
 from ..entity import controls
 from ..pb import pd335_sys_pb2
 from ..props import pb_field
@@ -12,6 +13,10 @@ class Device(delta3_classic.Device):
 
     SN_PREFIX = (b"P231",)
     NAME_PREFIX = "EF-D3"
+
+    ac_charging_speed_min = option_field(
+        UNLOCK_AC_CHARGING_MINIMUM, enabled=1, disabled=100
+    )
 
     usb_ports = pb_field(pb.flow_info_qcusb1, flow_is_on)
 

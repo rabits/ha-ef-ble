@@ -1,3 +1,4 @@
+from ..device_options import UNLOCK_AC_CHARGING_MINIMUM, option_field
 from ..devicebase import DeviceBase
 from ..entity import controls
 from ..entity.base import dynamic
@@ -104,6 +105,10 @@ class Delta2Base(DeviceBase, RawDataProps):
     dc_12v_port = raw_field(pb_pd.car_state, lambda x: x == 1)
     dc12v_output_voltage = raw_field(pb_mppt.car_out_vol, pdiv(1000, 2))
     dc12v_output_current = raw_field(pb_mppt.car_out_amp, pdiv(1000, 2))
+
+    ac_charging_speed_min = option_field(
+        UNLOCK_AC_CHARGING_MINIMUM, enabled=1, disabled=200
+    )
 
     @property
     def pd_heart_type(self):

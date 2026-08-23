@@ -3,6 +3,7 @@ from bleak.backends.scanner import AdvertisementData
 from google.protobuf.message import Message
 
 from ..commands import TimeCommands
+from ..device_options import UNLOCK_AC_CHARGING_MINIMUM, option_field
 from ..devicebase import DeviceBase
 from ..entity import controls
 from ..entity.base import dynamic
@@ -65,6 +66,9 @@ class Device(DeviceBase, ProtobufProps):
 
     ac_charging_speed = pb_field(pb.plug_in_info_ac_in_chg_pow_max)
     ac_charging_power_max = pb_field(pb.plug_in_info_ac_in_chg_hal_pow_max)
+    ac_charging_speed_min = option_field(
+        UNLOCK_AC_CHARGING_MINIMUM, enabled=1, disabled=400
+    )
 
     plugged_in_ac = pb_field(pb.plug_in_info_ac_charger_flag)
     energy_backup = pb_field(pb.energy_backup_en)
@@ -242,7 +246,11 @@ class Device(DeviceBase, ProtobufProps):
         )
         return True
 
-    @controls.power(ac_charging_speed, max=dynamic(ac_charging_power_max))
+    @controls.power(
+        ac_charging_speed,
+        min=dynamic(ac_charging_speed_min),
+        max=dynamic(ac_charging_power_max),
+    )
     async def set_ac_charging_speed(self, value: float):
         if (
             self.ac_charging_power_max is None

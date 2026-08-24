@@ -685,7 +685,7 @@ class Connection:
                 case 1:
                     await self._type_1_session()
                 case _:
-                    await self._ecdh_session()
+                    await self._init_ble_session_key()
 
             await self._auto_authentication()
             await self._wait_authenticated()
@@ -729,20 +729,20 @@ class Connection:
 
         await self.send_auth_status_packet()
 
-    async def _ecdh_session(self):
+    async def _init_ble_session_key(self):
         """
         Establish the encrypted session
 
         ECDH public key exchange, then session key derivation and auth status query.
         """
-        await self._exchange_public_keys()
-        await self._request_session_key()
-        await self._request_auth_status()
+        await self._ecdh_key_exchange()
+        await self._get_key_info_req()
+        await self._get_auth_status()
 
     @_auth_stage(ConnectionState.PUBLIC_KEY_EXCHANGE)
-    async def _exchange_public_keys(self):
+    async def _ecdh_key_exchange(self):
         self._logger.log_filtered(
-            LogOptions.CONNECTION_DEBUG, "_exchange_public_keys: Pub key exchange"
+            LogOptions.CONNECTION_DEBUG, "initBleSessionKey: Pub key exchange"
         )
         self._private_key = ecdsa.SigningKey.generate(curve=ecdsa.SECP160r1)
         self._public_key: ecdsa.VerifyingKey = self._private_key.get_verifying_key()  # pyright: ignore[reportAttributeAccessIssue]
@@ -778,9 +778,9 @@ class Connection:
         self._use_encryption(Type7Encryption(shared_key[:16], iv))
 
     @_auth_stage(ConnectionState.REQUESTING_SESSION_KEY)
-    async def _request_session_key(self):
+    async def _get_key_info_req(self):
         self._logger.log_filtered(
-            LogOptions.CONNECTION_DEBUG, "_request_session_key: Receiving session key"
+            LogOptions.CONNECTION_DEBUG, "getKeyInfoReq: Receiving session key"
         )
         async with self._expecting_response():
             # Command to get key info to make the shared key
@@ -805,9 +805,9 @@ class Connection:
         self._use_encryption(Type7Encryption(session_key, self._encryption.iv))
 
     @_auth_stage(ConnectionState.REQUESTING_AUTH_STATUS)
-    async def _request_auth_status(self):
+    async def _get_auth_status(self):
         self._logger.log_filtered(
-            LogOptions.CONNECTION_DEBUG, "_request_auth_status: Receiving auth status"
+            LogOptions.CONNECTION_DEBUG, "getAuthStatus: Receiving auth status"
         )
         async with self._expecting_response():
             await self.send_auth_status_packet()
@@ -816,14 +816,14 @@ class Connection:
 
         self._logger.log_filtered(
             LogOptions.CONNECTION_DEBUG,
-            "_request_auth_status: data: %r",
+            "getAuthStatus: data: %r",
             packets[0].payload,
         )
 
     @_auth_stage(ConnectionState.AUTHENTICATING)
     async def _auto_authentication(self):
         self._logger.info(
-            "_auto_authentication: Sending secretKey consists of user id and device "
+            "autoAuthentication: Sending secretKey consists of user id and device "
             "serial number",
         )
 
@@ -1054,7 +1054,7 @@ class Connection:
 
             if not processed:
                 self._logger.log_filtered(
-                    LogOptions.CONNECTION_DEBUG, "_listen_for_data_handler: %r", packet
+                    LogOptions.CONNECTION_DEBUG, "listenForDataHandler: %r", packet
                 )
 
     async def reply_packet(self, packet: Packet):

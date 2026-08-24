@@ -72,7 +72,18 @@ def get_updatable_prop_device(device: DeviceBase):
 def get_controls[E: controls.ControlType](
     device: DeviceBase, control_type: type[E]
 ) -> list[E]:
-    return get_updatable_prop_device(device).get_controls(control_type)
+    """
+    Return the device's controls of the given type.
+
+    A device that does not implement `UpdatableProps` simply has no controls -
+    `UnsupportedDevice` is the obvious case. Raising here would abort setup of
+    *every* control platform (button, climate, number, select, switch) for that
+    device, so return an empty list instead and let the platforms add nothing.
+    """
+    if not isinstance(device, UpdatableProps):
+        return []
+
+    return device.get_controls(control_type)
 
 
 __all__ = [

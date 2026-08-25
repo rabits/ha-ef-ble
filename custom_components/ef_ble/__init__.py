@@ -36,12 +36,15 @@ from .const import (
     CONF_EXTRA_BATTERY,
     CONF_PACKET_VERSION,
     CONF_PREFERRED_PROXY,
+    CONF_PREFERRED_PROXY_TIMEOUT,
     CONF_UPDATE_PERIOD,
     CONF_USER_ID,
     DEFAULT_CONNECTION_DELAY,
     DEFAULT_CONNECTION_TIMEOUT,
+    DEFAULT_PREFERRED_PROXY_TIMEOUT,
     DEFAULT_UPDATE_PERIOD,
     DOMAIN,
+    NO_PREFERRED_PROXY,
 )
 from .eflib.connection import (
     BleakError,
@@ -123,18 +126,26 @@ async def async_setup_entry(hass: HomeAssistant, entry: DeviceConfigEntry) -> bo
     advanced = merged_options.get(CONF_ADVANCED_CONNECTION_OPTIONS, {})
     timeout = advanced.get(CONF_CONNECTION_TIMEOUT, DEFAULT_CONNECTION_TIMEOUT)
     connection_delay = advanced.get(CONF_CONNECTION_DELAY, DEFAULT_CONNECTION_DELAY)
-    preferred_proxy = advanced.get(CONF_PREFERRED_PROXY)
+    preferred_proxy = advanced.get(CONF_PREFERRED_PROXY) or NO_PREFERRED_PROXY
     options = Connection.Options(
         timeout=timeout,
         bluez_start_notify=advanced.get(CONF_BLUEZ_START_NOTIFY, False),
     )
     issue_id = f"{entry.entry_id}_max_connection_attempts"
 
+    preference_wait = (
+        advanced.get(CONF_PREFERRED_PROXY_TIMEOUT, DEFAULT_PREFERRED_PROXY_TIMEOUT)
+        if preferred_proxy != NO_PREFERRED_PROXY
+        else 0.0
+    )
+
     try:
-        async with connect_gate(hass, device.name, connection_delay):
-            if preferred_proxy:
+        async with connect_gate(
+            hass, device.name, connection_delay, timeout, preference_wait
+        ):
+            if preference_wait:
                 await wait_for_preferred_proxy(
-                    hass, address, device.name, preferred_proxy
+                    hass, address, device.name, preferred_proxy, preference_wait
                 )
             await (
                 device.with_update_period(update_period)

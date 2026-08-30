@@ -1105,11 +1105,17 @@ class Connection:
             data,
         )
 
-        frame_assembler = (
-            self._get_frame_assembler()
-            if self._connection_state.received_session_key
-            else self._create_frame_assembler()
-        )
+        if not self._connection_state.received_session_key:
+            # The frame assembler for encrypt types 1/7 is built from the session
+            # key, which this link hasn't derived yet.
+            self._logger.log_filtered(
+                LogOptions.CONNECTION_DEBUG,
+                "No session key yet, dropping: %r",
+                data,
+            )
+            return []
+
+        frame_assembler = self._get_frame_assembler()
 
         decoded_payloads = await frame_assembler.reassemble(data)
 

@@ -178,6 +178,7 @@ class Device(DeviceBase, RawDataProps):
             "high": FanGear.HIGH,
         },
         current_temperature_field=ambient_temperature,
+        temperature_unit=dynamic(temp_unit),
     )
 
     @_climate.power(power)

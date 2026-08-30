@@ -11,6 +11,7 @@ from custom_components.ef_ble.eflib.devices.wave2 import (
     SubMode,
     WaterLevel,
 )
+from custom_components.ef_ble.eflib.entity.base import DynamicValue
 
 PACKETS = {
     "fan_celsius_target_30": "aa026c00bc2de6b30200012d42214250e4e5f8e45a3990a7e6ece6e7e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e4e7e7e7e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e66d8b9fa7e6e6e4e6e6e6e7e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e671a6",
@@ -126,6 +127,32 @@ async def test_temperature_unit_and_limits_follow_device_temp_sys(
     assert device.target_temperature_min == expected_min
     assert device.target_temperature_max == expected_max
     assert device.target_temperature == expected_temp
+
+
+@pytest.mark.parametrize(
+    ("packet_name", "expected_unit"),
+    [
+        ("heat_celsius_target_30", units.Temperature.C),
+        ("fan_fahrenheit_target_60", units.Temperature.F),
+    ],
+)
+async def test_climate_temperature_unit_follows_device_temp_sys(
+    device, packet_name, expected_unit
+):
+    """
+    The climate entity's own declared unit must track `temp_unit`, not stay fixed at
+    the framework default - otherwise HA labels values that are already in the
+    device's active unit (see the ambient_temperature check above) as if they were
+    always Celsius, which is "way off" whenever the device is actually in Fahrenheit.
+    """
+    dynamic_unit = Device._climate.temperature_unit
+    assert isinstance(dynamic_unit, DynamicValue), (
+        "climate.temperature_unit must be dynamic(temp_unit), not a fixed default"
+    )
+
+    await _process(device, PACKETS[packet_name])
+
+    assert dynamic_unit.resolve(device) is expected_unit
 
 
 @pytest.mark.parametrize(

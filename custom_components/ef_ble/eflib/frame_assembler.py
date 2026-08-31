@@ -93,6 +93,14 @@ class EncPacketAssembler(FrameAssembler):
                 continue
 
             data = data[data_end:]
+
+            if header[2] >> 4 == EncPacket.FRAME_TYPE_COMMAND:
+                # A plaintext handshake frame, not device data: some devices repeat each
+                # handshake reply several times and the copies land after the session
+                # key is in place, where decrypting one yields noise that counts toward
+                # the session-loss limit
+                continue
+
             decrypted = await self._encryption.decrypt(payload_data)
             payloads.append(decrypted)
 

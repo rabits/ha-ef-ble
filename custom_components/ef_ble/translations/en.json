@@ -994,6 +994,107 @@
       },
       "ac_c20_in_type": {
         "name": "AC C20 In Type"
+      },
+      "pcs_meter_power": {
+        "name": "Smart Meter Power"
+      },
+      "pcs_active_power": {
+        "name": "PCS Active Power"
+      },
+      "batteries_remaining_power": {
+        "name": "Batteries Remaining Power"
+      },
+      "batteries_online_count": {
+        "name": "Batteries Online Count"
+      },
+      "batteries_total_charge_energy": {
+        "name": "Batteries Total Charge Energy"
+      },
+      "batteries_total_discharge_energy": {
+        "name": "Batteries Total Discharge Energy"
+      },
+      "batteries_ems_power": {
+        "name": "Batteries EMS Power"
+      },
+      "ems_work_mode": {
+        "name": "EMS Work Mode",
+        "state": {
+          "workmode_selfuse": "Self use",
+          "workmode_tou": "TOU",
+          "workmode_backup": "Backup",
+          "workmode_dbg": "Debug",
+          "workmode_ac_makeup": "AC Makeup",
+          "workmode_drm_mode": "DRM",
+          "workmode_remote_sched": "Remote Schedule",
+          "workmode_standby_mode": "Standby",
+          "workmode_soc_calib": "SOC Calibration",
+          "workmode_timer_mode": "Timer",
+          "workmode_fcr_mode": "FCR",
+          "workmode_third_mode": "3rd Mode",
+          "workmode_ai_schedule": "AI Schedule",
+          "workmode_kraken": "Kraken"
+        }
+      },
+      "param_fault_code": {
+        "name": "{name} Fault Code"
+      },
+      "param_warning_code": {
+        "name": "{name} Warning Code"
+      },
+      "voltage": {
+        "name": "Voltage"
+      },
+      "current": {
+        "name": "Current"
+      },
+      "error_code": {
+        "name": "Error Code"
+      },
+      "environment_temperature": {
+        "name": "Environment Temperature"
+      },
+      "max_cell_temperature": {
+        "name": "Max Cell Temperature"
+      },
+      "min_cell_temperature": {
+        "name": "Min Cell Temperature"
+      },
+      "remaining_power": {
+        "name": "Remaining Power"
+      },
+      "health": {
+        "name": "Health"
+      },
+      "cycles": {
+        "name": "Cycles"
+      },
+      "system_state": {
+        "name": "System State",
+        "state": {
+          "pre_power_on_state": "Pre-Power On",
+          "cfm_power_on_state": "CFM Power On",
+          "normal_state": "Normal",
+          "power_off_state": "Power Off",
+          "sleep_state": "Sleep",
+          "unknown": "Unknown"
+        }
+      },
+      "bms_run_state": {
+        "name": "BMS Run State",
+        "state": {
+          "pb_bms_state_shutdown": "Shutdown",
+          "pb_bms_state_normal": "Normal",
+          "pb_bms_state_chargeable": "Charging",
+          "pb_bms_state_dischargeable": "Discharging",
+          "pb_bms_state_fault": "Fault",
+          "unknown": "Unknown"
+        }
+      },
+      "phase_apparent_power": {
+        "name": "{name} Apparent Power"
+      },
+      "phase_reactive_power": {
+        "name": "{name} Reactive Power"
       }
     },
     "select": {

@@ -44,6 +44,7 @@ from .eflib.devices import (
     wave2,
     wave3,
 )
+from .eflib.devices._powerocean_base import BmsRunStaDef, BmsSysState, WorkMode
 from .eflib.entity import units
 from .eflib.props.enums import IntFieldValue
 from .entity import (
@@ -861,14 +862,14 @@ _SENSORS: Final[dict[str, SensorEntityDescription]] = {
         precision=2,
         translation_key="port_current",
         translation_placeholders={"name": "PV ({n})"},
-        indexed_range=range(1, 3),
+        indexed_range=range(1, 4),
         enabled=False,
     ),
     "pv_voltage_{n}": voltage(
         precision=1,
         translation_key="port_voltage",
         translation_placeholders={"name": "PV ({n})"},
-        indexed_range=range(1, 3),
+        indexed_range=range(1, 4),
         enabled=False,
     ),
     # Wave 2
@@ -898,6 +899,40 @@ _SENSORS: Final[dict[str, SensorEntityDescription]] = {
     "llc_temperature": temperature(),
     # PowerPulse EV
     "ac_plug_state": enum(options=powerpulse_ev.AcPlugState),
+    # PowerOcean
+    "pcs_meter_power": power(),
+    "pcs_active_power": power(),
+    "batteries_ems_power": power(),
+    "batteries_remaining_power": energy_storage(),
+    "batteries_total_charge_energy": energy_storage(),
+    "batteries_total_discharge_energy": energy_storage(),
+    "batteries_online_count": raw(entity_category=EntityCategory.DIAGNOSTIC),
+    "ems_work_mode": enum(options=WorkMode, entity_category=EntityCategory.DIAGNOSTIC),
+    "pv_main_power_{n}": port_power("PV ({n})", indexed_range=range(1, 4)),
+    "pv_fault_code_{n}": raw(
+        translation_key="param_fault_code",
+        translation_placeholders={"name": "PV ({n})"},
+        entity_category=EntityCategory.DIAGNOSTIC,
+        indexed_range=range(1, 4),
+    ),
+    "pv_warning_code_{n}": raw(
+        translation_key="param_warning_code",
+        translation_placeholders={"name": "PV ({n})"},
+        entity_category=EntityCategory.DIAGNOSTIC,
+        indexed_range=range(1, 4),
+    ),
+    "l{n}_reactive_power": power(
+        enabled=False,
+        translation_key="phase_reactive_power",
+        translation_placeholders={"name": "L{n}"},
+        indexed_range=range(1, 4),
+    ),
+    "l{n}_apparent_power": power(
+        enabled=False,
+        translation_key="phase_apparent_power",
+        translation_placeholders={"name": "L{n}"},
+        indexed_range=range(1, 4),
+    ),
     # unsupported
     "collecting_data": enum(
         name="Collecting data",
@@ -934,6 +969,38 @@ _BATTERY_ADDON_SENSORS: Final = {
     ),
     "battery_{n}_input_power": power(precision=0, translation_key="input_power"),
     "battery_{n}_output_power": power(precision=0, translation_key="output_power"),
+    # PowerOcean
+    "battery_{n}_min_cell_temperature": temperature(
+        translation_key="min_cell_temperature"
+    ),
+    "battery_{n}_max_cell_temperature": temperature(
+        translation_key="max_cell_temperature"
+    ),
+    "battery_{n}_environment_temperature": temperature(
+        translation_key="environment_temperature"
+    ),
+    "battery_{n}_power": power(translation_key="power"),
+    "battery_{n}_remaining_power": energy_storage(translation_key="remaining_power"),
+    "battery_{n}_current": current(precision=2, translation_key="current"),
+    "battery_{n}_health": percentage(
+        translation_key="health", entity_category=EntityCategory.DIAGNOSTIC
+    ),
+    "battery_{n}_cycles": raw(
+        translation_key="cycles", entity_category=EntityCategory.DIAGNOSTIC
+    ),
+    "battery_{n}_error_code": raw(
+        translation_key="error_code", entity_category=EntityCategory.DIAGNOSTIC
+    ),
+    "battery_{n}_system_state": enum(
+        translation_key="system_state",
+        options=BmsSysState,
+        entity_category=EntityCategory.DIAGNOSTIC,
+    ),
+    "battery_{n}_bms_run_state": enum(
+        translation_key="bms_run_state",
+        options=BmsRunStaDef,
+        entity_category=EntityCategory.DIAGNOSTIC,
+    ),
 }
 
 

@@ -220,6 +220,12 @@
             "manufacturer_id": 46517,
             "manufacturer_data_start": [19, 74, 51, 50],
             "connectable": true
+        },
+        {
+            "local_name": "EF-R37*",
+            "manufacturer_id": 46517,
+            "manufacturer_data_start": [19, 82, 51, 55],
+            "connectable": true
         }
     ],
 

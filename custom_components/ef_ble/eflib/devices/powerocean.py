@@ -1,4 +1,3 @@
-from ..packet import Packet
 from ..pb import jt_s1_sys_pb2
 from ..props import pb_field, proto_attr_mapper
 from ._powerocean_base import PowerOceanBase, WorkMode
@@ -14,8 +13,9 @@ class Device(PowerOceanBase):
 
     SN_PREFIX = (b"J32", b"HJ3", b"HC3")  # 1-phase, 3-phase, DC-Fit
     NAME_PREFIX = "EF-J32"
+    EMS_CHANGE_REPORT = jt_s1_sys_pb2.EmsChangeReport
 
-    ems_work_mode = pb_field(pb_ems_change_report.ems_word_mode, WorkMode.from_mode)
+    ems_work_mode = pb_field(pb_ems_change_report.ems_word_mode, WorkMode.from_value)
 
     battery_level = pb_field(pb_ems_change_report.bp_soc)
     batteries_total_charge_energy = pb_field(pb_ems_change_report.bp_total_chg_energy)
@@ -28,6 +28,3 @@ class Device(PowerOceanBase):
     pv_warning_code_1 = pb_field(pb_ems_change_report.mppt1_warning_code)
     pv_fault_code_2 = pb_field(pb_ems_change_report.mppt2_fault_code)
     pv_warning_code_2 = pb_field(pb_ems_change_report.mppt2_warning_code)
-
-    def process_ems_change_report(self, packet: Packet):
-        self.update_from_bytes(jt_s1_sys_pb2.EmsChangeReport, packet.payload)

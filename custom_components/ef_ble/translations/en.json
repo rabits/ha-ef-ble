@@ -939,9 +939,6 @@
       "sleep_state": {
         "name": "Sleep State"
       },
-      "power": {
-        "name": "Power"
-      },
       "power_battery": {
         "name": "Battery Power"
       },
@@ -995,14 +992,17 @@
       "ac_c20_in_type": {
         "name": "AC C20 In Type"
       },
-      "pcs_meter_power": {
-        "name": "Smart Meter Power"
+      "grid_meter_power": {
+        "name": "Grid Meter Power"
       },
-      "pcs_active_power": {
-        "name": "PCS Active Power"
+      "grid_import_power": {
+        "name": "Grid Import Power"
       },
-      "batteries_remaining_power": {
-        "name": "Batteries Remaining Power"
+      "grid_export_power": {
+        "name": "Grid Export Power"
+      },
+      "battery_remaining_energy": {
+        "name": "Battery Remaining Energy"
       },
       "batteries_online_count": {
         "name": "Batteries Online Count"
@@ -1013,8 +1013,8 @@
       "batteries_total_discharge_energy": {
         "name": "Batteries Total Discharge Energy"
       },
-      "batteries_ems_power": {
-        "name": "Batteries EMS Power"
+      "battery_power_setpoint": {
+        "name": "Battery Power Setpoint"
       },
       "ems_work_mode": {
         "name": "EMS Work Mode",
@@ -1035,20 +1035,11 @@
           "workmode_kraken": "Kraken"
         }
       },
-      "param_fault_code": {
-        "name": "{name} Fault Code"
-      },
-      "param_warning_code": {
-        "name": "{name} Warning Code"
-      },
       "voltage": {
         "name": "Voltage"
       },
       "current": {
         "name": "Current"
-      },
-      "error_code": {
-        "name": "Error Code"
       },
       "environment_temperature": {
         "name": "Environment Temperature"
@@ -1059,14 +1050,11 @@
       "min_cell_temperature": {
         "name": "Min Cell Temperature"
       },
-      "remaining_power": {
-        "name": "Remaining Power"
+      "remaining_energy": {
+        "name": "Remaining Energy"
       },
       "health": {
         "name": "Health"
-      },
-      "cycles": {
-        "name": "Cycles"
       },
       "system_state": {
         "name": "System State",

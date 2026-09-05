@@ -1,7 +1,12 @@
-from ..packet import Packet
 from ..pb import re307_sys_pb2
-from ..props import pb_field, proto_attr_mapper
-from ._powerocean_base import PowerOceanBase, WorkMode, mppt_group
+from ..props import pb_field, pb_field_group, proto_attr_mapper
+from ._powerocean_base import (
+    PowerOceanBase,
+    WorkMode,
+    mppt_group,
+    pb_energy_stream_report,
+    pb_mppt_pv,
+)
 
 pb_ems_state_change_report = proto_attr_mapper(re307_sys_pb2.EmsStateChangeReport)
 pb_ems_change_report = proto_attr_mapper(re307_sys_pb2.EmsChangeReport)
@@ -15,8 +20,12 @@ class Device(PowerOceanBase):
 
     SN_PREFIX = (b"R37",)
     NAME_PREFIX = "EF-R37"
+    # Command ids 0x08, 0x11 and 0x25 all arrive on this one message, and without a test
+    # device it is unconfirmed which of EmsChangeReport / EmsStateChangeReport each
+    # actually carries
+    EMS_CHANGE_REPORT = re307_sys_pb2.EmsChangeReport
 
-    ems_work_mode = pb_field(pb_ems_change_report.ems_word_mode, WorkMode.from_mode)
+    ems_work_mode = pb_field(pb_ems_change_report.ems_word_mode, WorkMode.from_value)
 
     battery_level = pb_field(pb_ems_state_change_report.bp_soc)
     batteries_total_charge_energy = pb_field(
@@ -28,9 +37,11 @@ class Device(PowerOceanBase):
     batteries_online_count = pb_field(pb_ems_state_change_report.bp_online_sum)
 
     # Only the Plus drives a third string
-    pv_voltage = mppt_group("vol", 3, "pv_voltage_{n}")
-    pv_current = mppt_group("amp", 3, "pv_current_{n}")
-    pv_power = mppt_group("pwr", 3, "pv_power_{n}")
+    pv_power = pb_field_group(
+        pb_energy_stream_report.pv1_pwr, "pv{n}_pwr", 3, name_template="pv_power_{n}"
+    )
+    pv_voltage = mppt_group(pb_mppt_pv.vol, 3, "pv_voltage_{n}")
+    pv_current = mppt_group(pb_mppt_pv.amp, 3, "pv_current_{n}")
 
     pv_fault_code_1 = pb_field(pb_ems_state_change_report.mppt1_fault_code)
     pv_warning_code_1 = pb_field(pb_ems_state_change_report.mppt1_warning_code)
@@ -38,9 +49,3 @@ class Device(PowerOceanBase):
     pv_warning_code_2 = pb_field(pb_ems_state_change_report.mppt2_warning_code)
     pv_fault_code_3 = pb_field(pb_ems_state_change_report.mppt3_fault_code)
     pv_warning_code_3 = pb_field(pb_ems_state_change_report.mppt3_warning_code)
-
-    # Command ids 0x08, 0x11 and 0x25 all arrive on the same message here, and without a
-    # test device it is unconfirmed which of EmsChangeReport / EmsStateChangeReport each
-    # one carries
-    def process_ems_change_report(self, packet: Packet):
-        self.update_from_bytes(re307_sys_pb2.EmsChangeReport, packet.payload)

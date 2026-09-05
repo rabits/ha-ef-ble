@@ -806,7 +806,12 @@ _SENSORS: Final[dict[str, SensorEntityDescription]] = {
     "ac_power_2_1": port_power("AC (2-1)"),
     "ac_power_2_2": port_power("AC (2-2)"),
     "ac_power_2_3": port_power("AC (2-3)"),
-    "pv_power_{n}": port_power("PV ({n})", precision=1, indexed_range=range(5)),
+    "pv_power_{n}": port_power(
+        "PV ({n})",
+        precision=1,
+        indexed_range=range(5),
+        state_attribute_fields=["pv_fault_code_{n}", "pv_warning_code_{n}"],
+    ),
     "pv_power_sum": power(precision=1, translation_key="pv_power_sum"),
     # Smart Meter
     "grid_energy": energy(),
@@ -900,27 +905,17 @@ _SENSORS: Final[dict[str, SensorEntityDescription]] = {
     # PowerPulse EV
     "ac_plug_state": enum(options=powerpulse_ev.AcPlugState),
     # PowerOcean
-    "pcs_meter_power": power(),
-    "pcs_active_power": power(),
-    "batteries_ems_power": power(),
-    "batteries_remaining_power": energy_storage(),
+    "grid_meter_power": power(),
+    "grid_import_power": power(),
+    "grid_export_power": power(),
+    "battery_power_setpoint": power(
+        enabled=False, entity_category=EntityCategory.DIAGNOSTIC
+    ),
+    "battery_remaining_energy": energy_storage(),
     "batteries_total_charge_energy": energy_storage(),
     "batteries_total_discharge_energy": energy_storage(),
     "batteries_online_count": raw(entity_category=EntityCategory.DIAGNOSTIC),
     "ems_work_mode": enum(options=WorkMode, entity_category=EntityCategory.DIAGNOSTIC),
-    "pv_main_power_{n}": port_power("PV ({n})", indexed_range=range(1, 4)),
-    "pv_fault_code_{n}": raw(
-        translation_key="param_fault_code",
-        translation_placeholders={"name": "PV ({n})"},
-        entity_category=EntityCategory.DIAGNOSTIC,
-        indexed_range=range(1, 4),
-    ),
-    "pv_warning_code_{n}": raw(
-        translation_key="param_warning_code",
-        translation_placeholders={"name": "PV ({n})"},
-        entity_category=EntityCategory.DIAGNOSTIC,
-        indexed_range=range(1, 4),
-    ),
     "l{n}_reactive_power": power(
         enabled=False,
         translation_key="phase_reactive_power",
@@ -946,7 +941,10 @@ SENSOR_TYPES: Final[dict[str, SensorEntityDescription]] = (
 
 
 _BATTERY_ADDON_SENSORS: Final = {
-    "battery_{n}_battery_level": battery(translation_key="battery_level"),
+    "battery_{n}_battery_level": battery(
+        translation_key="battery_level",
+        state_attribute_fields=["battery_{n}_cycles", "battery_{n}_error_code"],
+    ),
     "battery_{n}_cell_temperature": temperature(translation_key="cell_temperature"),
     "battery_{n}_voltage": port_voltage(
         "Battery",
@@ -979,17 +977,12 @@ _BATTERY_ADDON_SENSORS: Final = {
     "battery_{n}_environment_temperature": temperature(
         translation_key="environment_temperature"
     ),
-    "battery_{n}_power": power(translation_key="power"),
-    "battery_{n}_remaining_power": energy_storage(translation_key="remaining_power"),
-    "battery_{n}_current": current(precision=2, translation_key="current"),
+    "battery_{n}_remaining_energy": energy_storage(translation_key="remaining_energy"),
+    "battery_{n}_current": current(
+        precision=2, enabled=False, translation_key="current"
+    ),
     "battery_{n}_health": percentage(
         translation_key="health", entity_category=EntityCategory.DIAGNOSTIC
-    ),
-    "battery_{n}_cycles": raw(
-        translation_key="cycles", entity_category=EntityCategory.DIAGNOSTIC
-    ),
-    "battery_{n}_error_code": raw(
-        translation_key="error_code", entity_category=EntityCategory.DIAGNOSTIC
     ),
     "battery_{n}_system_state": enum(
         translation_key="system_state",
@@ -1002,6 +995,11 @@ _BATTERY_ADDON_SENSORS: Final = {
         entity_category=EntityCategory.DIAGNOSTIC,
     ),
 }
+
+
+def _sensor_value(device: DeviceBase, sensor: str):
+    value = getattr(device, sensor, None)
+    return value.name.lower() if isinstance(value, Enum) else value
 
 
 def _sensor_class(sensor: str) -> "type[EcoflowSensor]":
@@ -1117,10 +1115,7 @@ class EcoflowSensor(EcoflowEntity, SensorEntity):
     @property
     def native_value(self):
         """Return the value of the sensor."""
-        value = getattr(self._device, self._sensor, None)
-        if isinstance(value, Enum):
-            return value.name.lower()
-        return value
+        return _sensor_value(self._device, self._sensor)
 
     @property
     def native_unit_of_measurement(self) -> str | None:
@@ -1178,7 +1173,7 @@ class EcoflowBatteryAddonSensor(EcoflowBatteryAddonEntity, SensorEntity):
 
     @property
     def native_value(self):
-        return getattr(self._device, self._sensor, None)
+        return _sensor_value(self._device, self._sensor)
 
     @property
     def extra_state_attributes(self) -> dict[str, Any]:

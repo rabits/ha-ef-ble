@@ -39,7 +39,7 @@ def is_solar_only(device: DeviceBase | None):
 
 def NewDevice(ble_dev: BLEDevice, adv_data: AdvertisementData) -> DeviceBase | None:
     """Return Device if ble dev fits the requirements otherwise None"""
-    if (sn := sn_from_advertisement(adv_data)) is None:
+    if not (sn := sn_from_advertisement(adv_data)):
         return None
 
     # Check if known devices fits the found serial number

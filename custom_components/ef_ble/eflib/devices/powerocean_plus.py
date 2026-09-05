@@ -20,10 +20,10 @@ class Device(PowerOceanBase):
 
     SN_PREFIX = (b"R37",)
     NAME_PREFIX = "EF-R37"
-    # Command ids 0x08, 0x11 and 0x25 all arrive on this one message, and without a test
-    # device it is unconfirmed which of EmsChangeReport / EmsStateChangeReport each
-    # actually carries
-    EMS_CHANGE_REPORT = re307_sys_pb2.EmsChangeReport
+    EMS_REPORTS = {
+        0x08: re307_sys_pb2.EmsChangeReport,
+        0x11: re307_sys_pb2.EmsStateChangeReport,
+    }
 
     ems_work_mode = pb_field(pb_ems_change_report.ems_word_mode, WorkMode.from_value)
 

@@ -13,7 +13,7 @@ class Device(PowerOceanBase):
 
     SN_PREFIX = (b"J32", b"HJ3", b"HC3")  # 1-phase, 3-phase, DC-Fit
     NAME_PREFIX = "EF-J32"
-    EMS_CHANGE_REPORT = jt_s1_sys_pb2.EmsChangeReport
+    EMS_REPORTS = {0x08: jt_s1_sys_pb2.EmsChangeReport}
 
     ems_work_mode = pb_field(pb_ems_change_report.ems_word_mode, WorkMode.from_value)
 

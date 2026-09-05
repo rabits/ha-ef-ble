@@ -143,20 +143,15 @@ def mppt_group[T_ATTR](
 
 
 class PowerOceanBase(DeviceBase, ProtobufProps):
-    EMS_CHANGE_REPORT: type[Message]
+    EMS_REPORTS: dict[int, type[Message]] = {}
 
     extra_battery_name = "PowerOcean Battery Pack"
 
     load_system = pb_field(pb_energy_stream_report.sys_load_pwr)
 
-    # The device reports one signed value, positive when the grid covers a shortfall;
-    # it is published as a direction pair rather than signed, which is what HA's energy
-    # dashboard consumes
     grid_import_power = pb_field(pb_energy_stream_report.sys_grid_pwr, ppositive())
     grid_export_power = pb_field(pb_energy_stream_report.sys_grid_pwr, pnegative())
     pv_power_sum = pb_field(pb_energy_stream_report.mppt_pwr)
-    # The device reports one signed value, positive while charging; it is published as
-    # a direction pair rather than signed, which is what HA's energy dashboard consumes
     battery_input_power = pb_field(pb_energy_stream_report.bp_pwr, ppositive())
     battery_output_power = pb_field(pb_energy_stream_report.bp_pwr, pnegative())
     battery_remaining_energy = pb_field(pb_heartbeat.bp_remain_watth)
@@ -168,8 +163,6 @@ class PowerOceanBase(DeviceBase, ProtobufProps):
 
     grid_meter_power = pb_field(pb_heartbeat.pcs_meter_power)
     inverter_power = pb_field(pb_heartbeat.pcs_act_pwr)
-    # The EMS's commanded battery power, which tracks but never equals the
-    # measured `battery_power`
     battery_power_setpoint = pb_field(pb_heartbeat.ems_bp_power)
 
     # A pack is present exactly when it reports itself, which is what the config flow
@@ -269,8 +262,8 @@ class PowerOceanBase(DeviceBase, ProtobufProps):
                 report = jt_s1_sys_pb2.ErrorChangeReport
             case 0x60, 0x60, 0x07:
                 report = jt_s1_sys_pb2.BpHeartbeatReport
-            case 0x60, 0x60, (0x08 | 0x11 | 0x25):
-                report = self.EMS_CHANGE_REPORT
+            case 0x60, 0x60, (0x08 | 0x11):
+                report = self.EMS_REPORTS.get(packet.cmd_id)
             case 0x60, 0x60, 0x21:
                 report = jt_s1_sys_pb2.EnergyStreamReport
             case 0x60, 0x60, 0x27:
@@ -313,9 +306,10 @@ class PowerOceanBase(DeviceBase, ProtobufProps):
                 return cmd_id == 0x10
             case 0x60, 0x60:
                 return cmd_id in {
-                    10, 11, 12, 13, 14, 24, 25, 26, 34, 35, 36, 41, 50, 98, 99, 100,
-                    101, 102, 103, 105, 106, 107, 109, 112, 121, 124, 125, 126, 127,
-                    132, 133, 137, 138, 143, 144, 145, 147, 148, 151, 152, 153,
+                    10, 11, 12, 13, 14, 17, 22, 24, 25, 26, 34, 35, 36, 37, 41, 50,
+                    98, 99, 100, 101, 102, 103, 105, 106, 107, 109, 112, 121, 124,
+                    125, 126, 127, 132, 133, 137, 138, 143, 144, 145, 147, 148, 151,
+                    152, 153,
                 }  # fmt: skip
             case 0x60, 0xD1:  # EV
                 return cmd_id in {2, 97, 98, 99, 100, 101, 103}

@@ -364,6 +364,12 @@
       "plugged_in_ac": {
         "name": "AC Plugged In"
       },
+      "battery_connected": {
+        "name": "Battery Connected"
+      },
+      "solar_connected": {
+        "name": "Solar Connected"
+      },
       "fan_running": {
         "name": "Fan Running"
       },

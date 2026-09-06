@@ -8,7 +8,7 @@ from ..props import computed_field
 from ..props.enums import IntFieldValue
 from ..props.raw_data_field import dataclass_attr_mapper, raw_field
 from ..props.raw_data_props import RawDataProps
-from ..props.transforms import pround
+from ..props.transforms import prop_has_bit_on, pround
 
 pb = dataclass_attr_mapper(KT210SAC)
 
@@ -123,12 +123,16 @@ class Device(DeviceBase, RawDataProps):
             return DrainMode.EXTERNAL
         return DrainMode.from_wte(self.wte_fth_en)
 
-    # power_src looks like a bitmask, observations:
-    # bit 0 - battery
-    # bits 1-2 - optional internal power sources?
-    # Bits 3, 5–7 - unused
-    # bit 4 - AC mains
-    # power_src = raw_field(pb.power_src)
+    # power_src is a bitmask, read off a unit reporting 1 on mains alone, 16 on battery
+    # alone, 17 on mains and battery, and 18 on battery and solar:
+    # bit 0 - AC mains
+    # bit 1 - solar
+    # bit 2 - grouped with mains and solar in the app, set in none of those readings
+    # bit 4 - battery
+    # bits 3, 5-7 - unused
+    plugged_in_ac = raw_field(pb.power_src, prop_has_bit_on(0))
+    solar_connected = raw_field(pb.power_src, prop_has_bit_on(1))
+    battery_connected = raw_field(pb.power_src, prop_has_bit_on(4))
 
     @classmethod
     def check(cls, sn):
@@ -184,11 +188,11 @@ class Device(DeviceBase, RawDataProps):
     async def enable_power(self, enabled: bool):
         await self.set_power_mode(PowerMode.ON if enabled else PowerMode.STANDBY)
 
-    @controls.switch(ambient_light)
+    @controls.switch(ambient_light, availability=power)
     async def enable_ambient_light(self, enabled: bool):
         await self._send_config_packet(0x5C, (0x01 if enabled else 0x02).to_bytes())
 
-    @controls.switch(automatic_drain)
+    @controls.switch(automatic_drain, availability=power)
     async def enable_automatic_drain(self, enabled: bool):
         preference = (self.wte_fth_en or 0) & 1
         if not enabled:
@@ -201,7 +205,18 @@ class Device(DeviceBase, RawDataProps):
             payload = preference
         await self._send_config_packet(0x59, payload.to_bytes())
 
-    @controls.select(drain_mode, options=DrainMode)
+    @controls.select(
+        drain_mode,
+        # The unit can only drain itself while cooling, so outside Cool the app offers
+        # the external hose alone
+        options=(
+            controls.option_set(DrainMode).exclude_if(
+                dynamic(main_mode, lambda mode: mode in (MainMode.WARM, MainMode.FAN)),
+                DrainMode.DRAIN_FREE,
+            )
+        ),
+        availability=power,
+    )
     async def set_drain_mode(self, mode: DrainMode):
         main_mode = self.main_mode
         if main_mode is MainMode.WARM or main_mode is MainMode.FAN:
@@ -218,16 +233,26 @@ class Device(DeviceBase, RawDataProps):
         fan_speed,
         modes={HvacMode.COOL, HvacMode.HEAT, HvacMode.FAN_ONLY},
     )
-    @controls.select(fan_speed, options=FanGear)
+    @controls.select(fan_speed, options=FanGear, availability=power)
     async def set_fan_speed(self, fan_gear: FanGear):
         await self._send_config_packet(0x5E, fan_gear.to_bytes())
 
     @_climate.mode()
-    @controls.select(main_mode, options=MainMode)
+    @controls.select(main_mode, options=MainMode, availability=power)
     async def set_main_mode(self, mode: MainMode):
         await self._send_config_packet(0x51, mode.to_bytes())
 
-    @controls.select(power_mode, options=PowerMode, exclude=[PowerMode.INIT])
+    @controls.select(
+        power_mode,
+        # On mains the firmware turns a power-off into standby, so offering Off there
+        # only ever looks broken. The app draws the same line, asking to confirm a
+        # power-off on battery alone and sending it without asking otherwise
+        options=(
+            controls.option_set(PowerMode)
+            .exclude(PowerMode.INIT)
+            .exclude_if(plugged_in_ac, PowerMode.OFF)
+        ),
+    )
     async def set_power_mode(self, mode: PowerMode):
         await self._send_config_packet(0x5B, mode.to_bytes())
 
@@ -244,11 +269,12 @@ class Device(DeviceBase, RawDataProps):
         min=dynamic(target_temperature_min),
         max=dynamic(target_temperature_max),
         unit=dynamic(temp_unit),
+        availability=power,
     )
     async def set_temperature(self, temperature: float):
         await self._send_config_packet(0x58, int(temperature).to_bytes())
         return True
 
-    @controls.select(sub_mode, options=SubMode)
+    @controls.select(sub_mode, options=SubMode, availability=power)
     async def set_sub_mode(self, sub_mode: SubMode):
         await self._send_config_packet(0x52, sub_mode.to_bytes())

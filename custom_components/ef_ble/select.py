@@ -1,6 +1,6 @@
 import dataclasses
 from collections.abc import Awaitable, Callable
-from typing import Any
+from typing import Any, Self
 
 from homeassistant.components.select import SelectEntity, SelectEntityDescription
 from homeassistant.core import HomeAssistant, callback
@@ -10,6 +10,7 @@ from . import DeviceConfigEntry
 from .deprecated.selects import SELECT_TYPES
 from .description_builder import EntityDescriptionBuilder
 from .eflib import DeviceBase, controls, get_controls
+from .eflib.entity import DynamicValue
 from .entity import EcoflowEntity
 
 
@@ -17,6 +18,7 @@ from .entity import EcoflowEntity
 class EcoflowSelectEntityDescription[T: DeviceBase](SelectEntityDescription):
     set_state: Callable[[T, str], Awaitable] | None = None
     availability_prop: str | None = None
+    conditional_options: tuple[tuple[DynamicValue, list[str]], ...] = ()
 
 
 class SelectSensorBuilder(EntityDescriptionBuilder):
@@ -24,9 +26,16 @@ class SelectSensorBuilder(EntityDescriptionBuilder):
         self._options = None
         self._async_set_native_value = None
         self._availability_prop = None
+        self._conditional_options = ()
 
     def options(self, options: list[str]):
         self._options = options
+        return self
+
+    def conditional_options(
+        self, conditional: list[tuple[DynamicValue, list[str]]]
+    ) -> Self:
+        self._conditional_options = tuple(conditional)
         return self
 
     def async_set_native_value(
@@ -50,6 +59,7 @@ class SelectSensorBuilder(EntityDescriptionBuilder):
             translation_key=self._entity_translation_key,
             entity_registry_enabled_default=self._entity_registry_enabled_default,
             availability_prop=self._availability_prop,
+            conditional_options=self._conditional_options,
             icon=self._icon,
         )
 
@@ -79,6 +89,7 @@ async def async_setup_entry(
             .builder(select, SelectSensorBuilder.from_entity(select))
             .set_state(select.set_value_func)
             .availability_prop(select.availability_prop)
+            .conditional_options(select.conditional_options)
             .options(select.options_str)
             .build()
         )
@@ -108,6 +119,13 @@ class EcoflowSelect(EcoflowEntity, SelectEntity):
         self._set_state = description.set_state
         self._attr_current_option = getattr(device, self._prop_name, None)
         self._availability_prop = description.availability_prop
+        self._offered_options = list(description.options or [])
+        # The deprecated descriptions this platform falls back to are a separate class
+        # that carries no conditions
+        self._conditional_options: tuple[tuple[DynamicValue, list[str]], ...] = getattr(
+            description, "conditional_options", ()
+        )
+        self._attr_options = self._options_now()
 
         if self.entity_description.translation_key is None:
             self._attr_translation_key = self.entity_description.key
@@ -126,6 +144,22 @@ class EcoflowSelect(EcoflowEntity, SelectEntity):
             prop_name=self._availability_prop,
             get_state=lambda state: state if state is not None else self.SkipWrite,
         )
+        for condition, _ in self._conditional_options:
+            self._register_update_callback(
+                entity_attr="_attr_options",
+                prop_name=condition.prop_name,
+                get_state=lambda _: self._options_now(),
+            )
+
+    def _options_now(self) -> list[str]:
+        withheld = {
+            option
+            for condition, options in self._conditional_options
+            if condition.resolve(self._device)
+            for option in options
+        }
+        withheld.discard(self._attr_current_option)
+        return [option for option in self._offered_options if option not in withheld]
 
     @property
     def available(self):

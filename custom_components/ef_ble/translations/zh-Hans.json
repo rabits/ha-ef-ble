@@ -361,6 +361,12 @@
       "plugged_in_ac": {
         "name": "交流已插入"
       },
+      "battery_connected": {
+        "name": "电池已连接"
+      },
+      "solar_connected": {
+        "name": "太阳能已连接"
+      },
       "fan_running": {
         "name": "风扇运行中"
       },

@@ -10,6 +10,7 @@ UNLOCK_DC_CHARGING_MINIMUM = DeviceOption("unlock_dc_charging_minimum", default=
 class _OptionField[T](_ComputedField[T]):
     def __init__(self, option: DeviceOption[bool], enabled: T, disabled: T) -> None:
         self._option = option
+        self._disabled = disabled
 
         def value(device: DeviceBase) -> T:
             return enabled if device.advanced_option(option) else disabled
@@ -26,6 +27,10 @@ class _OptionField[T](_ComputedField[T]):
         owner.ADVANCED_OPTIONS = tuple(
             dict.fromkeys([*owner.ADVANCED_OPTIONS, self._option])
         )
+        owner.LOCKED_OPTION_VALUES = {
+            **owner.LOCKED_OPTION_VALUES,
+            self._option: self._disabled,
+        }
 
 
 def option_field[T](

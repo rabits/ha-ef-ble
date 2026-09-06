@@ -72,6 +72,9 @@ class DeviceBase(abc.ABC):
     SN_PREFIX: tuple[bytes, ...] | bytes
 
     ADVANCED_OPTIONS: ClassVar[tuple[DeviceOption, ...]] = ()
+    # What a field guarded by an option reads while that option is off, so the limit
+    # a model enforces can be named without instantiating it
+    LOCKED_OPTION_VALUES: ClassVar[Mapping[DeviceOption, Any]] = {}
 
     _listeners = _Listeners.create()
 

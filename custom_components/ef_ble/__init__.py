@@ -55,6 +55,7 @@ from .eflib.connection import (
 )
 from .eflib.exceptions import AuthErrors, UnsupportedBluetoothProtocol
 from .eflib.logging_util import ConnectionLog
+from .issues import create_charging_minimum_issue
 from .proxy import connect_gate, wait_for_preferred_proxy
 
 PLATFORMS: list[Platform] = [
@@ -282,6 +283,13 @@ async def async_migrate_entry(hass: HomeAssistant, config_entry: ConfigEntry) ->
             hass.config_entries.async_update_entry(
                 config_entry, data=data, minor_version=2
             )
+
+        if config_entry.minor_version < 3:
+            # Charging controls gained the minimums the app enforces, which an
+            # automation set below can no longer reach. Only entries that predate the
+            # change are told, so a fresh install is not warned about a default
+            create_charging_minimum_issue(hass, config_entry)
+            hass.config_entries.async_update_entry(config_entry, minor_version=3)
 
     return True
 

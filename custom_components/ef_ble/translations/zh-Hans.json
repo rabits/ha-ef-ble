@@ -331,6 +331,10 @@
     "max_connection_attempts_reached": {
       "title": "{attempts} 次尝试后仍无法连接到 {device_name}",
       "description": "{attempts} 次尝试后仍无法连接到 {device_name}。请查看日志了解更多信息。\n\n为避免日志 spam，自动重试已被禁用，需要手动重新加载集成。成功连接后此错误会清除。"
+    },
+    "charging_minimum_applied": {
+      "title": "{device_name} 的充电控制现在遵循 EcoFlow 应用的最小值，除非在设备选项中解除限制",
+      "description": "交流和直流充电控制不再接受低于 EcoFlow 应用所设最小值的数值，因此设置更低数值的自动化会因超出范围而失败。\n\n若仍需低于最小值，请在该设备的“配置”中开启相应选项。Delta 2 和 Delta 2 Max 还新增了 AC Charging 开关，无需极低的充电功率即可阻止设备从电网取电。\n\n该设备的最小值为 {minimums}。"
     }
   },
   "entity": {

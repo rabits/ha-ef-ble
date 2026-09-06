@@ -750,6 +750,13 @@ class EFBLEConfigFlow(ConfigFlow, domain=DOMAIN):
 class OptionsFlowHandler(OptionsFlow):
     async def async_step_init(self, user_input: dict[str, Any] | None = None):
         if user_input is not None:
+            # The device options section is only rendered once the device class can be
+            # resolved, and creating the entry replaces the options wholesale, so the
+            # stored values have to be carried over a save that never showed them
+            if CONF_DEVICE_OPTIONS not in user_input:
+                stored = self.config_entry.options.get(CONF_DEVICE_OPTIONS)
+                if stored:
+                    user_input[CONF_DEVICE_OPTIONS] = stored
             return self.async_create_entry(data=user_input)
 
         device: eflib.DeviceBase | None = getattr(

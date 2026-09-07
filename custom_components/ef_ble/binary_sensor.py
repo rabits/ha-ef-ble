@@ -124,6 +124,7 @@ def shp2_channel(
 _BINARY_SENSORS: Final[dict[str, BinarySensorEntityDescription]] = {
     "error_happened": problem("error", entity_category=EntityCategory.DIAGNOSTIC),
     "plugged_in_ac": plug(),
+    "ac_in_flow": plug(),
     "fan_running": _make_desc(
         BinarySensorDeviceClass.RUNNING,
         enabled=False,

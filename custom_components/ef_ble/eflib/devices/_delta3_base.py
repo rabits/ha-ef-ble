@@ -81,6 +81,7 @@ class Delta3Base(DeviceBase, ProtobufProps):
     usba2_output_power = pb_field(pb.pow_get_qcusb2, out_power)
 
     plugged_in_ac = pb_field(pb.plug_in_info_ac_charger_flag)
+    ac_in_flow = pb_field(pb.flow_info_ac_in, flow_is_on)
     battery_input_power = pb_field(pb.pow_get_bms, lambda value: max(0, value))
     battery_output_power = pb_field(pb.pow_get_bms, lambda value: -min(0, value))
 

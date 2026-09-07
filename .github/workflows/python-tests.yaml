@@ -7,7 +7,10 @@ on:
 jobs:
   tests:
     runs-on: ubuntu-latest
-    name: Run python tests
+    name: Python ${{ matrix.python-version }}
+    strategy:
+      matrix:
+        python-version: ['3.13', '3.14']
     steps:
       - name: Check out code from GitHub
         uses: actions/checkout@v4
@@ -16,9 +19,9 @@ jobs:
         with:
           enable-cache: true
           cache-dependency-glob: pyproject.toml
-      - name: Setup Python 3.x
+      - name: Setup Python
         uses: actions/setup-python@v5
         with:
-          python-version: 3.x
+          python-version: ${{ matrix.python-version }}
       - name: Tests
-        run: uv run pytest tests/eflib
+        run: uv run --python ${{ matrix.python-version }} pytest tests/eflib

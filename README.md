@@ -735,10 +735,20 @@ Click on any device below to see available sensors, switches, and controls:
 ### Prerequisites
 
 - Home Assistant with Bluetooth support
+- OpenSSL 3 (`libcrypto.so.3`) with SECP160r1 support for ECDH devices (encryption type 7)
 - Your device must be **bound to your account** through the EcoFlow app before setup
 - Your **User ID** from the EcoFlow app (can be retrieved via the config flow login form
   during setup)
 - [HACS](https://hacs.xyz/) installed (recommended method)
+
+The ECDH backend currently supports Linux. Home Assistant needs the OpenSSL library
+inside its runtime, even if OpenSSL is installed on the host. Installing `cryptography`
+does not replace this system library. Native Windows and macOS need separate library
+loading support.
+
+FIPS-only configurations cannot perform the device's SECP160r1 handshake. The integration
+does not override OpenSSL security policies or fall back to another curve. Encryption
+types 0 and 1 do not need this ECDH backend.
 
 ### Method 1: HACS Installation (Recommended)
 

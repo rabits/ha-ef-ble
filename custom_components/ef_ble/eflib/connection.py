@@ -13,7 +13,6 @@ from enum import StrEnum, auto
 from functools import cached_property
 from typing import Any, Concatenate, Literal, Self
 
-import ecdsa
 from bleak import BleakClient
 from bleak.backends.characteristic import BleakGATTCharacteristic
 from bleak.backends.device import BLEDevice
@@ -26,6 +25,7 @@ from bleak_retry_connector import (
 )
 
 from . import keydata
+from .ecdh import key_exchange
 from .encryption import EncryptionStrategy, Type1Encryption, Type7Encryption
 from .exceptions import (
     AuthErrors,
@@ -749,35 +749,27 @@ class Connection:
         self._logger.log_filtered(
             LogOptions.CONNECTION_DEBUG, "initBleSessionKey: Pub key exchange"
         )
-        self._private_key = ecdsa.SigningKey.generate(curve=ecdsa.SECP160r1)
-        self._public_key: ecdsa.VerifyingKey = self._private_key.get_verifying_key()  # pyright: ignore[reportAttributeAccessIssue]
+        async with key_exchange() as key:
+            async with self._expecting_response():
+                # Payload contains some weird prefix and generated public key
+                await self.send_request(
+                    SimplePacketAssembler.encode(b"\x01\x00" + key.public_key)
+                )
+                data = await self._read_simple_reply(0x01, min_length=43)
+            self._set_state(ConnectionState.PUBLIC_KEY_RECEIVED)
 
-        async with self._expecting_response():
-            # Payload contains some weird prefix and generated public key
-            await self.send_request(
-                SimplePacketAssembler.encode(b"\x01\x00" + self._public_key.to_string())
-            )
-            data = await self._read_simple_reply(0x01, min_length=43)
-        self._set_state(ConnectionState.PUBLIC_KEY_RECEIVED)
+            # status = data[1]
+            ecdh_type_size = _get_ecdh_type_size(data[2])
+            if len(data) < ecdh_type_size + 3:
+                raise PacketParseError(
+                    f"Pub key data is {len(data)} bytes, need {ecdh_type_size + 3}: "
+                    + data.hex()
+                )
 
-        # status = data[1]
-        ecdh_type_size = _get_ecdh_type_size(data[2])
-        if len(data) < ecdh_type_size + 3:
-            raise PacketParseError(
-                f"Pub key data is {len(data)} bytes, need {ecdh_type_size + 3}: "
-                + data.hex()
-            )
-        self._dev_pub_key = ecdsa.VerifyingKey.from_string(
-            data[3 : ecdh_type_size + 3], curve=ecdsa.SECP160r1
-        )
+            # The device derives the same raw secret from its private key and
+            # our public key. Keep all 20 bytes, including any leading zeros.
+            shared_key = await key.exchange(data[3 : ecdh_type_size + 3])
 
-        # Generating shared key from our private key and received device public key
-        # NOTE: The device will do the same with it's private key and our public key to
-        # generate the # same shared key value and use it to encrypt/decrypt using
-        # symmetric encryption algorithm
-        shared_key = ecdsa.ECDH(
-            ecdsa.SECP160r1, self._private_key, self._dev_pub_key
-        ).generate_sharedsecret_bytes()
         # Set Initialization Vector from digest of the original shared key
         iv = hashlib.md5(shared_key).digest()
 

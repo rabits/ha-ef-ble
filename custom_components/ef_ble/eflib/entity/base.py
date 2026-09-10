@@ -47,8 +47,12 @@ class DynamicValue[F, T]:
     field: "updatable_props.Field[F]"
     transform: Callable[[F], T] | None = None
 
+    @property
+    def prop_name(self) -> str:
+        return self.field.public_name  # pyright: ignore[reportAttributeAccessIssue]
+
     def resolve(self, instance) -> T | None:
-        raw = getattr(instance, self.field.public_name, None)
+        raw = getattr(instance, self.prop_name, None)
         if raw is None:
             return None
         return self.transform(raw) if self.transform is not None else raw  # type: ignore[return-value]

@@ -361,6 +361,12 @@
       "plugged_in_ac": {
         "name": "Змінний струм (AC) підключено"
       },
+      "battery_connected": {
+        "name": "Батарея підключена"
+      },
+      "solar_connected": {
+        "name": "Сонячні панелі підключено"
+      },
       "fan_running": {
         "name": "Вентилятор працює"
       },

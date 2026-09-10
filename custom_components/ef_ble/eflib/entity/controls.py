@@ -27,7 +27,7 @@ class HvacMode(enum.StrEnum):
 
 def _resolve(value: float | DynamicValue | None, device: "DeviceBase") -> float | None:
     if isinstance(value, DynamicValue):
-        raw = getattr(device, value.field.public_name, None)  # pyright: ignore[reportAttributeAccessIssue]
+        raw = getattr(device, value.prop_name, None)
         if raw is None:
             return None
         return value.transform(raw) if value.transform is not None else float(raw)
@@ -172,32 +172,84 @@ class weight(NumberType):
     pass
 
 
+@dataclasses.dataclass
+class option_set[E: IntFieldValue]:
+    """
+    The options a select offers, and the ones it withholds
+
+    `exclude` drops a member for good, for an internal state that is never a choice.
+    `exclude_if` drops one only while a device field says so, which keeps the rest of
+    the select usable where hiding the whole entity would not
+    """
+
+    options: type[E]
+    excluded: list[E] = dataclasses.field(default_factory=list, init=False)
+    conditional: list[tuple[DynamicValue, list[E]]] = dataclasses.field(
+        default_factory=list, init=False
+    )
+
+    def exclude(self, *options: E) -> "option_set[E]":
+        self.excluded.extend(options)
+        return self
+
+    def exclude_if(
+        self, condition: "Field[Any] | bool", *options: E
+    ) -> "option_set[E]":
+        """
+        Withhold `options` while `condition` holds
+
+        `condition` is a boolean field, or a `dynamic(field, transform)` reading one -
+        which is annotated as the value it resolves to, the same way a number's `min`
+        takes one
+        """
+        if isinstance(condition, Field):
+            condition = cast("Any", DynamicValue(condition))
+        if not isinstance(condition, DynamicValue):
+            raise TypeError(
+                f"{condition!r} is not a field to read the condition from - pass the "
+                "field itself, or dynamic(field, transform)"
+            )
+        self.conditional.append((condition, list(options)))
+        return self
+
+
 class select[E: IntFieldValue](ControlType):
     type SetFunc = Callable[[DeviceBase, E], Awaitable[None]]
 
-    options: type[E] | list[str]
-    exclude: list[E] = dataclasses.field(default_factory=list, kw_only=True)
+    options: "type[E] | option_set[E] | list[str]"
     set_value_func: SetFunc = dataclasses.field(
         repr=False,
         init=False,
     )
 
     def __post_init__(self) -> None:
-        if isinstance(self.options, list):
+        options = self.options
+        excluded: list[E] = []
+        self._conditional: list[tuple[DynamicValue, list[E]]] = []
+        if isinstance(options, option_set):
+            self._conditional = options.conditional
+            excluded = options.excluded
+            options = options.options
+
+        if isinstance(options, list):
             self._value_type: type[E] | None = None
+            self._options_str = options
         else:
-            self._value_type = self.options
-            self.options = self.options.options(
-                include_unknown=False, exclude=self.exclude
-            )
+            self._value_type = options
+            self._options_str = options.options(include_unknown=False, exclude=excluded)
+        self.options = self._options_str
 
     @property
     def options_str(self) -> list[str]:
-        return (
-            self.options
-            if isinstance(self.options, list)
-            else self.options.options(include_unknown=False)
-        )
+        return self._options_str
+
+    @property
+    def conditional_options(self) -> list[tuple[DynamicValue, list[str]]]:
+        """Each condition, with the options to withhold while it holds"""
+        return [
+            (condition, [option.name.lower() for option in options])
+            for condition, options in self._conditional
+        ]
 
     def __call__[D: "DeviceBase"](
         self,

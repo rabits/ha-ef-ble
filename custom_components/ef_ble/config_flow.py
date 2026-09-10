@@ -25,6 +25,7 @@ from homeassistant.config_entries import (
 from homeassistant.const import CONF_ADDRESS, CONF_EMAIL, CONF_PASSWORD, CONF_REGION
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.data_entry_flow import AbortFlow, section
+from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.selector import (
     SelectOptionDict,
@@ -42,6 +43,7 @@ from .const import (
     CONF_COLLECT_PACKETS_AMOUNT,
     CONF_CONNECTION_DELAY,
     CONF_CONNECTION_TIMEOUT,
+    CONF_DEVICE_OPTIONS,
     CONF_DIAGNOSTICS_ENCRYPT,
     CONF_DIAGNOSTICS_ON_EXCEPTION,
     CONF_DIAGNOSTICS_OPTIONS,
@@ -129,7 +131,7 @@ class EFBLEConfigFlow(ConfigFlow, domain=DOMAIN):
     """EcoFlow BLE ConfigFlow"""
 
     VERSION = 1
-    MINOR_VERSION = 2
+    MINOR_VERSION = 3
 
     CONNECTION_CLASS = CONN_CLASS_LOCAL_PUSH
 
@@ -748,11 +750,21 @@ class EFBLEConfigFlow(ConfigFlow, domain=DOMAIN):
 class OptionsFlowHandler(OptionsFlow):
     async def async_step_init(self, user_input: dict[str, Any] | None = None):
         if user_input is not None:
+            # The device options section is only rendered once the device class can be
+            # resolved, and creating the entry replaces the options wholesale, so the
+            # stored values have to be carried over a save that never showed them
+            if CONF_DEVICE_OPTIONS not in user_input:
+                stored = self.config_entry.options.get(CONF_DEVICE_OPTIONS)
+                if stored:
+                    user_input[CONF_DEVICE_OPTIONS] = stored
             return self.async_create_entry(data=user_input)
 
         device: eflib.DeviceBase | None = getattr(
             self.config_entry, "runtime_data", None
         )
+        # `runtime_data` only exists while the entry is loaded, and the device options
+        # are exactly what someone reaches for when the device is not connecting
+        option_source = device or self._device_class_from_registry()
 
         merged_entry = self.config_entry.data | self.config_entry.options
         options = {
@@ -770,6 +782,7 @@ class OptionsFlowHandler(OptionsFlow):
                 (
                     schema_builder()
                     .update_period(condition=not eflib.is_unsupported(device))
+                    .device_options(option_source, merged_entry)
                     .diagnostics_options(
                         merged_entry,
                         collect_default=eflib.is_unsupported(device),
@@ -787,6 +800,15 @@ class OptionsFlowHandler(OptionsFlow):
                 "device_name": device.device if device else "Ecoflow Device"
             },
         )
+
+    def _device_class_from_registry(self) -> type[eflib.DeviceBase] | None:
+        """Resolve the device class from the serial number stored in the device registry"""
+        address = self.config_entry.data.get(CONF_ADDRESS)
+        registry = dr.async_get(self.hass)
+        device_entry = registry.async_get_device(identifiers={(DOMAIN, address)})
+        if device_entry is None or not device_entry.serial_number:
+            return None
+        return eflib.device_class_from_sn(device_entry.serial_number)
 
 
 class ConfLogOptions:
@@ -1027,6 +1049,42 @@ class _SchemaBuilder:
             return self
 
         return self.update({vol.Optional(key, default=default): selector})
+
+    def device_options(
+        self,
+        device: eflib.DeviceBase | type[eflib.DeviceBase] | None,
+        defaults_dict: Mapping[str, Any] | None = None,
+        collapsed: bool = True,
+    ):
+        """
+        Render the advanced options declared by the device class, if any
+
+        Takes a device or just its class: the options are a class-level declaration, so
+        they can be offered while the device is disconnected and the entry unloaded.
+        """
+        if device is None or not device.ADVANCED_OPTIONS:
+            return self
+
+        if defaults_dict is None:
+            defaults_dict = {}
+        current = defaults_dict.get(CONF_DEVICE_OPTIONS, {})
+
+        builder = schema_builder()
+        for option in device.ADVANCED_OPTIONS:
+            builder = builder.optional(
+                option.key,
+                type(option.default),
+                current.get(option.key, option.default),
+            )
+
+        return self.update(
+            {
+                vol.Required(CONF_DEVICE_OPTIONS): section(
+                    builder.build(),
+                    {"collapsed": collapsed},
+                ),
+            }
+        )
 
     def extra_battery(
         self, extra_battery_conf: list[str] | None, device: eflib.DeviceBase

@@ -77,7 +77,7 @@ class Device(DeviceBase, RawDataProps):
     dc_input_current = raw_field(rd_mppt.in_amp, pdiv(100, 2))
 
     ac_charging_speed = raw_field(rd_inv.cfg_slow_chg_watts)
-    max_ac_charging_power = raw_field(
+    ac_charging_power_max = raw_field(
         rd_inv.ac_chg_rated_power, lambda x: x if x and x > 200 else 1800
     )
 
@@ -275,9 +275,9 @@ class Device(DeviceBase, RawDataProps):
         await self._send_config_packet(0x03, 0x33, limit.to_bytes())
 
     async def set_ac_charging_speed(self, value: int):
-        if self.max_ac_charging_power is None:
+        if self.ac_charging_power_max is None:
             return False
-        value = max(1, min(value, self.max_ac_charging_power))
+        value = max(1, min(value, self.ac_charging_power_max))
         payload = bytes([0xFF, 0xFF]) + value.to_bytes(2, "little") + bytes([0xFF])
         await self.send_packet(
             Packet(0x20, 0x04, 0x20, 0x45, payload, version=0x02),

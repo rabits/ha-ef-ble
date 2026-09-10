@@ -175,8 +175,8 @@ async def test_delta2_max_ac_charging_power_limits(device, packet_sequence):
         packet = await device.packet_parse(bytes.fromhex(hex_packet))
         await device.data_parse(packet)
 
-    assert device.max_ac_charging_power == 1800, (
-        f"Max AC charging power should be 1800W, got {device.max_ac_charging_power}"
+    assert device.ac_charging_power_max == 1800, (
+        f"Max AC charging power should be 1800W, got {device.ac_charging_power_max}"
     )
 
 
@@ -206,7 +206,7 @@ async def test_delta2_max_exact_values_from_known_packets(device, packet_sequenc
         Device.ac_ports: True,
         Device.usb_ports: False,
         Device.dc_12v_port: False,
-        Device.max_ac_charging_power: 1800,
+        Device.ac_charging_power_max: 1800,
         Device.energy_backup: False,
         Device.ac_charging_speed: 300,
         Device.remaining_time_charging: 5999,

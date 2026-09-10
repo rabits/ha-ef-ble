@@ -233,6 +233,18 @@
           "update_period": "Number of seconds to wait before processing the next device update. Value of 0 means all updates are processed immediately (will result in a high number of DB writes)."
         },
         "sections": {
+          "device_options": {
+            "name": "Device options",
+            "description": "Advanced options specific to this device model. Only change these if you know what you are doing.",
+            "data": {
+              "unlock_ac_charging_minimum": "Unlock AC charging speed minimum",
+              "unlock_dc_charging_minimum": "Unlock DC charging speed minimum"
+            },
+            "data_description": {
+              "unlock_ac_charging_minimum": "Allows setting the AC charging speed below the minimum the EcoFlow app enforces. 1 W stops the device drawing from the grid without unplugging it, which is what solar-surplus automations need; charging that slowly is less efficient and may generate additional heat.",
+              "unlock_dc_charging_minimum": "Allows setting the DC charging speed below the minimum the EcoFlow app enforces. The value caps the current drawn from the DC input, so a lower one keeps the device within what a weak source can give - a fuse-limited car socket, a small supply or a single panel - instead of stalling it by asking for more."
+            }
+          },
           "diagnostics_options": {
             "name": "Diagnostics",
             "description": "Configure diagnostics data collection and encryption.",
@@ -319,6 +331,10 @@
     "max_connection_attempts_reached": {
       "title": "Could not connect to {device_name} after {attempts} unsuccessful attempts",
       "description": "Failed to connect to {device_name} after {attempts} unsuccessful attempts. Check the logs for more info.\n\nAutomatic retry was disabled to not spam logs, integration has to be reloaded manually. This error clears after successful connection."
+    },
+    "charging_minimum_applied": {
+      "title": "Charging controls on {device_name} now stop at the EcoFlow app's minimum unless you unlock it in the device options",
+      "description": "The AC and DC charging controls now refuse values below the minimum the EcoFlow app enforces, so an automation that sets a lower value will fail with an out-of-range error.\n\nTo keep setting values below the minimum, turn on the matching option under Configure for this device. The Delta 2 and Delta 2 Max also gained an AC Charging switch, which stops the device drawing from the grid without needing a very low charging speed.\n\nThe minimums for this device are {minimums}."
     }
   },
   "entity": {
@@ -1179,6 +1195,9 @@
       },
       "ac_ports": {
         "name": "AC Ports"
+      },
+      "ac_charging": {
+        "name": "AC Charging"
       },
       "ac_lv_port": {
         "name": "AC LV Port"

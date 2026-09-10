@@ -233,6 +233,18 @@
           "update_period": "处理下一次设备更新前等待的秒数。值为 0 表示立即处理所有更新（会导致大量数据库写入）。"
         },
         "sections": {
+          "device_options": {
+            "name": "设备选项",
+            "description": "特定于此设备型号的高级选项。请仅在您清楚其作用时更改。",
+            "data": {
+              "unlock_ac_charging_minimum": "解锁交流充电速度最低值",
+              "unlock_dc_charging_minimum": "解锁直流充电速度最低值"
+            },
+            "data_description": {
+              "unlock_ac_charging_minimum": "允许将交流充电速度设置为低于 EcoFlow 应用强制的最低值。设为 1 W 可在不拔掉线缆的情况下停止从电网取电，这正是光伏余电自动化所需；以该速度充电效率较低，并可能产生额外热量。",
+              "unlock_dc_charging_minimum": "允许将直流充电速度设置为低于 EcoFlow 应用强制的最低值。该值限制设备从直流输入抽取的电流，因此较低的设置可让设备保持在弱电源的供给能力内——保险丝受限的车载插座、小型电源或单块光伏板——而不会因索取过多而中断。"
+            }
+          },
           "diagnostics_options": {
             "name": "诊断",
             "description": "配置诊断数据收集和加密。",
@@ -319,6 +331,10 @@
     "max_connection_attempts_reached": {
       "title": "{attempts} 次尝试后仍无法连接到 {device_name}",
       "description": "{attempts} 次尝试后仍无法连接到 {device_name}。请查看日志了解更多信息。\n\n为避免日志 spam，自动重试已被禁用，需要手动重新加载集成。成功连接后此错误会清除。"
+    },
+    "charging_minimum_applied": {
+      "title": "{device_name} 的充电控制现在遵循 EcoFlow 应用的最小值，除非在设备选项中解除限制",
+      "description": "交流和直流充电控制不再接受低于 EcoFlow 应用所设最小值的数值，因此设置更低数值的自动化会因超出范围而失败。\n\n若仍需低于最小值，请在该设备的“配置”中开启相应选项。Delta 2 和 Delta 2 Max 还新增了 AC Charging 开关，无需极低的充电功率即可阻止设备从电网取电。\n\n该设备的最小值为 {minimums}。"
     }
   },
   "entity": {
@@ -1169,6 +1185,9 @@
       },
       "ac_ports": {
         "name": "交流端口"
+      },
+      "ac_charging": {
+        "name": "交流充电"
       },
       "ac_lv_port": {
         "name": "交流低压端口"

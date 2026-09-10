@@ -3,6 +3,7 @@ from bleak.backends.scanner import AdvertisementData
 from google.protobuf.message import Message
 
 from ..commands import TimeCommands
+from ..device_options import UNLOCK_AC_CHARGING_MINIMUM, option_field
 from ..devicebase import DeviceBase
 from ..entity import controls
 from ..entity.base import dynamic
@@ -64,7 +65,10 @@ class Device(DeviceBase, ProtobufProps):
     usba2_output_power = pb_field(pb.pow_get_qcusb2, out_power)
 
     ac_charging_speed = pb_field(pb.plug_in_info_ac_in_chg_pow_max)
-    max_ac_charging_power = pb_field(pb.plug_in_info_ac_in_chg_hal_pow_max)
+    ac_charging_power_max = pb_field(pb.plug_in_info_ac_in_chg_hal_pow_max)
+    ac_charging_speed_min = option_field(
+        UNLOCK_AC_CHARGING_MINIMUM, enabled=1, disabled=400
+    )
 
     plugged_in_ac = pb_field(pb.plug_in_info_ac_charger_flag)
     energy_backup = pb_field(pb.energy_backup_en)
@@ -242,11 +246,15 @@ class Device(DeviceBase, ProtobufProps):
         )
         return True
 
-    @controls.power(ac_charging_speed, max=dynamic(max_ac_charging_power))
+    @controls.power(
+        ac_charging_speed,
+        min=dynamic(ac_charging_speed_min),
+        max=dynamic(ac_charging_power_max),
+    )
     async def set_ac_charging_speed(self, value: float):
         if (
-            self.max_ac_charging_power is None
-            or value > self.max_ac_charging_power
+            self.ac_charging_power_max is None
+            or value > self.ac_charging_power_max
             or value < 0
         ):
             return False

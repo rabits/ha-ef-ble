@@ -9,7 +9,7 @@ class Device(Delta3Base):
     NAME_PREFIX = "EF-PR"
 
     @computed_field
-    def max_ac_charging_power(self) -> int:
+    def ac_charging_power_max(self) -> int:
         return 1000 if self._sn[:4] == "PR21" else 500
 
     @property

@@ -84,7 +84,7 @@ async def test_delta_pro_3_exact_values_from_known_packets(device, packet_sequen
         Device.battery_charge_limit_min: 1,
         Device.battery_charge_limit_max: 61,
         Device.ac_charging_speed: 400,
-        Device.max_ac_charging_power: 2900,
+        Device.ac_charging_power_max: 2900,
         Device.remaining_time_charging: 6565,
         Device.remaining_time_discharging: 8428,
         Device.bms_run_state: True,

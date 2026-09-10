@@ -31,6 +31,7 @@ from .const import (
     CONF_COLLECT_PACKETS_AMOUNT,
     CONF_CONNECTION_DELAY,
     CONF_CONNECTION_TIMEOUT,
+    CONF_DEVICE_OPTIONS,
     CONF_DIAGNOSTICS_ON_EXCEPTION,
     CONF_DIAGNOSTICS_OPTIONS,
     CONF_EXTRA_BATTERY,
@@ -54,6 +55,7 @@ from .eflib.connection import (
 )
 from .eflib.exceptions import AuthErrors, UnsupportedBluetoothProtocol
 from .eflib.logging_util import ConnectionLog
+from .issues import create_charging_minimum_issue
 from .proxy import connect_gate, wait_for_preferred_proxy
 
 PLATFORMS: list[Platform] = [
@@ -150,6 +152,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: DeviceConfigEntry) -> bo
             await (
                 device.with_update_period(update_period)
                 .with_logging_options(ConfLogOptions.from_config(merged_options))
+                .with_advanced_options(merged_options.get(CONF_DEVICE_OPTIONS, {}))
                 .with_disabled_reconnect()
                 .with_packet_version(packet_version.to_num())
                 .with_enabled_packet_diagnostics(packet_collection_enabled)
@@ -281,6 +284,13 @@ async def async_migrate_entry(hass: HomeAssistant, config_entry: ConfigEntry) ->
                 config_entry, data=data, minor_version=2
             )
 
+        if config_entry.minor_version < 3:
+            # Charging controls gained the minimums the app enforces, which an
+            # automation set below can no longer reach. Only entries that predate the
+            # change are told, so a fresh install is not warned about a default
+            create_charging_minimum_issue(hass, config_entry)
+            hass.config_entries.async_update_entry(config_entry, minor_version=3)
+
     return True
 
 
@@ -338,6 +348,7 @@ async def _update_listener(hass: HomeAssistant, entry: DeviceConfigEntry):
     (
         device.with_update_period(period=update_period)
         .with_logging_options(ConfLogOptions.from_config(merged_options))
+        .with_advanced_options(merged_options.get(CONF_DEVICE_OPTIONS, {}))
         .with_enabled_packet_diagnostics(
             enabled=packet_collection,
             buffer_size=diagnostics_buffer_size,

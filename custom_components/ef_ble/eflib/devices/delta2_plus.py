@@ -9,5 +9,5 @@ class Device(delta2.Device):
     NAME_PREFIX = "EF-D3"
 
     @computed_field
-    def max_ac_charging_power(self) -> int:
+    def ac_charging_power_max(self) -> int:
         return 1500

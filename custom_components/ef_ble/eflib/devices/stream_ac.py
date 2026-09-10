@@ -175,11 +175,11 @@ class Device(DeviceBase, ProtobufProps):
     )
 
     grid_in_power_limit = pb_field(pb.sys_grid_in_pwr_limit)
-    max_ac_in_power = pb_field(pb.pow_sys_ac_in_max)
-    max_ac_out_power = pb_field(pb.pow_sys_ac_out_max)
+    ac_in_power_max = pb_field(pb.pow_sys_ac_in_max)
+    ac_out_power_max = pb_field(pb.pow_sys_ac_out_max)
 
     _resident_load = ResidentLoad()
-    max_bp_input = pb_field(pb.max_bp_input)
+    bp_input_max = pb_field(pb.max_bp_input)
 
     _charging_task = ChargingTimerTask()
     _discharging_task = DischargingTimerTask()
@@ -358,9 +358,9 @@ class Device(DeviceBase, ProtobufProps):
         )
         return True
 
-    @controls.power(grid_in_power_limit, max=dynamic(max_ac_in_power))
+    @controls.power(grid_in_power_limit, max=dynamic(ac_in_power_max))
     async def set_grid_in_pow_limit(self, value: float):
-        if self.max_ac_in_power is None or value > self.max_ac_in_power or value < 0:
+        if self.ac_in_power_max is None or value > self.ac_in_power_max or value < 0:
             return False
 
         await self._send_config_packet(
@@ -370,7 +370,7 @@ class Device(DeviceBase, ProtobufProps):
 
     @controls.power(
         charging_grid_power_limit,
-        max=dynamic(max_bp_input),
+        max=dynamic(bp_input_max),
         availability=dynamic(charging_grid_power_limit_enabled),
     )
     async def set_charging_grid_power_limit(self, limit: float):
@@ -474,7 +474,7 @@ class Device(DeviceBase, ProtobufProps):
 
     @controls.power(
         discharging_power_limit,
-        max=dynamic(max_ac_out_power),
+        max=dynamic(ac_out_power_max),
         availability=dynamic(discharging_task_available),
     )
     async def set_discharging_power_limit(self, limit: float):

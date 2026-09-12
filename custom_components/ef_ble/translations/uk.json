@@ -1108,6 +1108,12 @@
       "backup_discharge_limit": {
         "name": "Ліміт розряджання"
       },
+      "battery_charge_limit_max": {
+        "name": "Ліміт заряджання батареї"
+      },
+      "battery_charge_limit_min": {
+        "name": "Ліміт розряджання батареї"
+      },
       "ac_charging_speed": {
         "name": "Швидкість заряджання AC"
       },

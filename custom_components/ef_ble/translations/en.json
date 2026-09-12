@@ -1118,6 +1118,12 @@
       "backup_discharge_limit": {
         "name": "Discharge Limit"
       },
+      "battery_charge_limit_max": {
+        "name": "Battery Charge Limit"
+      },
+      "battery_charge_limit_min": {
+        "name": "Battery Discharge Limit"
+      },
       "ac_charging_speed": {
         "name": "AC Charging Speed"
       },

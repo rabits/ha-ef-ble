@@ -272,6 +272,9 @@ class Connection:
         self._reconnect_task: asyncio.Task | None = None
         self._connection_attempt: int = 0
         self._reconnect_attempt: int = 0
+        # True only while `establish_connection` runs its own retries, which report
+        # every dropped attempt through our disconnected callback
+        self._establishing: bool = False
         self._reconnect = True
 
         self._connection_state: ConnectionState = None  # pyright: ignore[reportAttributeAccessIssue]
@@ -413,6 +416,7 @@ class Connection:
             # establish_connection needs a real retry count for BLE-level attempts (e.g.
             # when adapter slots are contested).
             ble_attempts = max_attempts if max_attempts != 0 else MAX_CONNECT_ATTEMPTS
+            self._establishing = True
             self._client = await establish_connection(
                 BleakClient,
                 self.ble_dev(),
@@ -443,6 +447,8 @@ class Connection:
         except BleakError as e:
             error = e
             self._set_state(ConnectionState.ERROR_BLEAK, e)
+        finally:
+            self._establishing = False
 
         if error is not None:
             await self._disconnect_client()
@@ -492,14 +498,20 @@ class Connection:
         # Traces the trigger: an unsolicited bleak drop shows bleak/asyncio frames here,
         # whereas a drop we requested shows our own `disconnect` chain.
         trigger = caller_chain()
-        self._logger.warning("Disconnected from device (%s)", trigger)
         self._client = None
 
         # NOTE(gnox): don't trigger disconnect/reconnect logic while
         # establish_connection is still retrying internally (bleak_retry_connector
         # manages its own retries and will raise on final failure)
-        if self._state is ConnectionState.ESTABLISHING_CONNECTION:
+        if self._establishing:
+            # One of those retries dropping is not a link we ever had, and a host that
+            # cannot reach the device produces a dozen of them per failing connect
+            self._logger.log_filtered(
+                LogOptions.CONNECTION_DEBUG, "Dropped while connecting (%s)", trigger
+            )
             return
+
+        self._logger.warning("Disconnected from device (%s)", trigger)
 
         if (inbox := self._inbox) is not None:
             # Woken rather than cancelled, see `_stop_data_pump`

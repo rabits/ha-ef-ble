@@ -142,20 +142,18 @@ class Device(DeviceBase, ProtobufProps):
             cmd_id=0x82,
         )
 
-    async def set_battery_charge_limit_min(self, limit: int) -> bool:
-        limit = max(0, min(limit, 30))
-
+    @controls.battery(battery_charge_limit_min, min=0, max=30)
+    async def set_battery_charge_limit_min(self, limit: float) -> bool:
         await self._send_ble_packet(
-            wn511_sys_pb2.bat_lower_pack(lower_limit=limit),
+            wn511_sys_pb2.bat_lower_pack(lower_limit=int(limit)),
             cmd_id=0x84,
         )
         return True
 
-    async def set_battery_charge_limit_max(self, limit: int) -> bool:
-        limit = max(50, min(limit, 100))
-
+    @controls.battery(battery_charge_limit_max, min=50, max=100)
+    async def set_battery_charge_limit_max(self, limit: float) -> bool:
         await self._send_ble_packet(
-            wn511_sys_pb2.bat_upper_pack(upper_limit=limit),
+            wn511_sys_pb2.bat_upper_pack(upper_limit=int(limit)),
             cmd_id=0x85,
         )
         return True

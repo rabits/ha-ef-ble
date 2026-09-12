@@ -1108,6 +1108,12 @@
       "backup_discharge_limit": {
         "name": "放电限制"
       },
+      "battery_charge_limit_max": {
+        "name": "电池充电限制"
+      },
+      "battery_charge_limit_min": {
+        "name": "电池放电限制"
+      },
       "ac_charging_speed": {
         "name": "交流充电速度"
       },

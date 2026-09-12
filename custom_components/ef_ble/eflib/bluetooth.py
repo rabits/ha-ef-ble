@@ -1,5 +1,8 @@
 """
-The BLE transport: which characteristics carry the protocol, and the host's GATT cache
+The BLE transport: which characteristics carry the protocol, and host-stack faults
+
+The fault predicates match on error text, and are deliberately narrow: treating an
+ordinary link failure as a host fault only slows a reconnect down.
 """
 
 from collections.abc import Callable
@@ -10,7 +13,7 @@ from bleak.backends.characteristic import BleakGATTCharacteristic
 from bleak.exc import BleakError
 
 from .exceptions import UnsupportedBluetoothProtocol
-from .logging_util import MaskingLogger
+from .logging_util import LogOptions, MaskingLogger
 
 # The characteristic pair each protocol generation carries its traffic on
 BT_PROTOCOL_UUIDS = {
@@ -59,6 +62,26 @@ async def start_notify(
     await client.start_notify(characteristic, callback, **kwargs)
 
 
+def is_stale_gatt_object(exc: Exception) -> bool:
+    """
+    Whether a subscribe failed against a characteristic the host cache invented
+
+    BlueZ also answers `Unlikely error` to a write against a peer that just dropped. A
+    clear costs nothing when nothing is cached, and `RemoveDevice` plus a re-discovery
+    when something is, which is the case worth paying for: both forms came back from a
+    host that was genuinely holding a dead handle.
+    """
+    text = str(exc).lower()
+    return "unknownobject" in text or "unlikely error" in text
+
+
+def is_empty_service_table(exc: Exception) -> bool:
+    """Whether the device resolved no characteristics at all, which no real one does"""
+    return isinstance(exc, UnsupportedBluetoothProtocol) and not (
+        exc.available_characteristics
+    )
+
+
 @runtime_checkable
 class SupportsCacheClear(Protocol):
     """A client that can drop its cached GATT database; plain `BleakClient` cannot"""
@@ -76,11 +99,15 @@ async def clear_gatt_cache(client: BleakClient | None, logger: MaskingLogger) ->
     if not isinstance(client, SupportsCacheClear):
         return
 
-    logger.warning("Clearing GATT cache to force service re-discovery")
     try:
-        if not await client.clear_cache():
-            # bleak itself can decline, and a caller that believed the cache was gone
-            # would keep reconnecting into the same broken table without knowing why
-            logger.warning("GATT cache was not cleared; this bleak version declined")
+        if await client.clear_cache():
+            logger.warning(
+                "Cleared the GATT cache, the next connect re-discovers services"
+            )
+        else:
+            # An ordinary outcome: nothing was cached for this device to begin with
+            logger.log_filtered(
+                LogOptions.CONNECTION_DEBUG, "GATT cache clear reported nothing to drop"
+            )
     except BleakError as e:
         logger.warning("Failed to clear GATT cache: %s", e)

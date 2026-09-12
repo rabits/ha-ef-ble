@@ -26,7 +26,13 @@ from bleak_retry_connector import (
 )
 
 from . import keydata
-from .bluetooth import clear_gatt_cache, find_characteristic, start_notify
+from .bluetooth import (
+    clear_gatt_cache,
+    find_characteristic,
+    is_empty_service_table,
+    is_stale_gatt_object,
+    start_notify,
+)
 from .encryption import EncryptionStrategy, Type1Encryption, Type7Encryption
 from .exceptions import (
     AuthErrors,
@@ -419,7 +425,7 @@ class Connection:
             self._validate_characteristics()
         except UnsupportedBluetoothProtocol as e:
             error = e
-            if not e.available_characteristics:
+            if is_empty_service_table(e):
                 # An empty service table is a host-side GATT cache glitch, not the
                 # device genuinely lacking the protocol - wipe the cache so the
                 # reconnect re-discovers services instead of failing the same way.
@@ -459,6 +465,9 @@ class Connection:
         await self._stop_data_pump()
         self._inbox = asyncio.Queue()
 
+        # bleak can null `self._client` from its disconnected callback while the
+        # subscribe is still awaiting, and the cache still has to be cleared on it
+        client = self._client
         try:
             await self._start_notify(self._on_notification)
         except Exception as e:  # noqa: BLE001 - any subscribe failure is fatal here
@@ -469,6 +478,9 @@ class Connection:
                 "Failed to subscribe to notifications (%s); reconnecting", e
             )
             await self._disconnect_client()
+            if is_stale_gatt_object(e):
+                # Every reconnect resolves the same dead handle until the cache goes
+                await self._clear_gatt_cache(client)
             self.disconnected()
             return
 
@@ -869,8 +881,8 @@ class Connection:
         self._get_characteristics("notify")
         self._get_characteristics("write")
 
-    async def _clear_gatt_cache(self) -> None:
-        await clear_gatt_cache(self._client, self._logger)
+    async def _clear_gatt_cache(self, client: BleakClient | None = None) -> None:
+        await clear_gatt_cache(client or self._client, self._logger)
 
     async def _gen_session_key(self, seed: bytes, srand: bytes):
         """Implements the necessary part of the logic, rest is skipped"""

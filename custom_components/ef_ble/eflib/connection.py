@@ -26,6 +26,7 @@ from bleak_retry_connector import (
 )
 
 from . import keydata
+from .bluetooth import clear_gatt_cache, find_characteristic, start_notify
 from .encryption import EncryptionStrategy, Type1Encryption, Type7Encryption
 from .exceptions import (
     AuthErrors,
@@ -59,18 +60,6 @@ MAX_CONNECTION_ATTEMPTS = 10
 DISCONNECT_TIMEOUT = 5.0
 # Waited before DISCONNECT_TIMEOUT rather than inside it, so a teardown costs the sum
 PUMP_STOP_TIMEOUT = 1.0
-
-
-_BT_PROTOCOL_UUIDS = {
-    "rfcomm": {
-        "notify": "00000003-0000-1000-8000-00805f9b34fb",
-        "write": "00000002-0000-1000-8000-00805f9b34fb",
-    },
-    "nordic_uart": {
-        "notify": "6e400003-b5a3-f393-e0a9-e50e24dcca9e",
-        "write": "6e400002-b5a3-f393-e0a9-e50e24dcca9e",
-    },
-}
 
 
 def _state_in(states: "Collection[ConnectionState | str]"):
@@ -881,19 +870,7 @@ class Connection:
         self._get_characteristics("write")
 
     async def _clear_gatt_cache(self) -> None:
-        # BlueZ can report `ServicesResolved` against an empty or stale cache (typically
-        # right after a bluetoothd restart or host update); without wiping it every
-        # reconnect keeps resolving the same broken service table. `clear_cache` is the
-        # `bleak_retry_connector.BleakClientWithServiceCache` interface, duck-typed via
-        # `getattr` because not every client implements it (plain `BleakClient` doesn't)
-        clear_cache = getattr(self._client, "clear_cache", None)
-        if clear_cache is None:
-            return
-        self._logger.warning("Clearing GATT cache to force service re-discovery")
-        try:
-            await clear_cache()
-        except BleakError as e:
-            self._logger.warning("Failed to clear GATT cache: %s", e)
+        await clear_gatt_cache(self._client, self._logger)
 
     async def _gen_session_key(self, seed: bytes, srand: bytes):
         """Implements the necessary part of the logic, rest is skipped"""
@@ -929,11 +906,12 @@ class Connection:
 
     async def _start_notify(self, callback: Callable):
         assert self._client is not None
-
-        kwargs = {}
-        if self._options.bluez_start_notify:
-            kwargs["bluez"] = {"use_start_notify": True}
-        await self._client.start_notify(self._notify_characteristic, callback, **kwargs)
+        await start_notify(
+            self._client,
+            self._notify_characteristic,
+            callback,
+            use_bluez_start_notify=self._options.bluez_start_notify,
+        )
 
     async def _on_notification(
         self, characteristic: BleakGATTCharacteristic, recv_data: bytearray
@@ -1428,17 +1406,7 @@ class Connection:
 
     def _get_characteristics(self, char_type: Literal["write", "notify"]):
         assert self._client is not None
-
-        for uuids in _BT_PROTOCOL_UUIDS.values():
-            if (
-                uuid := self._client.services.get_characteristic(uuids[char_type])
-            ) is not None:
-                return uuid
-        characteristic_list = [
-            f"{c.uuid} {c.description} {c.properties}"
-            for c in self._client.services.characteristics.values()
-        ]
-        raise UnsupportedBluetoothProtocol(char_type, characteristic_list)
+        return find_characteristic(self._client, char_type)
 
     @property
     def _notify_characteristic(self):

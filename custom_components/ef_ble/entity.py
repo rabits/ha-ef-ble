@@ -285,6 +285,11 @@ def resolve_entity_description_keys[D: EntityDescription](
             name_field = getattr(v, "name_field", None)
             if name_field and "{n}" in name_field:
                 replacements["name_field"] = name_field.replace("{n}", str(i))
+            attribute_fields = getattr(v, "state_attribute_fields", None)
+            if attribute_fields:
+                replacements["state_attribute_fields"] = [
+                    attr.replace("{n}", str(i)) for attr in attribute_fields
+                ]
             result[actual_key] = dataclasses.replace(v, **replacements)
 
     return result

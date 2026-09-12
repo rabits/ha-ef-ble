@@ -1,0 +1,115 @@
+syntax = "proto3";
+
+package jt_parallel_lan;
+
+
+enum ParLanCmdSets {
+  ParLan_NONE_CMD_SETS = 0;
+  ParLan_CMD_SETS = 225;
+}
+
+enum ParLanCmdId {
+  ParLan_CMD_ID_NONE = 0;
+  ParLan_CMD_ID_PARALLEL_SCAN_LAN_DEVICE = 97;
+  ParLan_CMD_ID_PARALLEL_BIND_LAN_DEVICE = 98;
+  ParLan_CMD_ID_PARALLEL_POWER_SET = 161;
+  ParLan_CMD_ID_PARALLEL_STATE_SYNC = 162;
+  ParLan_CMD_ID_PARALLEL_DATA_SYNC = 163;
+  ParLan_CMD_ID_PARALLEL_SLAVE_BROADCAST = 164;
+  ParLan_CMD_ID_PARALLEL_DEVICE_LIST_SYNC = 165;
+}
+
+message ParallelDevID {
+  optional uint32 groupid = 1;
+  optional string sn = 2;
+  optional uint32 id_pri = 3;
+}
+
+message ParLanSystemStatus {
+  optional ParallelDevID id = 1;
+  optional ParallelDevID target_id = 2;
+  optional uint32 feed_grid_mode = 3;
+  optional uint32 feed_grid_mode_pow_limit = 4;
+  optional uint32 sys_state = 5;
+  optional float ongrid_power = 6;
+  optional uint32 ongrid_power_out_limited = 7;
+}
+
+message ParLanParallelInfo {
+  optional ParallelDevID id = 1;
+  optional ParallelDevID target_id = 2;
+  optional uint32 parallel_set_state = 3;
+  optional bool parallel_force_sync = 4;
+  optional uint32 parallel_master_set_error = 5;
+}
+
+message ParLanParallelInfoAck {
+  optional ParallelDevID id = 1;
+  optional ParallelDevID target_id = 2;
+  optional uint32 parallel_set_state = 3;
+}
+
+message ParLanDeviceStatus {
+  optional ParallelDevID id = 1;
+  optional ParallelDevID target_id = 2;
+  optional uint32 product_detail = 3;
+  optional uint32 full_cap = 4;
+  optional uint32 soc = 5;
+  optional float inout_power = 6;
+  optional uint32 chg_power_max = 7;
+  optional uint32 dsg_power_max = 8;
+  optional float bp_soc = 9;
+  optional uint32 pv_power = 10;
+  optional bool ongrid = 11;
+  optional uint32 feed_grid_mode_pow_max = 12;
+  optional uint32 ongrid_power_in_max = 13;
+  optional uint32 ongrid_power_out_max = 14;
+  optional uint32 work_mode = 15;
+  optional float ongrid_power = 16;
+  optional uint32 ongrid_power_out_limited = 17;
+  optional float inv_total_power = 18;
+  optional uint32 connect_type = 19;
+  optional uint32 dev_type = 20;
+  optional uint32 attr = 21;
+  optional ParallelDevID master_id = 22;
+  optional uint32 bind_state = 23;
+  optional uint32 dev_stat = 24;
+}
+
+message SlaveDiscoverBroadcast {
+  optional uint32 group_id = 1;
+  optional string src_sn = 2;
+}
+
+message LanDevice {
+  optional ParallelDevID lan_dev_id = 1;
+  optional uint32 virtual_addr = 2;
+}
+
+message ParLanDeviceSync {
+  repeated LanDevice lan_dev_list = 1;
+}
+
+message ScanParallelDevListReq {
+}
+
+message ParaDevDevInfo {
+  optional ParallelDevID dev_id = 1;
+}
+
+message ParallelDevList {
+  repeated ParaDevDevInfo para_dev = 1;
+}
+
+message ScanParallelDevListAck {
+  optional ParallelDevList para_dev_list = 1;
+}
+
+message BindParallelDevReq {
+  optional ParallelDevID bind_dev_id = 1;
+  optional bool bind_flg = 2;
+}
+
+message BindParallelDevAck {
+  optional uint32 result = 1;
+}

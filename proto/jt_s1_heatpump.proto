@@ -1,0 +1,121 @@
+syntax = "proto3";
+
+package jt_s1_heatpump;
+
+
+enum HPCmdSets {
+  HP_NONE_CMD_SETS = 0;
+  HP_CMD_SETS = 211;
+}
+
+enum HPCmdId {
+  HP_CMD_ID_NONE = 0;
+  HP_CMD_ID_HEATPUMP_UI_REPORT = 1;
+  HP_CMD_ID_HP_TIMERTASK_REPORT = 2;
+  HP_CMD_ID_HEATPUMP_PARAM_SET = 99;
+  HP_CMD_ID_HEATPUMP_PARAM_GET = 100;
+  HP_CMD_ID_HEATPUMP_PARAM_LIST_GET = 101;
+  HP_CMD_ID_TIMER_TASK_SET = 102;
+  HP_CMD_ID_HP_TIMERTASK_GET = 103;
+  HP_CMD_ID_HEATPUMP_REMOTE_STAT_GET = 33;
+}
+
+message HPRTUPoint {
+  optional uint32 address = 1;
+  optional int32 u_value = 2;
+  optional uint32 value_type = 3;
+}
+
+message HPParamSet {
+  optional string hp_sn = 1;
+  repeated HPRTUPoint rtu_pt = 2;
+}
+
+message HPParamSetAck {
+  optional string hp_sn = 1;
+  optional int32 result = 2;
+  repeated HPRTUPoint rtu_pt = 3;
+}
+
+message HPParamGet {
+  optional string hp_sn = 1;
+  repeated HPRTUPoint rtu_pt = 2;
+}
+
+message HPParamGetAck {
+  optional string hp_sn = 1;
+  repeated HPRTUPoint rtu_pt = 2;
+}
+
+message HPTempSector {
+  optional uint32 switch_stat = 1;
+  optional float temp_target = 2;
+  optional float temp_curr = 3;
+}
+
+message HPBoard {
+  optional uint32 hp_mode = 1;
+  optional uint32 switch_stat = 2;
+  optional float temp_ambient = 3;
+  optional float temp_inlet = 4;
+  optional float temp_outlet = 5;
+  optional uint32 run_mode = 6;
+  optional uint32 run_flg0 = 7;
+  optional uint32 run_flg1 = 8;
+  optional uint32 icon_bits = 9;
+  optional uint32 spec_mode = 10;
+  optional bytes ext_info = 11;
+}
+
+message HPUIReport {
+  optional string hp_sn = 1;
+  optional int32 result = 2;
+  optional HPBoard hp_master = 3;
+  optional HPTempSector sector_a = 4;
+  optional HPTempSector sector_b = 5;
+  optional HPTempSector sector_dhw = 6;
+}
+
+message HPRemoteStatGet {
+  optional string hp_sn = 1;
+}
+
+message HPRemoteStatGetAck {
+  optional string hp_sn = 1;
+  optional bool remote_online = 2;
+  optional float hp_pwr = 3;
+}
+
+message HPParamListGet {
+  optional string hp_sn = 1;
+}
+
+message HPParamListGetAck {
+  optional string hp_sn = 1;
+  repeated HPRTUPoint rtu_pt = 2;
+}
+
+message HPTimerTaskCfg {
+  optional uint32 is_cfg = 1;
+  optional uint32 task_index = 2;
+  optional bool is_enable = 3;
+  optional bool is_effect = 4;
+  optional uint32 type = 5;
+  optional int32 param = 6;
+  optional uint32 time_mode = 7;
+  optional uint32 time_param = 8;
+  repeated uint32 time_table = 9;
+}
+
+message HPTimerTaskCfgAck {
+  optional uint32 type = 1;
+  optional uint32 task_index = 2;
+  optional int32 result = 3;
+}
+
+message HPTimerTaskGet {
+}
+
+message HPTimerTaskReport {
+  repeated HPTimerTaskCfg time_task_cfg = 1;
+}

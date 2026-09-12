@@ -59,6 +59,7 @@ MAX_CONNECTION_ATTEMPTS = 10
 DISCONNECT_TIMEOUT = 5.0
 # Waited before DISCONNECT_TIMEOUT rather than inside it, so a teardown costs the sum
 PUMP_STOP_TIMEOUT = 1.0
+_AUTH_CMD_SET = 0x35
 
 
 _BT_PROTOCOL_UUIDS = {
@@ -829,25 +830,33 @@ class Connection:
             "serial number",
         )
 
-        # Building payload for auth
+        # Building payload for auth, upper case in MD5 data is required here
         md5_data = hashlib.md5((self._user_id + self._dev_sn).encode("ASCII")).digest()
-        # We need upper case in MD5 data here
         payload = ("".join(f"{c:02X}" for c in md5_data)).encode("ASCII")
 
-        # Forming packet - use detected protocol version (V2 or V3)
-        packet = Packet(
-            0x21,
-            self._auth_header_dst,
-            0x35,
-            0x86,
-            payload,
-            0x01,
-            0x01,
-            self._packet_version,
+        # The auth reply (and everything after) arrives through `_on_notification`
+        await self._send_auth_command(0x86, payload)
+
+    async def _send_auth_command(self, cmd_id: int, payload: bytes) -> None:
+        await self.send_packet(
+            Packet(
+                0x21,
+                self._auth_header_dst,
+                _AUTH_CMD_SET,
+                cmd_id,
+                payload,
+                0x01,
+                0x01,
+                self._packet_version,
+            )
         )
 
-        # The auth reply (and everything after) arrives through `_on_notification`
-        await self.send_packet(packet)
+    def complete_authentication(self) -> None:
+        """Record that the device accepted us and release everything waiting on it"""
+        self._connection_attempt = 0
+        self._reconnect_attempt = 0
+        self._set_state(ConnectionState.AUTHENTICATED)
+        self._connected.set()
 
     async def _check_auth(self, packet: Packet):
         exc = AuthErrors.from_payload(packet.payload)
@@ -863,17 +872,7 @@ class Connection:
 
     async def send_auth_status_packet(self):
         """Send the auth status packet used for initial auth wake-up."""
-        pkt = Packet(
-            0x21,
-            self._auth_header_dst,
-            0x35,
-            0x89,
-            b"",
-            0x01,
-            0x01,
-            self._packet_version,
-        )
-        await self.send_packet(pkt)
+        await self._send_auth_command(0x89, b"")
 
     def _validate_characteristics(self) -> None:
         """Resolve both GATT characteristics against the freshly connected client"""
@@ -1051,7 +1050,7 @@ class Connection:
                     return replies
 
     def _is_auth_reply(self, packet: Packet) -> bool:
-        return packet.src == self._auth_header_dst and packet.cmd_set == 0x35
+        return packet.src == self._auth_header_dst and packet.cmd_set == _AUTH_CMD_SET
 
     def _start_data_pump(self) -> None:
         """Hand the inbox to the data path, which owns it for the rest of the link"""
@@ -1157,19 +1156,13 @@ class Connection:
 
             if is_auth_reply and authenticating:
                 await self._check_auth(packet)
-                self._connection_attempt = 0
-                self._reconnect_attempt = 0
                 processed = True
                 self._logger.info("Auth completed, everything is fine")
-                self._set_state(ConnectionState.AUTHENTICATED)
-                self._connected.set()
+                self.complete_authentication()
             else:
                 if authenticating and not is_auth_reply:
-                    self._connection_attempt = 0
-                    self._reconnect_attempt = 0
                     self._logger.info("Auth completed - first data packet received")
-                    self._set_state(ConnectionState.AUTHENTICATED)
-                    self._connected.set()
+                    self.complete_authentication()
 
                 try:
                     # Processing the packet with specific device

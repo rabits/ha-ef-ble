@@ -1,0 +1,2030 @@
+syntax = "proto3";
+
+package jt_s1_sys;
+
+enum WorkMode {
+  WORKMODE_SELFUSE = 0;
+  WORKMODE_TOU = 1;
+  WORKMODE_BACKUP = 2;
+  WORKMODE_DBG = 3;
+  WORKMODE_AC_MAKEUP = 4;
+  WORKMODE_DRM_MODE = 5;
+  WORKMODE_REMOTE_SCHED = 6;
+  WORKMODE_STANDBY_MODE = 7;
+  WORKMODE_SOC_CALIB = 8;
+  WORKMODE_TIMER_MODE = 9;
+  WORKMODE_FCR_MODE = 10;
+  WORKMODE_THIRD_MODE = 11;
+  WORKMODE_AI_SCHEDULE = 12;
+  WORKMODE_KRAKEN = 13;
+}
+
+enum SgReadyMode {
+  SG_AUTO = 0;
+  SG_MANUAL = 1;
+}
+
+enum RunStaDef {
+  RUNSTA_STANDBY = 0;
+  RUNSTA_RUN = 1;
+  RUNSTA_STOP = 2;
+}
+
+enum bms_RunStaDef {
+  PB_BMS_STATE_SHUTDOWN = 0;
+  PB_BMS_STATE_NORMAL = 1;
+  PB_BMS_STATE_CHARGEABLE = 2;
+  PB_BMS_STATE_DISCHARGEABLE = 3;
+  PB_BMS_STATE_FAULT = 4;
+}
+
+enum bms_ChgDsgSta {
+  PB_STANDBY_STATE = 0;
+  PB_DSG_STATE = 1;
+  PB_CHG_STATE = 2;
+}
+
+enum dab_ModelStaDef {
+  PB_MOD_STA_NORMAL = 0;
+  PB_MOD_STA_WARNNING = 1;
+  PB_MOD_STA_FAULT = 2;
+}
+
+enum bms_HeatingExitEvent {
+  PB_PTC_OT_STATE = 0;
+  HEAT_EVENT_TEMP_OK = 1;
+  HEAT_EVENT_ABNORMAL = 2;
+  HEAT_EVENT_TEMP_DIFF = 3;
+  HEAT_EVENT_BMS_FAULT = 4;
+  HEAT_EVENT_OVERTIME = 5;
+  HEAT_EVENT_CHG_DISABLE = 6;
+  HEAT_EVENT_POWER_LOW = 7;
+  HEAT_EVENT_AB_DSG = 8;
+  HEAT_EVENT_DSG_SOC_LOW = 9;
+  HEAT_EVENT_DSG_VOL_LOW = 10;
+  HEAT_EVENT_DSG_DISABLE = 11;
+  HEAT_EVENT_AFE_FAULT = 12;
+  HEAT_EVENT_FTOP_FAULT = 13;
+  HEAT_EVENT_FVOP_FAULT = 14;
+  HEAT_EVENT_PWR_FAULT = 15;
+  HEAT_EVENT_PTC_SC = 16;
+  HEAT_EVENT_MOS_SC = 17;
+  HEAT_EVENT_PTC_TEMP_FAULT = 18;
+  HEAT_EVENT_PTC_TEMP_SOT = 19;
+}
+
+enum bms_SysState {
+  PRE_POWER_ON_STATE = 0;
+  CFM_POWER_ON_STATE = 1;
+  NORMAL_STATE = 2;
+  POWER_OFF_STATE = 3;
+  SLEEP_STATE = 4;
+}
+
+enum PeakShavingStatus {
+  NO_PEAK_SHAVING_TASK = 0;
+  PEAK_SHAVING_TASK_EXIST = 1;
+  PEAK_SHAVING_TASK_ACTIVE = 2;
+}
+
+enum SysFactoryResetEnum {
+  RESET_RESERVED = 0;
+  RESET_IOT_INFO = 1;
+  RESET_HISTORICAL_DATA = 2;
+  RESET_CONFIGURE_PARAM = 4;
+}
+
+enum InverterCtrlMode {
+  W_MAX_PCT = 0;
+  WATTS = 1;
+  BATTERY_WATTS = 3;
+}
+
+enum InverterOperationOpt {
+  STOP = 0;
+  START = 1;
+  ENTER_STANDBY = 2;
+  EXIT_STANDBY = 3;
+}
+
+enum AppDateType {
+  NONE_SET = 0;
+  APP_AUTO_SET = 1;
+  APP_MANUAL_SET = 2;
+  BMS_AUTO_SET = 3;
+}
+
+enum BpResetType {
+  NONE_RESET_VAL = 0;
+  HAS_RESET_VAL = 1;
+  NEED_RESET_VAL = 2;
+}
+
+enum CLOUD_CTRL_ACTION {
+  CLEAR_ACTION = 0;
+  PROHIBIT_CHG_DSG = 1;
+  LIMIT_POWER = 2;
+  SOC_UP_DOWN_LIMIT = 3;
+}
+
+enum CLOUD_EDGE_BALANCE {
+  MODE_0 = 0;
+  MODE_1 = 1;
+  MODE_2 = 2;
+  MODE_3 = 3;
+}
+
+enum CLOUD_EDGE_OCV {
+  NO_BASE_SOC_MODE = 0;
+  BASE_DISPLAY_SOC_MODE = 1;
+  BASE_MAX_OCV_SOC_MODE = 2;
+  BASE_MIN_OCV_SOC_MODE = 3;
+}
+
+message SgReadyStatParam {
+  optional bool ems_sg_stat_en = 1;
+  optional uint32 ems_sg_stat = 2;
+  optional uint32 ems_sg_pwr = 3;
+  optional uint32 ems_sg_soc = 4;
+}
+
+message SgReadyParam {
+  optional SgReadyMode ems_sg_mode = 1;
+  repeated SgReadyStatParam ems_sg_param = 2;
+  optional uint32 ems_sg_rate_pwr = 3;
+  optional uint32 ems_sg_swit_time = 4;
+}
+
+message TimeInfo {
+  optional uint32 hour = 1;
+  optional uint32 min = 2;
+  optional uint32 sec = 3;
+}
+
+message SelfUsedParam {
+}
+
+message TouParam {
+  optional TimeInfo start_time = 1;
+  optional TimeInfo end_time = 2;
+  optional uint32 chg_dsg_mode = 3;
+}
+
+message BackupParam {
+  optional uint32 backup_soc = 1;
+}
+
+message PeakShavingDetail {
+  optional uint32 peak_shaving_start_time = 1;
+  optional uint32 peak_shaving_end_time = 2;
+  optional float control_energy_wh = 3;
+}
+
+message EmsPeakShavingDetailReport {
+  optional float peak_electricity = 1;
+  optional PeakShavingDetail peak_shaving_details = 2;
+}
+
+message EnergyStreamItem {
+  optional float load_pwr = 1;
+  optional float grid_pwr = 2;
+  optional float mppt_pwr = 3;
+  optional float bp_pwr = 4;
+  optional uint32 timestamp = 5;
+  optional sint32 timezone = 6;
+  optional uint32 bp_soc = 7;
+  optional float pv1_pwr = 8;
+  optional float pv2_pwr = 9;
+  optional float pv_inv_pwr = 10;
+  optional float pv3_pwr = 11;
+  optional float other_pv_pwr = 12;
+  optional EmsPeakShavingDetailReport peak_shaving_detail = 13;
+}
+
+message EnergyStreamSwitch {
+  optional bool ems_open_energy_stream = 1;
+}
+
+message EnergyStreamReport {
+  optional float sys_load_pwr = 1;
+  optional float sys_grid_pwr = 2;
+  optional float mppt_pwr = 3;
+  optional float bp_pwr = 4;
+  optional uint32 bp_soc = 5;
+  optional float pv1_pwr = 6;
+  optional float pv2_pwr = 7;
+  optional float pv_inv_pwr = 8;
+  optional float pv3_pwr = 9;
+  optional float other_pv_pwr = 10;
+}
+
+message EnergyStreamDetail {
+  repeated EnergyStreamItem sys_energy_stream = 1;
+  optional uint32 sys_seq = 2;
+}
+
+message EnergyStreamDetailAck {
+  optional uint32 sys_seq = 1;
+  optional uint32 sys_energy_num = 2;
+}
+
+message SysWorkModeSet {
+  optional WorkMode ems_word_mode = 1;
+  optional SelfUsedParam ems_selfused_param = 2;
+  repeated TouParam ems_tou_param = 3;
+  optional BackupParam ems_backup_param = 4;
+}
+
+message SysWorkModeSetAck {
+  optional sint32 result = 1;
+}
+
+message SysBackupEventSet {
+  optional uint32 ems_backup_event = 1;
+  optional bool ems_backup_enable_disenabl = 2;
+  optional uint32 ems_backup_start_time = 3;
+  optional uint32 ems_backup_end_time = 4;
+}
+
+message SysBackupEventSetAck {
+  optional sint32 result = 1;
+}
+
+message SysKeepSocSet {
+  optional uint32 ems_keep_soc = 1;
+}
+
+message SysKeepSocSetAck {
+  optional sint32 result = 1;
+}
+
+message SysFeedPowerSet {
+  optional float ems_max_feed_pwr = 1;
+  optional uint32 ems_feed_mode = 2;
+  optional uint32 ems_feed_ratio = 3;
+  optional uint32 ems_feed_pwr = 4;
+  optional uint32 breaker_capacity_max = 5;
+  optional uint32 sys_switch_bit = 6;
+}
+
+message SysFeedPowerSetAck {
+  optional sint32 result = 1;
+}
+
+message SysMeterRecheck {
+  optional uint32 meter_recheck = 1;
+}
+
+message SysMeterRecheckAck {
+  optional sint32 result = 1;
+}
+
+message SysOffGridSet {
+  optional bool sys_grid_disconnect_mode = 1;
+}
+
+message SysOffGridSetAck {
+  optional sint32 result = 1;
+}
+
+message SysOnOffMachineSet {
+  optional bool sys_on_off_machine = 1;
+}
+
+message SysOnOffMachineSetAck {
+  optional sint32 result = 1;
+}
+
+message SysMeterCfgSet {
+  optional bool sys_meter_cfg = 1;
+}
+
+message SysMeterCfgSetAck {
+  optional sint32 result = 1;
+}
+
+message SysTypeCfgSet {
+  optional uint32 sys_type_cfg = 1;
+}
+
+message SysTypeCfgSetAck {
+  optional sint32 result = 1;
+}
+
+message SysReportRateCtrlSet {
+  optional bool rate_ctrl_swtich = 1;
+  optional uint32 sys_rate_ctrl_time = 2;
+  optional uint32 dura_time = 3;
+  optional uint32 ui_perio = 4;
+  optional uint32 perio_aging = 5;
+}
+
+message SysReportRateCtrlSetAck {
+  optional sint32 result = 1;
+}
+
+message SysBatChgDsgSet {
+  optional uint32 sys_bat_chg_up_limit = 1;
+  optional uint32 sys_bat_dsg_down_limie = 2;
+  optional uint32 sys_bat_backup_ratio = 3;
+  optional uint32 dev_soc = 4;
+}
+
+message SysBatChgDsgSetAck {
+  optional sint32 result = 1;
+}
+
+message SysParamGet {
+}
+
+message SysParamGetAck {
+  optional WorkMode ems_work_mode = 1;
+  optional uint32 ems_backup_event = 2;
+  optional uint32 ems_keep_soc = 3;
+  optional float ems_max_feed_pwr = 4;
+  optional bool sys_grid_disconnect_mode = 5;
+}
+
+message SysRTCSync {
+}
+
+message SysRTCSyncAck {
+  optional uint32 sys_utc_time = 1;
+  optional sint32 sys_timezone = 2;
+}
+
+message SysRTCGet {
+}
+
+message MpptPVInfo {
+  optional float vol = 1;
+  optional float amp = 2;
+  optional float pwr = 3;
+  optional bool light_sta = 4;
+}
+
+message PhaseInfo {
+  optional float vol = 1;
+  optional float amp = 2;
+  optional float act_pwr = 3;
+  optional float react_pwr = 4;
+  optional float apparent_pwr = 5;
+}
+
+message DCBusInfo {
+  optional float vol = 1;
+  optional float amp = 2;
+}
+
+message LoadInfo {
+  optional float vol = 1;
+  optional float amp = 2;
+  optional float freq = 3;
+  optional float pwr = 4;
+}
+
+message ErrorCode {
+  optional bytes module_sn = 1;
+  repeated uint32 err_code = 2;
+}
+
+message ErrorCodeMask {
+  repeated uint32 err_code = 1;
+}
+
+message MpptStaReport {
+  repeated MpptPVInfo mppt_pv = 1;
+  optional float mppt_ins_resist = 2;
+  repeated float mppt_temp_val = 3;
+}
+
+message MpptPVScanSet {
+  optional uint32 mppt_no = 1;
+}
+
+message MpptPVCharacterPoint {
+  optional uint32 pv_point_mark = 1;
+  optional float pv_scan_vol = 2;
+  optional float pv_scan_amp = 3;
+  optional float pv_scan_pwr = 4;
+}
+
+message SysEventRecordItem {
+  optional uint32 sys_ms = 1;
+  optional uint32 timestamp = 2;
+  optional uint32 event_no = 3;
+  optional uint32 dur_time = 4;
+}
+
+message SysEventRecordReport {
+  optional uint32 event_seq = 1;
+  repeated SysEventRecordItem event_report = 2;
+}
+
+message SysEventInfoReportAck {
+  optional uint32 event_seq = 1;
+  optional uint32 event_item_num = 2;
+}
+
+message MeterStaReport {
+  optional uint32 meter_type = 1;
+  optional uint32 meter_addr = 2;
+  repeated float meter_data = 3;
+}
+
+message BpStaReport {
+  optional float bp_pwr = 1;
+  optional uint32 bp_soc = 2;
+  optional uint32 bp_soh = 3;
+  optional uint32 bp_sop = 4;
+  repeated float bp_temp = 5;
+  optional float bp_cell_max_vol = 6;
+  optional float bp_cell_min_vol = 7;
+  optional RunStaDef bp_run_sta = 8;
+  optional float bp_vol = 9;
+  optional float bp_amp = 10;
+  optional float bp_bus_vol = 11;
+  optional float bp_bus_amp = 12;
+  optional uint32 bp_err_code = 13;
+  repeated float bp_cell_vol = 14;
+  optional uint32 bp_dsrc = 15;
+  optional bytes bp_sn = 16;
+  optional uint32 bp_cycles = 17;
+  optional uint32 bp_balance_state = 18;
+  optional float bp_hv_mos_temp = 19;
+  optional float bp_lv_mos_temp = 20;
+  optional float bp_ptc_temp = 21;
+  optional float bp_hts_temp = 22;
+  optional float bp_bus_neg_temp = 23;
+  optional float bp_bus_pos_temp = 24;
+  optional float bp_env_temp = 25;
+  optional uint32 bp_accu_chg_cap = 26;
+  optional uint32 bp_accu_dsg_cap = 27;
+  optional uint32 bp_design_cap = 28;
+  optional uint32 bp_full_cap = 29;
+  optional float bp_max_cell_temp = 30;
+  optional float bp_min_cell_temp = 31;
+  optional float bp_max_mos_temp = 32;
+  optional float bp_min_mos_temp = 33;
+  optional uint32 bp_bms_fault = 34;
+  optional uint32 bp_eclound_soc = 35;
+  optional uint32 bp_heartbeat_ver = 36;
+  optional uint32 bp_timestamp = 37;
+  optional float bp_real_soc = 38;
+  optional float bp_real_soh = 39;
+  optional uint32 bp_global_protect = 40;
+  optional uint32 bp_down_limit_soc = 41;
+  optional uint32 bp_up_limit_soc = 42;
+  optional uint32 bp_active_cal_req_stat = 43;
+  optional uint32 bp_active_cal_run_stat = 44;
+  optional uint32 module_product_info = 45;
+  optional uint32 module_program_sta = 46;
+  optional uint32 module_apl_sw_ver = 47;
+  optional uint32 module_loader_sw_ver = 48;
+  optional bms_RunStaDef bms_run_sta = 49;
+  optional bms_ChgDsgSta bms_chg_dsg_sta = 50;
+  optional dab_ModelStaDef dab_mod_sta = 51;
+  optional uint32 bp_chg_sop = 52;
+  optional uint32 bp_dsg_sop = 53;
+  optional float bp_remain_watth = 54;
+  optional float bp_target_soc = 55;
+  optional float bp_diff_soc = 56;
+  optional float bp_max_soc = 57;
+  optional float bp_min_soc = 58;
+  optional float bp_limit_soc = 59;
+  optional float bp_calendar_soh = 60;
+  optional float bp_cycle_soh = 61;
+  optional bool bp_ac_recharge_flag = 62;
+  optional bool bp_ptc_heat_flag = 63;
+  optional bms_HeatingExitEvent bp_ptc_exit_event = 64;
+  optional uint32 bp_accu_chg_energy = 65;
+  optional uint32 bp_accu_dsg_energy = 66;
+  optional float bp_ptc_temp2 = 67;
+  optional bms_SysState bp_sys_state = 68;
+  optional float bp_aux_cell_vol_01 = 69;
+}
+
+message HeartbeatReport {
+  optional float bp_remain_watth = 1;
+  optional uint32 bp_dsg_time = 2;
+  optional bool rate_ctrl_swtich = 3;
+  optional uint32 sys_rate_ctrl_time = 4;
+  optional uint32 dura_time = 5;
+  optional float pcs_act_pwr = 10;
+  optional float pcs_ac_freq = 11;
+  optional PhaseInfo pcs_a_phase = 12;
+  optional PhaseInfo pcs_b_phase = 13;
+  optional PhaseInfo pcs_c_phase = 14;
+  repeated LoadInfo pcs_load_info = 15;
+  optional float pcs_bus_volt = 16;
+  optional float pcs_leak_amp = 17;
+  optional float pcs_dci = 18;
+  optional float pcs_dcv = 19;
+  optional uint32 pcs_dev_state = 20;
+  optional uint32 pcs_run_ctrl = 21;
+  optional uint32 pcs_offgrid_para_addr = 22;
+  optional uint32 pcs_offgrid_para_type = 23;
+  repeated MeterStaReport meter_heart_beat = 30;
+  repeated MpptStaReport mppt_heart_beat = 31;
+  optional float pcs_vbus_ref = 32;
+  optional float pcs_active_power_ref = 33;
+  optional float pcs_active_power_limit_up = 34;
+  optional float pcs_active_power_limit_dn = 35;
+  optional float pcs_bp_power = 36;
+  optional float pcs_bp_power_chg_limit = 37;
+  optional uint32 pcs_relay_state_show = 38;
+  optional uint32 pcs_grid_safety_func_record = 39;
+  optional uint32 pcs_grid_safety_state_record = 40;
+  optional float pcs_grid_inv_error_rms = 41;
+  optional float pcs_pfc_cur_real = 42;
+  optional float pcs_pfc_cur_ref = 43;
+  optional float pcs_reactive_power_ref = 44;
+  optional float pcs_meter_power = 45;
+  optional uint32 pcs_comm_interface_state = 46;
+  optional float pcs_average_voltage = 47;
+  optional float pcs_vgrid_thd = 48;
+  optional float pcs_interrupt_occupancy_rate = 49;
+  optional uint32 ems_mppt_selfcheck_state = 50;
+  optional uint32 ems_mppt_startup_state = 51;
+  optional uint32 ems_bp_selfcheck_state = 52;
+  optional uint32 ems_bp_startup_state = 53;
+  optional uint32 ems_pcs_selfcheck_state = 54;
+  optional uint32 ems_pcs_startup_state = 55;
+  optional float ems_bus_volt = 56;
+  optional uint32 ems_active_off_grid_cmd = 57;
+  optional uint32 ems_bp_alive_num = 58;
+  optional float ems_bp_power = 59;
+  optional float ems_bp_chg = 60;
+  optional float ems_bp_dsg = 61;
+  optional uint32 ems_bp_chg_request = 62;
+  optional uint32 ems_self_used_cnt = 63;
+  optional uint32 ems_ac_makeup_triggle_soc = 64;
+  optional uint32 ems_ac_makeup_exit_soc = 65;
+  optional uint32 ems_ac_makeup_min_soc = 66;
+  optional uint32 ems_ac_makeup_cnt = 67;
+  optional uint32 ems_start_fsm_state = 68;
+  optional uint32 ems_mppt_run_state = 69;
+  optional uint32 ems_mppt_mod_stat = 70;
+  optional uint32 ems_stop_cmd = 71;
+  optional uint32 ems_sys_cfg = 72;
+  optional uint32 ems_lp_state = 73;
+  optional uint32 ems_lp_type = 74;
+  optional uint32 ems_lp_mppt_cnt = 75;
+  optional uint32 ems_lp_bp_cnt = 76;
+  optional uint32 ems_lp_state_flag = 77;
+  optional uint32 ems_soc_calib_state = 78;
+  optional uint32 ems_soc_calib_request = 79;
+  optional uint32 ems_mppt_hb_state = 80;
+  optional float ems_ntc_temp_max = 81;
+  optional float ems_bus_volt_err_slid_filter = 82;
+  optional float ems_bus_volt_ripple = 83;
+  optional float ems_pv_inv_pwr = 84;
+  optional uint32 ems_14A_eebus_power = 85;
+  optional float mppt_bus_vol_ref = 100;
+  optional float dcdc_bus_vol_ref = 101;
+  optional float dcdc_bp_vol = 102;
+  optional float dcdc_inductance_curr = 103;
+  optional float inner_temperature = 104;
+  optional uint32 power_limit_mode = 105;
+  optional uint32 inv_rated_power = 106;
+  optional uint32 dcdc_state_record = 107;
+  optional uint32 ems_work_mode = 108;
+  optional float pcs_backup_pwr = 109;
+}
+
+message ai_schedule_data {
+  optional float bp_chg_pwr_max = 1;
+  optional float bp_dsg_pwr_max = 2;
+  optional float bp_chg_effic = 3;
+  optional float bp_dsg_effic = 4;
+  optional float bp_full_cap = 5;
+  optional float bp_crrent_soc = 6;
+  optional float bp_chg_up_limit = 7;
+  optional float bp_chg_down_limit = 8;
+  optional float pcs_max_in_pwr = 9;
+  optional float pcs_max_out_pwr = 10;
+  optional float grid_get_max_pwr = 11;
+  optional float max_feed_pwr = 12;
+}
+
+message BpHeartbeatReport {
+  repeated BpStaReport bp_heart_beat = 1;
+}
+
+message EVChargingSnList {
+  repeated string ev_sn = 1;
+}
+
+message EmsChangeReport {
+  optional uint32 sys_work_sta = 1;
+  optional uint32 sys_grid_sta = 2;
+  optional WorkMode ems_word_mode = 3;
+  optional uint32 ems_backup_event = 4;
+  optional uint32 bp_chg_dsg_sta = 5;
+  optional uint32 ems_keep_soc = 6;
+  optional uint32 bp_soc = 7;
+  optional uint32 ems_sys_self_check_stat = 8;
+  optional uint32 bp_online_sum = 9;
+  optional uint32 sys_on_off_machine_stat = 10;
+  optional uint32 sys_bat_chg_up_limit = 11;
+  optional uint32 sys_bat_dsg_down_limit = 12;
+  optional uint32 bp_total_chg_energy = 13;
+  optional uint32 bp_total_dsg_energy = 14;
+  optional uint32 sys_bat_backup_ratio = 15;
+  optional uint32 ems_feed_mode = 16;
+  optional uint32 ems_feed_ratio = 17;
+  optional uint32 ems_feed_pwr = 18;
+  optional uint32 sys_meter_cfg = 19;
+  optional uint32 sys_type_cfg = 20;
+  optional RunStaDef pcs_run_sta = 21;
+  optional uint32 pcs_ac_err_code = 22;
+  optional uint32 pcs_dc_err_code = 23;
+  optional uint32 meter_connect_stat = 30;
+  optional float pcs_over_vol1 = 31;
+  optional float pcs_over_vol2 = 32;
+  optional float pcs_over_vol3 = 33;
+  optional uint32 pcs_over_vol_time1 = 34;
+  optional uint32 pcs_over_vol_time2 = 35;
+  optional uint32 pcs_over_vol_time3 = 36;
+  optional float pcs_low_vol1 = 37;
+  optional float pcs_low_vol2 = 38;
+  optional float pcs_low_vol3 = 39;
+  optional uint32 pcs_low_vol_time1 = 40;
+  optional uint32 pcs_low_vol_time2 = 41;
+  optional uint32 pcs_low_vol_time3 = 42;
+  optional float pcs_over_vol_recover = 43;
+  optional float pcs_low_vol_recover = 44;
+  optional uint32 pcs_vol_recover_time = 45;
+  optional float pcs_10min_over_vol = 46;
+  optional uint32 pcs_10min_over_vol_time = 47;
+  optional float pcs_over_freq1 = 48;
+  optional float pcs_over_freq2 = 49;
+  optional uint32 pcs_over_freq_time1 = 50;
+  optional uint32 pcs_over_freq_time2 = 51;
+  optional float pcs_low_freq1 = 52;
+  optional float pcs_low_freq2 = 53;
+  optional uint32 pcs_low_freq_time1 = 54;
+  optional uint32 pcs_low_freq_time2 = 55;
+  optional float pcs_over_freq_recover = 56;
+  optional float pcs_low_freq_recover = 57;
+  optional uint32 pcs_freq_recover_time = 58;
+  optional uint32 pcs_hvrt_lvrt_switch = 59;
+  optional float pcs_over_vol_ride_through_start1 = 60;
+  optional float pcs_over_vol_ride_through_start2 = 61;
+  optional uint32 pcs_over_vol_ride_through_protect_time1 = 62;
+  optional uint32 pcs_over_vol_ride_through_protect_time2 = 63;
+  optional float pcs_low_vol_ride_through_start1 = 64;
+  optional float pcs_low_vol_ride_through_start2 = 65;
+  optional float pcs_low_vol_ride_through_start3 = 66;
+  optional uint32 pcs_low_vol_ride_through_protect_time1 = 67;
+  optional uint32 pcs_low_vol_ride_through_protect_time2 = 68;
+  optional uint32 pcs_low_vol_ride_through_protect_time3 = 69;
+  optional float pcs_high_vol_ride_through_recover = 70;
+  optional float pcs_low_vol_ride_through_recover = 71;
+  optional uint32 pcs_island_detect_switch = 72;
+  optional uint32 pcs_active_power_derating_switch = 73;
+  optional float pcs_active_power_derating_percent = 74;
+  optional float pcs_active_power_gradient = 75;
+  optional uint32 pcs_active_power_softstart_switch = 76;
+  optional uint32 pcs_active_power_softstart_time = 77;
+  optional uint32 pcs_over_freq_derating_switch = 78;
+  optional float pcs_over_freq_derating_power_based = 79;
+  optional float pcs_over_freq_derating_start = 80;
+  optional float pcs_over_freq_derating_end = 81;
+  optional float pcs_over_freq_derating_slope = 82;
+  optional float pcs_over_freq_derating_recover_slope = 83;
+  optional uint32 pcs_over_freq_derating_froze_switch = 84;
+  optional float pcs_over_freq_derating_cutoff_power = 85;
+  optional uint32 pcs_under_freq_increment_switch = 86;
+  optional float pcs_under_freq_increment_start = 87;
+  optional float pcs_under_freq_increment_end = 88;
+  optional float pcs_under_freq_increment_slope = 89;
+  optional float pcs_under_freq_increment_recover_slope = 90;
+  optional uint32 pcs_under_freq_increment_froze_switch = 91;
+  optional uint32 pcs_anti_back_flow_switch = 92;
+  optional uint32 pcs_over_vol_derating_switch = 93;
+  optional float pcs_over_vol_derating_start = 94;
+  optional float pcs_over_vol_derating_end = 95;
+  optional float pcs_over_vol_derating_starting_power = 96;
+  optional float pcs_over_vol_derating_end_power = 97;
+  optional float pcs_over_vol_derating_time_const = 98;
+  optional uint32 pcs_react_pwr_mode_select = 99;
+  optional float pcs_react_pwr_compensation = 100;
+  optional float pcs_pf_value = 101;
+  optional float pcs_react_pwr_percent = 102;
+  optional float pcs_qu_v1 = 103;
+  optional float pcs_qu_v2 = 104;
+  optional float pcs_qu_v3 = 105;
+  optional float pcs_qu_v4 = 106;
+  optional float pcs_qu_q1 = 107;
+  optional float pcs_qu_q2 = 108;
+  optional float pcs_qu_q3 = 109;
+  optional float pcs_qu_q4 = 110;
+  optional float pcs_qu_time_const = 111;
+  optional float pcs_cosp_p1 = 112;
+  optional float pcs_cosp_p2 = 113;
+  optional float pcs_cosp_p3 = 114;
+  optional float pcs_cosp_pf1 = 115;
+  optional float pcs_cosp_pf2 = 116;
+  optional float pcs_cosp_pf3 = 117;
+  optional uint32 pcs_safety_country_code_selection = 118;
+  optional uint32 pcs_reconnect_grid_detect_switch = 119;
+  optional uint32 pcs_on_grid_wait_time = 120;
+  optional float pcs_high_vol_on_grid = 121;
+  optional float pcs_low_vol_on_grid = 122;
+  optional float pcs_high_freq_on_grid = 123;
+  optional float pcs_low_freq_on_grid = 124;
+  optional uint32 pcs_fault_recover_on_grid_wait_time = 125;
+  optional float pcs_fault_recover_high_vol_on_grid = 126;
+  optional float pcs_fault_recover_low_vol_on_grid = 127;
+  optional float pcs_fault_recover_high_freq_on_grid = 128;
+  optional float pcs_fault_recover_low_freq_on_grid = 129;
+  optional uint32 pcs_power_derating_flag = 130;
+  optional uint32 pcs_power_derating_set = 131;
+  optional uint32 pcs_send_end = 132;
+  optional bool rate_ctrl_swtich = 133;
+  optional uint32 sys_rate_ctrl_time = 134;
+  optional uint32 dura_time = 135;
+  optional uint32 pcs_10min_over_vol_switch = 136;
+  optional float pcs_active_power_soft_start_rate = 137;
+  optional float pcs_active_power_normal_ramp_up_rate = 138;
+  optional float pcs_over_freq_derating_start_delay = 139;
+  optional float pcs_over_freq_derating_end_delay = 140;
+  optional uint32 pcs_over_freq_derating_recover_slope_switch = 141;
+  optional float pcs_under_freq_increment_start_delay = 142;
+  optional float pcs_under_freq_increment_end_delay = 143;
+  optional uint32 pcs_over_vol_derating_delay_time = 144;
+  optional uint32 pcs_ongrid_reconnect_flag = 145;
+  optional float pcs_qu_lockin_power = 146;
+  optional float pcs_qu_lockout_power = 147;
+  optional float pcs_qu_minimum_cosphi = 148;
+  optional uint32 pcs_fast_check = 149;
+  optional uint32 pcs_function_enable = 150;
+  optional uint32 ems_ctrl_led_type = 151;
+  optional uint32 ems_ctrl_led_bright = 152;
+  optional uint32 pcs_under_freq_increment_recover_slope_switch = 153;
+  optional float pcs_over_vol_derating_daley_time = 154;
+  optional float pcs_cosp_p4 = 155;
+  optional float pcs_cosp_pf4 = 156;
+  optional uint32 pcs_reserved1 = 157;
+  optional uint32 pcs_reserved2 = 158;
+  optional uint32 pcs_reserved3 = 159;
+  optional uint32 pcs_reserved4 = 160;
+  optional uint32 pcs_reserved5 = 161;
+  optional uint32 pcs_uwn_pe_relay_close_enable = 162;
+  optional float pcs_fvolt_rated = 163;
+  optional float pcs_fIrated = 164;
+  optional float pcs_ffreq_rate = 165;
+  optional float pcs_ffreq_deta_limit = 166;
+  optional float pcs_fapparent_rate = 167;
+  optional float pcs_fapparent_max = 168;
+  optional float pcs_fact_power_rate = 169;
+  optional float pcs_fact_power_max = 170;
+  optional float pcs_freact_power_max = 171;
+  optional float pcs_fact_power_max_each = 172;
+  optional float pcs_freact_power_max_each = 173;
+  optional float pcs_fapparent_max_each = 174;
+  optional float pcs_fapparent_rate_each = 175;
+  optional bool sys_mul_peak_switch = 180;
+  optional uint32 sys_mul_peak_time = 181;
+  optional SgReadyParam ems_sg_ready = 182;
+  optional bool ems_sg_ready_en = 183;
+  optional uint32 ems_sg_run_stat = 184;
+  optional uint32 ems_stop_all = 185;
+  optional sint32 iot_4g_on = 186;
+  optional sint32 iot_4g_sta = 187;
+  optional sint32 iot_4g_pdp = 188;
+  optional sint32 iot_4g_err = 189;
+  optional uint32 sys_heat_stat = 190;
+  optional uint32 pcs_ac_warning_code = 191;
+  optional uint32 pcs_relay_self_check_sta = 192;
+  optional uint32 pcs_run_fsm_state = 193;
+  optional uint32 mppt1_fault_code = 194;
+  optional uint32 mppt2_fault_code = 195;
+  optional uint32 mppt1_warning_code = 196;
+  optional uint32 mppt2_warning_code = 197;
+  optional uint32 bp_line_off_flag = 198;
+  optional uint32 bp_restart_flag = 199;
+  optional uint32 bp_reverse_flag = 200;
+  optional uint32 bat_relay_close_fail_flag = 201;
+  optional uint32 bat_soft_relay_status = 202;
+  optional uint32 bat_realy_status = 203;
+  optional uint32 pcs_relay_state_show = 204;
+  optional uint32 ems_work_state = 205;
+  optional EVChargingSnList ev_bind_list = 206;
+  optional uint32 afci_fault_cnt_ch1 = 207;
+  optional float afci_fault_value_ch1 = 208;
+  optional float afci_fault_max_value_ch1 = 209;
+  optional float afci_protect_value_ch1 = 210;
+  optional uint32 afci_fault_flag_ch1 = 211;
+  optional uint32 afci_fault_cnt_ch2 = 212;
+  optional float afci_fault_value_ch2 = 213;
+  optional float afci_fault_max_value_ch2 = 214;
+  optional float afci_protect_value_ch2 = 215;
+  optional uint32 afci_fault_flag_ch2 = 216;
+  optional uint32 afci_self_test_cmd_state = 217;
+  optional uint32 afci_enable_cmd_state = 218;
+  optional uint32 afci_fault_clear_state = 219;
+  optional uint32 afci_sellf_test_result = 220;
+  optional uint32 afci_switch_freq_ch1 = 221;
+  optional uint32 afci_switch_freq_ch2 = 222;
+  optional uint32 sys_cal_stat = 223;
+  optional uint32 eth_wan_stat = 224;
+  optional uint32 wifi_sta_stat = 225;
+  optional string wireless_4g_iccid = 226;
+  optional uint32 virtual_hard_edition = 227;
+  optional uint32 user_role = 228;
+  optional uint32 chg_dsg_mode = 229;
+  optional float chg_dsg_pwr = 230;
+  optional bool parallel_allow_state = 231;
+  optional uint32 parallel_type_set = 232;
+  optional uint32 parallel_type = 233;
+  optional uint32 afci_is_exist = 234;
+  optional uint32 afci_en = 235;
+  optional uint32 afci_en_set = 236;
+  optional uint32 parallel_type_cur = 237;
+  optional uint32 pcs_pcs_anti_back_flow_protect_switch = 238;
+  optional float pcs_anti_back_flow_export_current_limit = 239;
+  optional float pcs_anti_back_flow_import_current_limit = 240;
+  optional uint32 pcs_freq_local_command = 241;
+  optional uint32 pcs_freq_external_signal = 242;
+  optional uint32 pcs_auto_test_state = 243;
+  optional uint32 pcs_auto_test_flag = 244;
+  optional uint32 pcs_avg_ovp_protect_cnt = 245;
+  optional uint32 pcs_ovp_protect_cnt = 246;
+  optional uint32 pcs_uvp1_protect_cnt = 247;
+  optional uint32 pcs_uvp2_protect_cnt = 248;
+  optional uint32 pcs_ofp_protect_cnt = 249;
+  optional uint32 pcs_ufp_protect_cnt = 250;
+  optional float pcs_avg_ovp_protect_value = 251;
+  optional float pcs_ovp_protect_value = 252;
+  optional float pcs_uvp1_protect_value = 253;
+  optional float pcs_uvp2_protect_value = 254;
+  optional float pcs_ofp_protect_value = 255;
+  optional float pcs_ufp_protect_value = 256;
+  optional uint32 pcs_auto_test_percent = 257;
+  optional float pcs_qu_k = 258;
+  optional uint32 pcs_battery_storage_mode = 259;
+  optional uint32 pcs_dci_protect_switch = 260;
+  optional uint32 relay_14a = 261;
+  optional uint32 sys_14a_type = 262;
+  optional bool sys_14a_enable = 263;
+  optional uint32 offgrid_parallel_bit = 264;
+  optional uint32 pcs_safety_set_related_flag = 265;
+  optional uint32 sys_state_bit = 266;
+  optional uint32 slave_modbus_addr = 267;
+  optional uint32 end_timestamp = 268;
+  optional uint32 duration = 269;
+  optional uint32 dev_max_power = 270;
+  optional uint32 pcs_quick_selfcheck_en = 271;
+  optional float pcs_qp_p1 = 272;
+  optional float pcs_qp_p2 = 273;
+  optional float pcs_qp_p3 = 274;
+  optional float pcs_qp_p4 = 275;
+  optional float pcs_qp_q1 = 276;
+  optional float pcs_qp_q2 = 277;
+  optional float pcs_qp_q3 = 278;
+  optional float pcs_qp_q4 = 279;
+  optional SafetyFunRCRParamReport rcr_report = 280;
+  optional uint32 role_effect_state = 281;
+  optional uint32 safety_effect_state = 282;
+  optional uint32 meter_check_state = 283;
+  optional float pcs_under_freq_increment_transition_point = 284;
+  optional float pcs_over_freq_derating_transition_point = 285;
+  optional uint32 pcs_charge_under_vol_derating_switch = 286;
+  optional float pcs_charge_under_vol_derating_start = 287;
+  optional float pcs_charge_under_vol_derating_end = 288;
+  optional float pcs_charge_under_vol_derating_starting_power = 289;
+  optional float pcs_charge_under_vol_derating_end_power = 290;
+  optional float pcs_hard_export_limit = 291;
+  optional bool ems_acmake_stat = 306;
+  optional ai_schedule_data po_ai_schedule = 307;
+}
+
+message EmsPeakShavingReport {
+  optional PeakShavingStatus peak_shaving_status = 1;
+  optional float peak_shaving_max_power = 2;
+  optional float peak_shaving_energy = 3;
+  optional float peak_shaving_soc = 4;
+  optional float peak_shaving_times = 5;
+  optional float peak_shaving_control_energy = 6;
+}
+
+message EmsParamChangeReport {
+  optional bool smart_ctrl = 1;
+  optional bool energy_efficient_enable = 2;
+  optional uint32 sys_zone = 3;
+  optional uint32 sys_time_tab = 4;
+  optional bool bp_burst = 5;
+  optional bool lower_power_stat = 6;
+  optional uint32 breaker_capacity_max = 7;
+  optional bool breaker_enable_state = 8;
+  optional EmsAllTimerTaskReport timer_task = 9;
+  optional uint32 dev_soc = 10;
+  optional uint32 sys_switch_bit = 11;
+  optional uint32 modbus_online_status = 12;
+  optional float tou_offset = 13;
+  optional EmsPeakShavingReport ems_peak_shaving_report = 14;
+  optional EmsAllPeakTaskReport ems_all_peak_task_report = 15;
+  optional uint32 alarm_reset_count = 16;
+  optional solarAttr solar_Array = 17;
+  optional uint32 kraken_register_status = 18;
+  optional uint32 kraken_switch = 19;
+}
+
+message solarAttr {
+  repeated float mppt_pwr_max = 1;
+}
+
+message BpFaultCode {
+  optional uint32 bp_err_code = 1;
+  optional uint32 bp_bms_fault = 2;
+  optional uint32 bp_global_protect = 3;
+}
+
+message CtrlAssistData {
+  optional uint32 ac_wiring_type = 1;
+  optional uint32 ems_pcs_startup_state = 2;
+  optional RunStaDef pcs_run_sta = 3;
+  optional uint32 sys_grid_sta = 4;
+  optional uint32 pcs_ac_err_code = 5;
+  optional uint32 pcs_dc_err_code = 6;
+  optional float pcs_act_pwr = 7;
+  optional float pcs_apparent_power = 8;
+  optional float pcs_reactive_power = 9;
+  optional float pcs_power_factor = 10;
+  optional float pcs_voltage_ll = 11;
+  optional float pcs_voltage_ln = 12;
+  optional float pcs_ac_freq = 13;
+  optional float pcs_fact_power_max = 14;
+  optional uint32 fcr_ctrl_enable = 15;
+  optional InverterCtrlMode fcr_ctrl_mode = 16;
+  optional int32 fcr_ctrl_pwr = 17;
+  optional uint32 ctrl_heatbeat = 18;
+  optional float meter_act_pwr = 19;
+  optional RunStaDef mppt_state = 20;
+  optional uint32 mppt1_fault_code = 21;
+  optional uint32 mppt2_fault_code = 22;
+  optional uint32 mppt_ctrl_mode = 23;
+  optional int32 mppt_pwr_limit = 24;
+  optional float mppt_pwr = 25;
+  optional float bp_energy_cap = 26;
+  optional float ems_bp_chg = 27;
+  optional float ems_bp_dsg = 28;
+  optional uint32 fcr_bp_chg_limit = 29;
+  optional uint32 fcr_bp_dsg_limit = 30;
+  optional float soc_cur = 31;
+  optional float bp_backup_ratio = 32;
+  optional RunStaDef bp_state = 33;
+  repeated BpFaultCode bp_fault_code = 34;
+  optional float pcs_dcv = 35;
+  optional float pcs_dci = 36;
+  optional float ems_bp_power = 37;
+}
+
+message ThirdPvInfo {
+  optional float pv_vol = 1;
+  optional float pv_cur = 2;
+}
+
+message ThirdPvData {
+  repeated ThirdPvInfo pv_info = 1;
+}
+
+message ThirdErrorCode {
+  repeated uint32 error_code = 1;
+}
+
+message ThirdBpSoc {
+  repeated uint32 bp_soc = 1;
+}
+
+message ThirdGridTotalEnergy {
+  repeated float grid_total_energy = 1;
+}
+
+message ThirdInvTotalEnergy {
+  repeated float inv_total_energy = 1;
+}
+
+message ThirdBpTotalEnergy {
+  repeated float bp_total_energy = 1;
+}
+
+message ThirdGridInEnergy {
+  optional float grid_in_energy_total = 1;
+  repeated float grid_in_energy = 2;
+}
+
+message ThirdGridOutEnergy {
+  optional float grid_out_energy_total = 1;
+  repeated float grid_out_energy = 2;
+}
+
+message ThirdInvInEnergy {
+  optional float inv_in_energy_total = 1;
+  repeated float inv_in_energy = 2;
+}
+
+message ThirdInvOutEnergy {
+  optional float inv_out_energy_total = 1;
+  repeated float inv_out_energy = 2;
+}
+
+message ThirdBpInEnergy {
+  optional float bp_in_energy_total = 1;
+  repeated float bp_in_energy = 2;
+}
+
+message ThirdBpOutEnergy {
+  optional float bp_out_energy_total = 1;
+  repeated float bp_out_energy = 2;
+}
+
+message ThirdPvEnergy {
+  optional float pv_energy_total = 1;
+  repeated float pv_energy = 2;
+}
+
+message ThirdPartyData {
+  optional uint32 grid_code = 1;
+  optional uint32 utc_time = 2;
+  optional int32 time_zone = 3;
+  optional float load_pwr = 4;
+  optional float grid_pwr = 5;
+  optional float pv_pwr = 6;
+  optional float bp_pwr = 7;
+  optional uint32 sys_soc = 8;
+  optional uint32 sys_rated_pwr = 9;
+  optional uint32 sys_state_1 = 10;
+  optional uint32 sys_state_2 = 11;
+  optional uint32 backup_radio = 12;
+  optional uint32 feed_mode_set = 13;
+  optional uint32 max_feed_pwr = 14;
+  optional uint32 breaker_cap = 15;
+  optional uint32 led_bright = 16;
+  optional int32 sys_pwr_set = 17;
+  optional int32 inv_pwr_set = 18;
+  optional uint32 max_inv_cap = 19;
+  optional uint32 max_rec_cap = 20;
+  optional int32 inv_pwr = 21;
+  optional uint32 bp_cap = 22;
+  optional uint32 bp_dsg_cap = 23;
+  optional uint32 bp_chg_cap = 24;
+  optional float grid_cur_a = 25;
+  optional float grid_cur_b = 26;
+  optional float grid_cur_c = 27;
+  optional float grid_vol_a = 28;
+  optional float grid_vol_b = 29;
+  optional float grid_vol_c = 30;
+  optional int32 bp_pwr_set = 31;
+  optional uint32 feed_limit_percent = 32;
+  optional float bp_vol = 33;
+  optional float bp_cur = 34;
+  optional float bp_temp = 35;
+  optional float inv_vol_a = 36;
+  optional float inv_vol_b = 37;
+  optional float inv_vol_c = 38;
+  optional float inv_cur_a = 39;
+  optional float inv_cur_b = 40;
+  optional float inv_cur_c = 41;
+  optional float inv_temp = 42;
+  optional float inv_freq = 43;
+  optional ThirdPvData pv_data = 44;
+  optional ThirdErrorCode error_code_info = 45;
+  optional ThirdBpSoc bp_soc_info = 46;
+  optional ThirdGridTotalEnergy grid_total_energy_info = 47;
+  optional ThirdInvTotalEnergy inv_total_energy_info = 48;
+  optional ThirdBpTotalEnergy bp_total_energy_info = 49;
+  optional ThirdGridInEnergy grid_in_energy_info = 50;
+  optional ThirdGridOutEnergy grid_out_energy_info = 51;
+  optional ThirdInvInEnergy inv_in_energy_info = 52;
+  optional ThirdInvOutEnergy inv_out_energy_info = 53;
+  optional ThirdBpInEnergy bp_in_energy_info = 54;
+  optional ThirdBpOutEnergy bp_out_energy_info = 55;
+  optional ThirdPvEnergy pv_energy_info = 56;
+}
+
+message EmsGetParam {
+}
+
+message EmsSafetyParamSet {
+  optional float pcs_over_vol1 = 1;
+  optional float pcs_over_vol2 = 2;
+  optional float pcs_over_vol3 = 3;
+  optional uint32 pcs_over_vol_time1 = 4;
+  optional uint32 pcs_over_vol_time2 = 5;
+  optional uint32 pcs_over_vol_time3 = 6;
+  optional float pcs_low_vol1 = 7;
+  optional float pcs_low_vol2 = 8;
+  optional float pcs_low_vol3 = 9;
+  optional uint32 pcs_low_vol_time1 = 10;
+  optional uint32 pcs_low_vol_time2 = 11;
+  optional uint32 pcs_low_vol_time3 = 12;
+  optional float pcs_over_vol_recover = 13;
+  optional float pcs_low_vol_recover = 14;
+  optional uint32 pcs_vol_recover_time = 15;
+  optional float pcs_10min_over_vol = 16;
+  optional uint32 pcs_10min_over_vol_time = 17;
+  optional float pcs_over_freq1 = 18;
+  optional float pcs_over_freq2 = 19;
+  optional uint32 pcs_over_freq_time1 = 20;
+  optional uint32 pcs_over_freq_time2 = 21;
+  optional float pcs_low_freq1 = 22;
+  optional float pcs_low_freq2 = 23;
+  optional uint32 pcs_low_freq_time1 = 24;
+  optional uint32 pcs_low_freq_time2 = 25;
+  optional float pcs_over_freq_recover = 26;
+  optional float pcs_low_freq_recover = 27;
+  optional uint32 pcs_freq_recover_time = 28;
+  optional uint32 pcs_hvrt_lvrt_switch = 29;
+  optional float pcs_over_vol_ride_through_start1 = 30;
+  optional float pcs_over_vol_ride_through_start2 = 31;
+  optional uint32 pcs_over_vol_ride_through_protect_time1 = 32;
+  optional uint32 pcs_over_vol_ride_through_protect_time2 = 33;
+  optional float pcs_low_vol_ride_through_start1 = 34;
+  optional float pcs_low_vol_ride_through_start2 = 35;
+  optional float pcs_low_vol_ride_through_start3 = 36;
+  optional uint32 pcs_low_vol_ride_through_protect_time1 = 37;
+  optional uint32 pcs_low_vol_ride_through_protect_time2 = 38;
+  optional uint32 pcs_low_vol_ride_through_protect_time3 = 39;
+  optional float pcs_high_vol_ride_through_recover = 40;
+  optional float pcs_low_vol_ride_through_recover = 41;
+  optional uint32 pcs_island_detect_switch = 42;
+  optional uint32 pcs_active_power_derating_switch = 43;
+  optional float pcs_active_power_derating_percent = 44;
+  optional float pcs_active_power_gradient = 45;
+  optional uint32 pcs_active_power_softstart_switch = 46;
+  optional uint32 pcs_active_power_softstart_time = 47;
+  optional uint32 pcs_over_freq_derating_switch = 48;
+  optional float pcs_over_freq_derating_power_based = 49;
+  optional float pcs_over_freq_derating_start = 50;
+  optional float pcs_over_freq_derating_end = 51;
+  optional float pcs_over_freq_derating_slope = 52;
+  optional float pcs_over_freq_derating_recover_slope = 53;
+  optional uint32 pcs_over_freq_derating_froze_switch = 54;
+  optional float pcs_over_freq_derating_cutoff_power = 55;
+  optional uint32 pcs_under_freq_increment_switch = 56;
+  optional float pcs_under_freq_increment_start = 57;
+  optional float pcs_under_freq_increment_end = 58;
+  optional float pcs_under_freq_increment_slope = 59;
+  optional float pcs_under_freq_increment_recover_slope = 60;
+  optional uint32 pcs_under_freq_increment_froze_switch = 61;
+  optional uint32 pcs_anti_back_flow_switch = 62;
+  optional uint32 pcs_over_vol_derating_switch = 63;
+  optional float pcs_over_vol_derating_start = 64;
+  optional float pcs_over_vol_derating_end = 65;
+  optional float pcs_over_vol_derating_starting_power = 66;
+  optional float pcs_over_vol_derating_end_power = 67;
+  optional float pcs_over_vol_derating_time_const = 68;
+  optional uint32 pcs_react_pwr_mode_select = 69;
+  optional float pcs_react_pwr_compensation = 70;
+  optional float pcs_pf_value = 71;
+  optional float pcs_react_pwr_percent = 72;
+  optional float pcs_qu_v1 = 73;
+  optional float pcs_qu_v2 = 74;
+  optional float pcs_qu_v3 = 75;
+  optional float pcs_qu_v4 = 76;
+  optional float pcs_qu_q1 = 77;
+  optional float pcs_qu_q2 = 78;
+  optional float pcs_qu_q3 = 79;
+  optional float pcs_qu_q4 = 80;
+  optional float pcs_qu_time_const = 81;
+  optional float pcs_cosp_p1 = 82;
+  optional float pcs_cosp_p2 = 83;
+  optional float pcs_cosp_p3 = 84;
+  optional float pcs_cosp_pf1 = 85;
+  optional float pcs_cosp_pf2 = 86;
+  optional float pcs_cosp_pf3 = 87;
+  optional uint32 pcs_safety_country_code_selection = 88;
+  optional uint32 pcs_reconnect_grid_detect_switch = 89;
+  optional uint32 pcs_on_grid_wait_time = 90;
+  optional float pcs_high_vol_on_grid = 91;
+  optional float pcs_low_vol_on_grid = 92;
+  optional float pcs_high_freq_on_grid = 93;
+  optional float pcs_low_freq_on_grid = 94;
+  optional uint32 pcs_fault_recover_on_grid_wait_time = 95;
+  optional float pcs_fault_recover_high_vol_on_grid = 96;
+  optional float pcs_fault_recover_low_vol_on_grid = 97;
+  optional float pcs_fault_recover_high_freq_on_grid = 98;
+  optional float pcs_fault_recover_low_freq_on_grid = 99;
+  optional uint32 pcs_power_derating_flag = 100;
+  optional uint32 pcs_power_derating_set = 101;
+  optional uint32 pcs_send_end = 102;
+  optional uint32 pcs_10min_over_vol_switch = 103;
+  optional float pcs_active_power_soft_start_rate = 104;
+  optional float pcs_active_power_normal_ramp_up_rate = 105;
+  optional float pcs_over_freq_derating_start_delay = 106;
+  optional float pcs_over_freq_derating_end_delay = 107;
+  optional uint32 pcs_over_freq_derating_recover_slope_switch = 108;
+  optional float pcs_under_freq_increment_start_delay = 109;
+  optional float pcs_under_freq_increment_end_delay = 110;
+  optional uint32 pcs_over_vol_derating_delay_time = 111;
+  optional uint32 pcs_ongrid_reconnect_flag = 112;
+  optional float pcs_qu_lockin_power = 113;
+  optional float pcs_qu_lockout_power = 114;
+  optional float pcs_qu_minimum_cosphi = 115;
+  optional uint32 pcs_fast_check = 116;
+  optional uint32 pcs_function_enable = 117;
+  optional uint32 pcs_under_freq_increment_recover_slope_switch = 118;
+  optional float pcs_over_vol_derating_daley_time = 119;
+  optional float pcs_cosp_p4 = 120;
+  optional float pcs_cosp_pf4 = 121;
+  optional uint32 pcs_reserved1 = 122;
+  optional uint32 pcs_reserved2 = 123;
+  optional uint32 pcs_reserved3 = 124;
+  optional uint32 pcs_reserved4 = 125;
+  optional uint32 pcs_reserved5 = 126;
+  optional uint32 pcs_uwn_pe_relay_close_enable = 127;
+  optional float pcs_fvolt_rated = 128;
+  optional float pcs_fIrated = 129;
+  optional float pcs_ffreq_rate = 130;
+  optional float pcs_ffreq_deta_limit = 131;
+  optional float pcs_fapparent_rate = 132;
+  optional float pcs_fapparent_max = 133;
+  optional float pcs_fact_power_rate = 134;
+  optional float pcs_fact_power_max = 135;
+  optional float pcs_freact_power_max = 136;
+  optional float pcs_reserved16 = 137;
+  optional uint32 pcs_pcs_anti_back_flow_protect_switch = 138;
+  optional float pcs_anti_back_flow_export_current_limit = 139;
+  optional float pcs_anti_back_flow_import_current_limit = 140;
+  optional uint32 pcs_freq_local_command = 141;
+  optional uint32 pcs_freq_external_signal = 142;
+  optional uint32 pcs_auto_test_state = 143;
+  optional uint32 pcs_auto_test_flag = 144;
+  optional uint32 pcs_avg_ovp_protect_cnt = 145;
+  optional uint32 pcs_ovp_protect_cnt = 146;
+  optional uint32 pcs_uvp1_protect_cnt = 147;
+  optional uint32 pcs_uvp2_protect_cnt = 148;
+  optional uint32 pcs_ofp_protect_cnt = 149;
+  optional uint32 pcs_ufp_protect_cnt = 150;
+  optional float pcs_avg_ovp_protect_value = 151;
+  optional float pcs_ovp_protect_value = 152;
+  optional float pcs_uvp1_protect_value = 153;
+  optional float pcs_uvp2_protect_value = 154;
+  optional float pcs_ofp_protect_value = 155;
+  optional float pcs_ufp_protect_value = 156;
+  optional uint32 pcs_auto_test_percent = 157;
+  optional float pcs_qu_k = 158;
+  optional uint32 pcs_battery_storage_mode = 159;
+  optional uint32 pcs_dci_protect_switch = 160;
+  optional float pcs_fact_power_max_each = 161;
+  optional float pcs_freact_power_max_each = 162;
+  optional float pcs_fapparent_max_each = 163;
+  optional float pcs_fapparent_rate_each = 164;
+  optional uint32 pcs_quick_selfcheck_en = 165;
+  optional float pcs_qp_p1 = 166;
+  optional float pcs_qp_p2 = 167;
+  optional float pcs_qp_p3 = 168;
+  optional float pcs_qp_p4 = 169;
+  optional float pcs_qp_q1 = 170;
+  optional float pcs_qp_q2 = 171;
+  optional float pcs_qp_q3 = 172;
+  optional float pcs_qp_q4 = 173;
+  optional float pcs_under_freq_increment_transition_point = 174;
+  optional float pcs_over_freq_derating_transition_point = 175;
+  optional uint32 pcs_charge_under_vol_derating_switch = 176;
+  optional float pcs_charge_under_vol_derating_start = 177;
+  optional float pcs_charge_under_vol_derating_end = 178;
+  optional float pcs_charge_under_vol_derating_starting_power = 179;
+  optional float pcs_charge_under_vol_derating_end_power = 180;
+  optional float pcs_hard_export_limit = 181;
+}
+
+message EmsSafetyParamSetAck {
+  optional sint32 result = 1;
+}
+
+message ErrorChangeReport {
+  optional ErrorCode ems_err_code = 1;
+  optional ErrorCode pcs_err_code = 2;
+  repeated ErrorCode bp_err_code = 3;
+}
+
+message EmsGetErrorCode {
+}
+
+message ErrorCodeErase {
+  optional ErrorCode ems_err_code = 1;
+  optional ErrorCode pcs_err_code = 2;
+  repeated ErrorCode bp_err_code = 3;
+}
+
+message ErrorCodeEraseAck {
+  optional sint32 result = 1;
+}
+
+message ErrorCodeMaskReport {
+  repeated uint32 error_code = 1;
+}
+
+message ErrorCodeMaskReportAck {
+  optional sint32 result = 1;
+}
+
+message ErrorCodeMaskSet {
+  optional uint32 err_type = 1;
+  repeated uint32 error_code = 2;
+}
+
+message ErrorCodeMaskSetAck {
+  optional sint32 result = 1;
+}
+
+message SysLedBrightSet {
+  optional uint32 sys_led_type = 1;
+  optional uint32 sys_led_ctrl_bright = 2;
+}
+
+message SysLedBrightSetAck {
+  optional sint32 result = 1;
+}
+
+message SysFactoryReset {
+  optional uint32 sys_reset = 1;
+}
+
+message SysFactoryResetAck {
+  optional sint32 result = 1;
+}
+
+message SysMulPeakSet {
+  optional bool sys_mul_peak_switch = 1;
+  optional uint32 sys_mul_peak_time = 2;
+}
+
+message SysMulPeakSetAck {
+  optional sint32 result = 1;
+}
+
+message EmsSgReadySet {
+  optional SgReadyParam ems_sg_ready = 1;
+  optional bool ems_sg_ready_en = 2;
+}
+
+message EmsSgReadySetAck {
+  optional sint32 result = 1;
+}
+
+message SgReadyItem {
+  optional uint32 sg_ready_stat = 1;
+  optional fixed32 timestamp = 2;
+  optional uint32 run_times = 3;
+}
+
+message SgReadyDetail {
+  optional uint32 sys_seq = 1;
+  repeated SgReadyItem sys_sg_ready_detail = 2;
+}
+
+message SgReadyDetailAck {
+  optional uint32 sys_seq = 1;
+  optional uint32 detail_num = 2;
+}
+
+message SysSelfSet {
+  optional uint32 sys_self_req = 1;
+}
+
+message SysSelfSetAck {
+  optional uint32 sys_self_result = 1;
+  optional uint32 sys_self_chk_stat = 2;
+}
+
+message EmsTimerTaskCfg {
+  optional uint32 role = 1;
+  optional uint32 is_cfg = 2;
+  optional uint32 task_index = 3;
+  optional bool is_enable = 4;
+  optional bool is_effect = 5;
+  optional uint32 type = 6;
+  optional uint32 sys_chg_dsg_pwr = 7;
+  optional uint32 time_mode = 8;
+  optional uint32 time_param = 9;
+  repeated uint32 time_table = 10;
+}
+
+message EmsTimerTaskCfgAck {
+  optional uint32 type = 1;
+  optional uint32 task_index = 2;
+  optional uint32 sta = 3;
+}
+
+message EmsTimerTaskGet {
+  optional uint32 task_index = 1;
+  optional uint32 type = 2;
+}
+
+message EmsTimerTaskGetAck {
+  optional EmsTimerTaskCfg time_task_cfg = 1;
+}
+
+message EmsAllTimerTaskGet {
+}
+
+message EmsAllTimerTaskGetAck {
+  repeated EmsTimerTaskCfg time_task_cfg = 1;
+}
+
+message EmsAllTimerTaskReport {
+  repeated EmsTimerTaskCfg time_task_cfg = 1;
+}
+
+message AfciParamSet {
+  optional uint32 switch_freq_ch1 = 1;
+  optional uint32 switch_freq_ch2 = 2;
+  optional float protect_value_ch1 = 3;
+  optional float protect_value_ch2 = 4;
+}
+
+message AfciParmInfo {
+  optional uint32 switch_freq_ch1 = 1;
+  optional uint32 switch_freq_ch2 = 2;
+  optional float protect_value_ch1 = 3;
+  optional float protect_value_ch2 = 4;
+  optional uint32 module_en = 5;
+  optional bool type = 8;
+}
+
+message AfciParmState {
+  optional uint32 result = 1;
+  optional bool type = 2;
+}
+
+message AfciParmSelfCheck {
+  optional uint32 self_test = 1;
+}
+
+message AfciParmSelfCheckAck {
+  optional uint32 result = 1;
+}
+
+message AfciParmEraseError {
+  optional uint32 error_erase = 1;
+}
+
+message AfciParmEraseErrorAck {
+  optional uint32 result = 1;
+}
+
+message EmsPVInvMeterGet {
+}
+
+message EmsPVInvMeterGetAck {
+  optional uint32 result = 1;
+}
+
+message EmsPVInvMeterCfgSet {
+  optional bool pv_meter_cfg = 1;
+}
+
+message EmsPVInvMeterCfgSetAck {
+  optional uint32 result = 1;
+}
+
+message EmsPVInvEnergyStreamReport {
+  optional float pv_inv_pwr = 1;
+}
+
+message EmsEcologyDevGet {
+  optional uint32 product_detail = 1;
+}
+
+message EmsEcologyDevGetAck {
+  optional uint32 product_detail = 1;
+  optional uint32 local_connected = 2;
+  repeated string dev_sn = 3;
+}
+
+message EmsEcologyDevBind {
+  optional uint32 product_detail = 1;
+  optional string dev_sn = 2;
+  optional bool bind_flg = 3;
+  optional uint32 commute_type = 4;
+}
+
+message EmsEcologyDevBindAck {
+  optional uint32 product_detail = 1;
+  optional string dev_sn = 2;
+  optional bool bind_flg = 3;
+  optional int32 result = 4;
+  optional uint32 commute_type = 5;
+}
+
+message HPRTUParam {
+  optional uint32 address = 1;
+  optional int32 u_value = 2;
+}
+
+message HPParam {
+  optional string dev_sn = 1;
+  optional uint32 online = 2;
+  optional bytes error_code = 7;
+}
+
+message EmsEcologyDevReport {
+  optional HPParam HP_report = 1;
+}
+
+message HeatpumpEnergy {
+  optional float hp_pwr = 1;
+}
+
+message EmsEcologyDevEnergyStreamReport {
+  optional HeatpumpEnergy hp_energy = 1;
+}
+
+message HeatpumpEnergyItem {
+  optional float ev_pwr = 1;
+  optional float temp_sector_a = 2;
+  optional float temp_sector_b = 3;
+  optional float temp_ambient = 4;
+  optional float temp_dhw = 5;
+  optional fixed32 timestamp = 6;
+  repeated float param = 7;
+}
+
+message HeatpumpEnergyDetail {
+  optional string dev_sn = 1;
+  repeated HeatpumpEnergyItem hp_energy = 2;
+}
+
+message EmsEcologyDevEnergyStreamDetail {
+  optional uint32 sys_seq = 1;
+  optional uint32 product_detail = 2;
+  optional HeatpumpEnergyDetail hp_detail = 3;
+}
+
+message EmsEcologyDevEnergyStreamDetailAck {
+  optional uint32 sys_seq = 1;
+  optional uint32 product_detail = 2;
+  optional uint32 sys_energy_num = 3;
+}
+
+message EmsDeviceRole {
+  optional uint32 user_role = 1;
+}
+
+message EmsDeviceRoleAck {
+  optional uint32 result = 1;
+}
+
+message EmsCtrlChgDsgMode {
+  optional uint32 chg_dsg_mode = 1;
+  optional float chg_dsg_pwr = 2;
+}
+
+message EmsCtrlChgDsgModeAck {
+  optional uint32 result = 1;
+}
+
+message FCRCtrlRWParam {
+  optional uint32 inverter_ctrl_enable = 1;
+  optional InverterCtrlMode inverter_ctrl_mode = 2;
+  optional int32 inverter_ctrl_value = 3;
+  optional InverterOperationOpt inverter_ctrl_opt = 4;
+  optional uint32 battery_chg_limit = 5;
+  optional uint32 battery_dsg_limit = 6;
+  optional uint32 battery_backup_radio = 7;
+  optional uint32 mppt_ctrl_mode = 8;
+  optional uint32 mppt_pwr_limit = 9;
+  optional uint32 ctrl_heatbeat = 10;
+}
+
+message FCRCtrlRWParamAck {
+  optional uint32 result = 1;
+}
+
+message ThirdPartyCtrlParam {
+  optional uint32 sys_ctrl_word = 1;
+  optional uint32 backup_radio = 2;
+  optional uint32 feed_mode_set = 3;
+  optional uint32 max_feed_pwr = 4;
+  optional uint32 breaker_cap = 5;
+  optional uint32 led_bright = 6;
+  optional int32 sys_pwr_set = 7;
+  optional int32 inv_pwr_set = 8;
+  optional uint32 sys_workmode_set = 9;
+  optional int32 bp_pwr_set = 10;
+  optional uint32 feed_limit_percent = 11;
+  optional uint32 ctrl_hb = 12;
+}
+
+message ThirdPartyCtrlParamAck {
+  optional uint32 result = 1;
+}
+
+message EmsEcologyDevParamSet {
+  optional uint32 product_detail = 1;
+  optional string dev_sn = 2;
+  optional EcologyDevParamNet hp_net_param = 4;
+}
+
+message EcologyDevParamNet {
+  optional float rated_power = 1;
+}
+
+message EmsEcologyDevParamSetAck {
+  optional uint32 product_detail = 1;
+  optional string dev_sn = 2;
+  optional int32 result = 4;
+}
+
+message EmsParamSet {
+  optional bool smart_ctrl = 1;
+  optional bool bp_burst = 2;
+  optional bool price_update = 3;
+}
+
+message EmsParamSetAck {
+  optional int32 result = 1;
+}
+
+message EmsEnergyEfficientSet {
+  optional bool energy_efficient_enable = 1;
+  optional uint32 sys_zone = 2;
+  optional uint32 sys_time_tab = 3;
+}
+
+message EmsEnergyEfficientSetAck {
+  optional int32 result = 1;
+}
+
+message AppRuquestBpEuLawData {
+  optional string bp_sn = 1;
+  optional uint32 app_to_bms_launch_date = 2;
+  optional uint32 app_launch_date_set_type = 3;
+  optional uint32 app_to_bms_reset_flag = 4;
+  optional uint32 bms_data_upload_en = 5;
+}
+
+message AppRuquestBpEuLawDataAck {
+  optional string bp_sn = 1;
+  optional uint32 soh = 2;
+  optional uint32 accu_chg_cap = 3;
+  optional uint32 accu_dsg_cap = 4;
+  optional uint32 accu_chg_energy = 5;
+  optional uint32 accu_dsg_energy = 6;
+  optional uint32 deep_dsg_cnt = 7;
+  optional uint32 high_temp_use_time = 8;
+  optional uint32 low_temp_use_time = 9;
+  optional uint32 high_temp_chg_time = 10;
+  optional uint32 low_temp_chg_time = 11;
+  optional uint32 bp_launch_date = 12;
+  optional uint32 bp_cycles = 13;
+  optional float bp_power_capability = 14;
+  optional float bp_round_trip_eff = 15;
+  optional float bp_self_dsg_rate = 16;
+  optional float bp_ohm_res = 17;
+  optional BpResetType bp_reset_flag = 18;
+  optional AppDateType bp_launch_date_flag = 19;
+}
+
+message BpCloudEdgeCtrlSta {
+  optional string bp_sn = 1;
+  optional uint32 bp_cloud_ctrl_enable = 2;
+  optional CLOUD_CTRL_ACTION bp_cloud_ctrl_action = 3;
+  optional uint32 bp_real_soh_calib_enable = 4;
+  optional uint32 bp_real_soh = 5;
+  optional uint32 bp_disp_soh_calib_enable = 6;
+  optional uint32 bp_disp_soh = 7;
+  optional uint32 bp_cycles_calib_enable = 8;
+  optional uint32 bp_cycles = 9;
+  optional uint32 bp_accu_chg_cap_calib_enable = 10;
+  optional uint32 bp_accu_chg_cap = 11;
+  optional uint32 bp_accu_dsg_cap_calib_enable = 12;
+  optional uint32 bp_accu_dsg_cap = 13;
+  optional uint32 bp_accu_chg_eng_calib_enable = 14;
+  optional uint32 bp_accu_chg_eng = 15;
+  optional uint32 bp_accu_dsg_eng_calib_enable = 16;
+  optional uint32 bp_accu_dsg_eng = 17;
+  optional uint32 bp_balance_enable = 18;
+  optional CLOUD_EDGE_BALANCE bp_balance_mode = 19;
+  optional uint32 bp_max_ocv_soc_calib_enable = 20;
+  optional float bp_max_ocv_soc = 21;
+  optional uint32 bp_min_ocv_soc_calib_enable = 22;
+  optional float bp_min_ocv_soc = 23;
+  optional CLOUD_EDGE_OCV bp_cali_ocv_mode = 24;
+}
+
+message BpCloudEdgeCtrlStaAck {
+  optional string bp_sn = 1;
+  optional uint32 result = 2;
+}
+
+message RoleHistoryItem {
+  optional uint32 start_time = 1;
+  optional uint32 end_time = 2;
+  optional uint32 role = 3;
+}
+
+message RoleHistoryReport {
+  optional uint32 seq = 1;
+  repeated RoleHistoryItem role_history_items = 2;
+}
+
+message RoleHistoryReportAck {
+  optional uint32 seq = 1;
+  optional uint32 item_num = 2;
+}
+
+message PeaktaskInfo {
+  optional uint32 peak_pwr_max = 1;
+  optional uint32 peak_energy_max = 2;
+  optional uint32 peak_soc = 3;
+}
+
+message EmsPeakTaskCfg {
+  optional uint32 role = 1;
+  optional uint32 is_cfg = 2;
+  optional uint32 task_index = 3;
+  optional bool is_enable = 4;
+  optional bool is_effect = 5;
+  optional uint32 type = 6;
+  optional PeaktaskInfo Info = 7;
+  optional bytes peak_sub_info = 8;
+}
+
+message EmsPeakSubTimeTaskInfo {
+  optional uint32 time_mode = 1;
+  optional uint32 time_param = 2;
+  repeated uint32 time_table = 3;
+}
+
+message EmsPeakPriceInfo {
+  optional int32 peak_price = 1;
+}
+
+message PeakTaskCfgAck {
+  optional uint32 type = 1;
+  optional uint32 task_index = 2;
+  optional uint32 result = 3;
+}
+
+message EmsPEAKTaskGet {
+  optional uint32 task_index = 1;
+  optional uint32 type = 2;
+}
+
+message EmsPeakShavingTaskGetAck {
+  optional EmsPeakTaskCfg peak_task_cfg = 1;
+}
+
+message EmsAllPeakShavingTaskGet {
+}
+
+message EmsAllPeakShavingTaskGetAck {
+  repeated EmsPeakTaskCfg peak_task_cfg = 1;
+}
+
+message EmsAllPeakTaskReport {
+  repeated EmsPeakTaskCfg peak_task_cfg = 1;
+}
+
+message EmsAllPeakTaskReportAck {
+  optional int32 result = 1;
+}
+
+message EmsTouTaskCfg {
+  optional uint32 role = 1;
+  optional uint32 is_cfg = 2;
+  optional uint32 task_index = 3;
+  optional bool is_enable = 4;
+  optional uint32 type = 5;
+  optional uint32 sys_meter_dsg_pwr = 6;
+  optional bool is_effect = 7;
+  optional bytes tou_sub_info = 8;
+}
+
+message EmsTouSubManualInfo {
+  optional uint32 manual_mode = 1;
+}
+
+message EmsTouSubTimerTaskInfo {
+  optional uint32 time_mode = 1;
+  optional uint32 time_param = 2;
+  repeated uint32 time_table = 3;
+}
+
+message EmsTouSubLowPriceInfo {
+  optional uint32 time_mode = 1;
+  optional uint32 time_param = 2;
+  repeated uint32 time_table = 3;
+}
+
+message EmsTouTaskCfgAck {
+  optional uint32 type = 1;
+  optional uint32 task_index = 2;
+  optional uint32 result = 3;
+}
+
+message EmsTouTaskGet {
+  optional uint32 task_index = 1;
+  optional uint32 type = 2;
+}
+
+message EmsTouTaskGetAck {
+  optional EmsTouTaskCfg tou_task_cfg = 1;
+}
+
+message EmsAllTouTaskGet {
+}
+
+message EmsAllTouTaskGetAck {
+  repeated EmsTouTaskCfg tou_task_cfg = 1;
+  repeated EmsTouTaskCfg pou_task_cfg = 2;
+}
+
+message EmsAllTouTaskDel {
+}
+
+message EmsAllTouTaskDelAck {
+  optional int32 result = 1;
+}
+
+message EmsAllTouTaskReport {
+  repeated EmsTouTaskCfg tou_task_cfg = 1;
+  repeated EmsTouTaskCfg pou_task_cfg = 2;
+}
+
+message EmsTouSubDynamicPriceInfo {
+  optional uint32 ctrl_mode = 1;
+  optional uint32 ctrl_obj = 2;
+  optional int32 set_price = 3;
+}
+
+message EmsTaskTypeEnableFlagSet {
+  optional int32 task_type_enable_flag_set = 1;
+}
+
+message EmsTaskTypeEnableFlagSetAck {
+  optional int32 task_type_result_set_ack = 1;
+  optional int32 task_type_enable_flag_set_ack = 2;
+}
+
+message EmsSupplyTypeEnableFlagSet {
+  optional int32 supply_enable_flag_set = 1;
+}
+
+message EmsSupplyTypeEnableFlagSetAck {
+  optional int32 supply_result_set_ack = 1;
+  optional int32 supply_enable_flag_set_ack = 2;
+}
+
+message TouPriceQuery {
+  optional uint32 startDate = 1;
+  optional uint32 endDate = 2;
+  optional uint32 type = 3;
+  optional string zoneId = 4;
+}
+
+message Item {
+  optional float price = 1;
+  optional uint32 startX = 2;
+  optional uint32 endX = 3;
+}
+
+message DataEntry {
+  optional uint32 electricityChargeType = 1;
+  repeated Item items = 2;
+}
+
+message TouPriceResponse {
+  optional int32 ret = 1;
+  repeated DataEntry data = 2;
+}
+
+message SafetyFunRCRSet {
+  optional uint32 enable = 1;
+}
+
+message SafetyFunRCRSetAck {
+  optional uint32 result = 1;
+}
+
+message SafetyFunRCRParamReport {
+  optional uint32 enable = 1;
+  optional uint32 active_state = 2;
+}
+
+message ConfigRead {
+  repeated uint32 action_id = 1;
+}
+
+message ConfigReadAck {
+  optional GetIntelligentSchedule cfg_read_intelligent_schedule = 545;
+}
+
+message GetIntelligentSchedule {
+  optional uint32 intelligent_schedule_mode = 1;
+  optional uint32 join_intelligent_schedule = 2;
+}
+
+message DevRequest {
+  optional uint32 dev_utc_time = 1;
+  optional float dev_utc_timezone = 2;
+  optional ReqIntelligentSchedule require_intelligent_schedule = 11;
+}
+
+message ReqIntelligentSchedule {
+  optional uint32 req_intelligent_schedule_state = 1;
+}
+
+message Krakendatareport {
+  optional uint32 kraken_commit_id = 1;
+  optional uint32 kraken_mode_active = 2;
+  optional bool is_load_limit = 3;
+  optional inverterState inverter_State = 4;
+  optional interval interval = 5;
+  optional batteryState battery_State = 6;
+  optional bool kraken_cmd_support = 7;
+  optional float sys_bp_pwr = 8;
+  optional float kraken_effect_staut = 9;
+  optional float kraken_register_stayt = 10;
+}
+
+message interval {
+  optional float averageActivePower = 1;
+  optional uint32 duration = 2;
+  optional float energyCharged = 3;
+}
+
+message inverterState {
+  optional float solarActivePower = 1;
+  optional float inverterActivePower = 2;
+  optional float gridActivePower = 3;
+  optional uint32 exportToGridAllowed = 4;
+  optional uint32 importFromGridAllowed = 5;
+  optional float maximumExportPowerToGrid = 6;
+}
+
+message batteryState {
+  optional uint32 chargeStatus = 1;
+  optional uint32 mode = 2;
+  optional uint32 usableCapacity = 3;
+  optional uint32 reserveState0fCharge = 4;
+  optional uint32 stateOfCharge = 5;
+  optional uint32 currentEnergy = 6;
+}
+
+message KrakenSet {
+  optional uint32 kraken_switch = 1;
+}
+
+message KrakenSetAck {
+  optional uint32 result = 1;
+}
+
+message OilEngineTimerTask {
+  optional uint32 is_cfg = 1;
+  optional uint32 task_index = 2;
+  optional bool is_enable = 3;
+  optional bool is_effect = 4;
+  optional uint32 type = 5;
+  optional uint32 param = 6;
+  optional uint32 time_mode = 7;
+  optional uint32 time_param = 8;
+  repeated uint32 time_table = 9;
+}
+
+message OilEngineBind {
+  optional uint32 bind_ctrl = 1;
+  optional OilEngineParaSet oil_engine_para = 2;
+}
+
+message OilEngineBindAck {
+  optional uint32 result = 1;
+}
+
+message OilEngineParaSet {
+  optional float rated_power = 1;
+  optional uint32 connect_type = 2;
+  optional uint32 control_type = 3;
+  optional uint32 control_state = 4;
+  optional uint32 start_threshold = 5;
+  optional uint32 stop_threshold = 6;
+  optional OilEngineTimerTask time_para = 7;
+  optional uint32 start_control_io_bit = 8;
+  optional uint32 connect_io_bit = 9;
+}
+
+message OilEngineParaSetAck {
+  optional uint32 result = 1;
+}
+
+message OilEngineParaReport {
+  optional uint32 bind_state = 1;
+  optional uint32 ctrl_state = 2;
+  optional uint32 dry_contact_state = 3;
+  optional uint32 work_state = 4;
+  optional uint32 schedule_mode = 5;
+  optional OilEngineParaSet oil_engine_para = 10;
+}
+
+message OilEngineUnBind {
+}
+
+message OilEngineUnBindAck {
+  optional uint32 result = 1;
+}

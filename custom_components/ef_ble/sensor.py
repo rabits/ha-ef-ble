@@ -24,13 +24,14 @@ from homeassistant.const import (
     UnitOfTemperature,
     UnitOfTime,
 )
-from homeassistant.core import HomeAssistant
+from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
 from . import DeviceConfigEntry
 from .const import CONF_EXTRA_BATTERY, DOMAIN
 from .eflib import DeviceBase
+from .eflib.connection import ConnectionState
 from .eflib.device_mappings import extra_battery_indices
 from .eflib.devices import (
     _delta3_base,
@@ -966,6 +967,8 @@ async def async_setup_entry(
     if new_sensors:
         async_add_entities(new_sensors)
 
+    async_add_entities([EcoflowConnectionStateSensor(device)])
+
     if battery_entities := _get_extra_battery_entities(
         hass=hass, device=device, conf=config_entry.data.get(CONF_EXTRA_BATTERY)
     ):
@@ -1124,3 +1127,56 @@ class EcoflowBatteryAddonSensor(EcoflowBatteryAddonEntity, SensorEntity):
             for field_name in self._attribute_fields
             if hasattr(self._device, field_name)
         }
+
+
+def _connection_status(state: ConnectionState | None) -> str:
+    """Collapse the fine-grained connection state into a small diagnostic status."""
+    match state:
+        case None:
+            return "disconnected"
+        case state if state.authenticated:
+            return "connected"
+        case state if state.is_error:
+            return "error"
+        case state if state.is_connecting:
+            return "connecting"
+        case _:
+            return "disconnected"
+
+
+class EcoflowConnectionStateSensor(EcoflowEntity, SensorEntity):
+    """Diagnostic sensor reflecting the device's BLE connection state."""
+
+    _attr_translation_key = "connection_state"
+    _attr_device_class = SensorDeviceClass.ENUM
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
+    _attr_options = ["connected", "connecting", "disconnected", "error"]
+
+    def __init__(self, device: DeviceBase) -> None:
+        super().__init__(device)
+        self._attr_unique_id = f"ef_{device.serial_number}_connection_state"
+        self._remove_listener = None
+
+    @property
+    def available(self) -> bool:
+        return True
+
+    @property
+    def native_value(self) -> str:
+        return _connection_status(self._device.connection_state)
+
+    async def async_added_to_hass(self) -> None:
+        await super().async_added_to_hass()
+        self._remove_listener = self._device.on_connection_state_change(
+            self._on_connection_state_change
+        )
+
+    async def async_will_remove_from_hass(self) -> None:
+        if self._remove_listener is not None:
+            self._remove_listener()
+            self._remove_listener = None
+        await super().async_will_remove_from_hass()
+
+    @callback
+    def _on_connection_state_change(self, state: ConnectionState) -> None:
+        self.async_write_ha_state()

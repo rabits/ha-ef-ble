@@ -337,6 +337,12 @@
       "description": "The AC and DC charging controls now refuse values below the minimum the EcoFlow app enforces, so an automation that sets a lower value will fail with an out-of-range error.\n\nTo keep setting values below the minimum, turn on the matching option under Configure for this device. The Delta 2 and Delta 2 Max also gained an AC Charging switch, which stops the device drawing from the grid without needing a very low charging speed.\n\nThe minimums for this device are {minimums}."
     }
   },
+  "device_automation": {
+    "trigger_type": {
+      "connected": "{entity_name} connected",
+      "disconnected": "{entity_name} disconnected"
+    }
+  },
   "entity": {
     "button": {
       "power_off": {
@@ -432,7 +438,28 @@
         "name": "LV Solar Voltage Low"
       }
     },
+    "event": {
+      "connection": {
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "connected": "Connected",
+              "disconnected": "Disconnected"
+            }
+          }
+        }
+      }
+    },
     "sensor": {
+      "connection_state": {
+        "name": "Connection state",
+        "state": {
+          "connected": "Connected",
+          "connecting": "Connecting",
+          "disconnected": "Disconnected",
+          "error": "Error"
+        }
+      },
       "collecting_data": {
         "name": "Collecting diagnostics data"
       },

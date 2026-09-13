@@ -66,6 +66,7 @@ PLATFORMS: list[Platform] = [
     Platform.NUMBER,
     Platform.SELECT,
     Platform.CLIMATE,
+    Platform.EVENT,
 ]
 
 type DeviceConfigEntry = ConfigEntry[eflib.DeviceBase]

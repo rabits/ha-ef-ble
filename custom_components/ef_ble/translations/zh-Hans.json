@@ -337,6 +337,12 @@
       "description": "交流和直流充电控制不再接受低于 EcoFlow 应用所设最小值的数值，因此设置更低数值的自动化会因超出范围而失败。\n\n若仍需低于最小值，请在该设备的“配置”中开启相应选项。Delta 2 和 Delta 2 Max 还新增了 AC Charging 开关，无需极低的充电功率即可阻止设备从电网取电。\n\n该设备的最小值为 {minimums}。"
     }
   },
+  "device_automation": {
+    "trigger_type": {
+      "connected": "{entity_name} 已连接",
+      "disconnected": "{entity_name} 已断开"
+    }
+  },
   "entity": {
     "button": {
       "unpause_solar": {
@@ -427,6 +433,18 @@
       },
       "lv_solar_low_voltage": {
         "name": "低压太阳能电压低"
+      }
+    },
+    "event": {
+      "connection": {
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "connected": "已连接",
+              "disconnected": "已断开"
+            }
+          }
+        }
       }
     },
     "sensor": {
@@ -1012,6 +1030,15 @@
           "battery": "电池",
           "oil": "智能发电机",
           "station_charger": "充电桩"
+        }
+      },
+      "connection_state": {
+        "name": "连接状态",
+        "state": {
+          "connected": "已连接",
+          "connecting": "连接中",
+          "disconnected": "已断开",
+          "error": "错误"
         }
       }
     },

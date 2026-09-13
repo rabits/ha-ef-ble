@@ -217,9 +217,12 @@ def temperature(
 
 
 def _wave_unit(dev: "wave2.Device | wave3.Device"):
+    if isinstance(dev, wave3.Device):
+        return UnitOfTemperature.CELSIUS
+
     return (
         UnitOfTemperature.FAHRENHEIT
-        if dev.temp_unit in (units.Temperature.F, wave3.TemperatureUnit.FAHRENHEIT)
+        if dev.temp_unit is units.Temperature.F
         else UnitOfTemperature.CELSIUS
     )
 

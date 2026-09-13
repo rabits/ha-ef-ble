@@ -132,7 +132,12 @@ class Device(DeviceBase, ProtobufProps):
 
     @computed_field
     def is_submode_available(self) -> bool:
-        return self.operating_mode in (OperatingMode.COOLING, OperatingMode.HEATING)
+        # A unit in standby reports no mode, so the submode it belongs to is not
+        # selectable either
+        return self.power is True and self.operating_mode in (
+            OperatingMode.COOLING,
+            OperatingMode.HEATING,
+        )
 
     @classmethod
     def check(cls, sn):
@@ -219,17 +224,37 @@ class Device(DeviceBase, ProtobufProps):
 
     @_climate.power(power)
     async def enable_power(self, enabled: bool):
+        """
+        Turn the unit off into standby rather than powering it down
+
+        `cfg_power_off` cuts the Bluetooth radio with it, so a unit switched off that
+        way can only be woken at the unit itself, which makes it a poor fit for the
+        climate entity's off state. Standby keeps the link up so the same entity can
+        turn it back on. This is the app's own home-screen toggle: `cfg_power_on` to
+        turn on and `cfg_sys_pause` to send it to standby, with powering down offered
+        separately.
+        """
         cfg = ac517_apl_comm_pb2.ConfigWrite()
         if enabled:
             cfg.cfg_power_on = True
         else:
-            cfg.cfg_power_off = True
+            cfg.cfg_sys_pause = True
         await self._send_config_packet(cfg)
+
+    @controls.button(enabled=False)
+    async def power_off(self) -> None:
+        await self._send_config_packet(
+            ac517_apl_comm_pb2.ConfigWrite(cfg_power_off=True)
+        )
 
     @_climate.mode()
     async def set_operating_mode(self, mode: OperatingMode):
+        """Set the operating mode, waking the unit from standby in the same write"""
         await self._send_config_packet(
-            ac517_apl_comm_pb2.ConfigWrite(cfg_wave_operating_mode=mode.value)
+            ac517_apl_comm_pb2.ConfigWrite(
+                cfg_power_on=True,
+                cfg_wave_operating_mode=mode.value,
+            )
         )
 
     @_climate.target_temp(

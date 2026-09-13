@@ -25,7 +25,8 @@ class Device(delta3_plus.Device):
     ac_ports_2 = pb_field(pb.flow_info_ac2_out, flow_is_on)
 
     ac_power_1 = _ACPortPower(0)
-    ac_power_2 = _ACPortPower(3)
+    # pow_get_ac_out_list on D3M1 is [AC1, 0, AC2, 0, 0]; index 3 is always 0
+    ac_power_2 = _ACPortPower(2)
 
     usbc3_output_power = pb_field(pb.pow_get_typec3, out_power)
     _ac_charging_power_max = pb_field(pb.plug_in_info_ac_in_chg_hal_pow_max)

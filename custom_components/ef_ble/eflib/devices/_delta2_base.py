@@ -73,6 +73,8 @@ class Delta2Base(DeviceBase, RawDataProps):
     battery_1_voltage = raw_field(pb_bms_1.vol, pdiv(1000, 2))
     battery_1_max_cell_voltage = raw_field(pb_bms_1.max_cell_vol, pdiv(1000, 3))
     battery_1_min_cell_voltage = raw_field(pb_bms_1.min_cell_vol, pdiv(1000, 3))
+    battery_1_input_power = raw_field(pb_bms_1.input_watts)
+    battery_1_output_power = raw_field(pb_bms_1.output_watts)
     battery_1_sn = Field[str]()
 
     battery_2_enabled = Field[bool]()
@@ -81,6 +83,8 @@ class Delta2Base(DeviceBase, RawDataProps):
     battery_2_voltage = raw_field(pb_bms_2.vol, pdiv(1000, 2))
     battery_2_max_cell_voltage = raw_field(pb_bms_2.max_cell_vol, pdiv(1000, 3))
     battery_2_min_cell_voltage = raw_field(pb_bms_2.min_cell_vol, pdiv(1000, 3))
+    battery_2_input_power = raw_field(pb_bms_2.input_watts)
+    battery_2_output_power = raw_field(pb_bms_2.output_watts)
     battery_2_sn = Field[str]()
 
     battery_level = raw_field(pb_ems.f32_lcd_show_soc, pround(2))

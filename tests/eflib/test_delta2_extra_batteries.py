@@ -8,6 +8,8 @@ that both packs report on ``src=0x06`` and are told apart by the first payload b
 comes from a Delta 2 Max log with two attached. Identifying fields are replaced.
 """
 
+import struct
+
 import pytest
 from pytest_mock import MockerFixture
 
@@ -23,12 +25,21 @@ _REAL_BMS_PAYLOAD = bytes.fromhex(
 # Byte offsets into that pack (little-endian, fields in declaration order)
 _NUM = 0
 _MAX_CELL_TEMP = 43
+_INPUT_WATTS = 57
+_OUTPUT_WATTS = 61
 
 
-def _bms_payload(num: int, cell_temp: int = 32) -> bytes:
+def _bms_payload(
+    num: int,
+    cell_temp: int = 32,
+    input_watts: int = 0,
+    output_watts: int = 0,
+) -> bytes:
     payload = bytearray(_REAL_BMS_PAYLOAD)
     payload[_NUM] = num
     payload[_MAX_CELL_TEMP] = cell_temp
+    payload[_INPUT_WATTS : _INPUT_WATTS + 4] = struct.pack("<I", input_watts)
+    payload[_OUTPUT_WATTS : _OUTPUT_WATTS + 4] = struct.pack("<I", output_watts)
     return bytes(payload)
 
 
@@ -74,6 +85,16 @@ async def test_main_pack_routes_to_the_main_slot(device):
     assert device.get_value(Device.battery_level_main) is not None
     assert device.get_value(Device.battery_1_cell_temperature) is None
     assert device.get_value(Device.battery_2_cell_temperature) is None
+
+
+async def test_power_is_reported_per_pack(device):
+    assert await device.data_parse(_bms_packet(num=1, input_watts=120, output_watts=0))
+    assert await device.data_parse(_bms_packet(num=2, input_watts=0, output_watts=45))
+
+    assert device.get_value(Device.battery_1_input_power) == 120
+    assert device.get_value(Device.battery_1_output_power) == 0
+    assert device.get_value(Device.battery_2_input_power) == 0
+    assert device.get_value(Device.battery_2_output_power) == 45
 
 
 async def test_routing_follows_the_pack_index_not_the_source_address(device):

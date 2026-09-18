@@ -113,3 +113,25 @@ async def test_unknown_pack_index_is_left_unprocessed(device):
 
     assert device.get_value(Device.battery_1_cell_temperature) is None
     assert device.get_value(Device.battery_2_cell_temperature) is None
+
+
+_MODULE_INFO = bytes.fromhex(
+    "015233363154455354313233343536373864b10e000001000000c900000000000000"
+    "00000000000000000000000000000000000000000000000000000000000000c03f00"
+    "008c420000a0400000a0410103"
+)
+
+
+async def test_module_info_report_is_recognized(device):
+    """The per-module report is keyed by the same slot index as the BMS heartbeat"""
+    packet = Packet(0x06, 0x21, 0x20, 0x58, _MODULE_INFO, version=0x02)
+
+    assert await device.data_parse(packet) is True
+
+
+async def test_module_info_with_unknown_slot_is_left_unprocessed(device):
+    payload = bytearray(_MODULE_INFO)
+    payload[0] = 5
+    packet = Packet(0x06, 0x21, 0x20, 0x58, bytes(payload), version=0x02)
+
+    assert await device.data_parse(packet) is False

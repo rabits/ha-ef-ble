@@ -181,6 +181,8 @@ class Delta2Base(DeviceBase, RawDataProps):
             case 0x05, 0x20, 0x02:
                 self.update_from_bytes(self.mppt_heart_type, packet.payload)
                 processed = True
+            case _, 0x20, 0x58:
+                processed = self._parse_module_info(packet.payload)
             case 0x35, 0x35, 0x20:
                 self._logger.debug("Ping received: %r", packet)
                 processed = True
@@ -236,6 +238,23 @@ class Delta2Base(DeviceBase, RawDataProps):
             return False
         packet = Packet(0x21, 0x03, 0x20, 0x33, int(limit).to_bytes(), version=0x02)
         await self.send_packet(packet, raise_on_failure=True)
+        return True
+
+    def _parse_module_info(self, payload: bytes) -> bool:
+        """
+        Recognize the per-module info report, keyed by pack index like the BMS
+
+        Byte 0 is the slot and `[1:17]` the serial, which `AllKitDetailData`
+        already reports. `[18:34]` holds four monotonic counters that pair up and
+        look like milliamp-hours over watt-hours, but reading the pairs as charge
+        and discharge implies either 110.6% round-trip or 73.6% coulombic
+        efficiency, so the model is wrong somewhere and none of it is wired up.
+        Settling it needs a controlled charge with no load, not another capture.
+        """
+        if not payload or payload[0] not in _SLOTS:
+            return False
+
+        self._logger.debug("Module info received for slot %s", payload[0])
         return True
 
     def _parse_bms_heartbeat(self, payload: bytes) -> bool:

@@ -29,6 +29,18 @@ class _BmsHeartbeatBattery2(DirectBmsMDeltaHeartbeatPack):
     pass
 
 
+# The BMS heartbeats carry their own slot number in `num`: 0 is the device's own pack
+# and 1-2 are the attached extra batteries. The source address does not identify the
+# slot - every extra battery reports on 0x06, so routing on the address alone sent both
+# packs into slot 1 and left slot 2 empty.
+_BMS_HEARTBEAT_BY_SLOT = {
+    0: _BmsHeartbeatBatteryMain,
+    1: _BmsHeartbeatBattery1,
+    2: _BmsHeartbeatBattery2,
+}
+_SLOTS = frozenset(_BMS_HEARTBEAT_BY_SLOT)
+
+
 pb_pd = dataclass_attr_mapper(BasePdHeart)
 pb_mppt = dataclass_attr_mapper(BaseMpptHeart)
 pb_ems = dataclass_attr_mapper(DirectEmsDeltaHeartbeatPack)
@@ -157,12 +169,8 @@ class Delta2Base(DeviceBase, RawDataProps):
             case 0x03, 0x20, 0x02:
                 self.update_from_bytes(DirectEmsDeltaHeartbeatPack, packet.payload)
                 processed = True
-            case 0x03, 0x20, 0x32:
-                self.update_from_bytes(_BmsHeartbeatBatteryMain, packet.payload)
-                processed = True
-            case 0x06, 0x20, 0x32:
-                self.update_from_bytes(_BmsHeartbeatBattery1, packet.payload)
-                processed = True
+            case _, 0x20, 0x32:
+                processed = self._parse_bms_heartbeat(packet.payload)
             case 0x04, _, 0x02:
                 self.update_from_bytes(DirectInvDeltaHeartbeatPack, packet.payload)
                 processed = True
@@ -221,6 +229,18 @@ class Delta2Base(DeviceBase, RawDataProps):
             return False
         packet = Packet(0x21, 0x03, 0x20, 0x33, int(limit).to_bytes(), version=0x02)
         await self.send_packet(packet, raise_on_failure=True)
+        return True
+
+    def _parse_bms_heartbeat(self, payload: bytes) -> bool:
+        """Route a BMS heartbeat to the slot named by `num` in its payload"""
+        if not payload:
+            return False
+
+        heartbeat_type = _BMS_HEARTBEAT_BY_SLOT.get(payload[0])
+        if heartbeat_type is None:
+            return False
+
+        self.update_from_bytes(heartbeat_type, payload)
         return True
 
     def _update_extra_batteries(self, kit_data: AllKitDetailData):

@@ -2,6 +2,7 @@ import pytest
 from pytest_mock import MockerFixture
 
 from custom_components.ef_ble.eflib.devices.delta2_max import Device
+from custom_components.ef_ble.eflib.packet import Packet
 
 
 @pytest.fixture
@@ -222,3 +223,17 @@ async def test_delta2_max_exact_values_from_known_packets(device, packet_sequenc
         assert actual_value == expected_value, (
             f"{field_name}: expected {expected_value}, got {actual_value}"
         )
+
+
+async def test_delta2_max_acknowledges_ping(device):
+    """
+    A keepalive is handled rather than left to the unprocessed-packet log
+
+    Payload taken from a real Delta 2 Max log; other devices treat the same
+    src/cmd_set/cmd_id triple as a ping and ignore its contents.
+    """
+    ping = Packet(
+        0x35, 0x20, 0x35, 0x20, bytes.fromhex("040056007f007300"), version=0x02
+    )
+
+    assert await device.data_parse(ping) is True

@@ -181,6 +181,9 @@ class Delta2Base(DeviceBase, RawDataProps):
             case 0x05, 0x20, 0x02:
                 self.update_from_bytes(self.mppt_heart_type, packet.payload)
                 processed = True
+            case 0x35, 0x35, 0x20:
+                self._logger.debug("Ping received: %r", packet)
+                processed = True
 
         self._notify_updated()
 

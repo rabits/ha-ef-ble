@@ -52,6 +52,7 @@ from .entity import (
     EcoflowEntity,
     resolve_entity_description_keys,
 )
+from .registry import async_get_device
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -967,13 +968,19 @@ async def async_setup_entry(
         async_add_entities(new_sensors)
 
     if battery_entities := _get_extra_battery_entities(
-        hass=hass, device=device, conf=config_entry.data.get(CONF_EXTRA_BATTERY)
+        hass=hass,
+        device=device,
+        conf=config_entry.data.get(CONF_EXTRA_BATTERY),
+        config_entry_id=config_entry.entry_id,
     ):
         async_add_entities(battery_entities)
 
 
 def _get_extra_battery_entities(
-    hass: HomeAssistant, device: DeviceBase, conf: list[str] | None
+    hass: HomeAssistant,
+    device: DeviceBase,
+    conf: list[str] | None,
+    config_entry_id: str,
 ):
     available_indices = extra_battery_indices(device)
 
@@ -993,7 +1000,11 @@ def _get_extra_battery_entities(
     for battery_index in available_indices:
         if battery_index not in enabled_indices:
             identifier = (DOMAIN, f"{device.address}_battery_{battery_index}")
-            if dev_entry := registry.async_get_device(identifiers={identifier}):
+            if dev_entry := async_get_device(
+                registry,
+                identifiers={identifier},
+                config_entry_id=config_entry_id,
+            ):
                 registry.async_remove_device(dev_entry.id)
 
     battery_entities: list[EcoflowBatteryAddonSensor] = []

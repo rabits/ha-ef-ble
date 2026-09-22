@@ -12,6 +12,7 @@ from .eflib.device_options import (
     UNLOCK_AC_CHARGING_MINIMUM,
     UNLOCK_DC_CHARGING_MINIMUM,
 )
+from .registry import async_get_device
 
 _CHARGING_MINIMUM_OPTIONS = {
     UNLOCK_AC_CHARGING_MINIMUM: ("AC", "W"),
@@ -23,7 +24,11 @@ def create_charging_minimum_issue(
     hass: HomeAssistant, config_entry: ConfigEntry
 ) -> None:
     address = config_entry.data.get(CONF_ADDRESS)
-    device_entry = dr.async_get(hass).async_get_device(identifiers={(DOMAIN, address)})
+    device_entry = async_get_device(
+        dr.async_get(hass),
+        identifiers={(DOMAIN, address)},
+        config_entry_id=config_entry.entry_id,
+    )
     if device_entry is None or not device_entry.serial_number:
         return
 

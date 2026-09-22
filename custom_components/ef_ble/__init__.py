@@ -57,6 +57,7 @@ from .eflib.exceptions import AuthErrors, UnsupportedBluetoothProtocol
 from .eflib.logging_util import ConnectionLog
 from .issues import create_charging_minimum_issue
 from .proxy import connect_gate, wait_for_preferred_proxy
+from .registry import async_get_device
 
 PLATFORMS: list[Platform] = [
     Platform.BUTTON,
@@ -257,7 +258,11 @@ async def async_migrate_entry(hass: HomeAssistant, config_entry: ConfigEntry) ->
         if config_entry.minor_version < 1:
             address = config_entry.data.get(CONF_ADDRESS)
             device_reg = dr.async_get(hass)
-            device_entry = device_reg.async_get_device(identifiers={(DOMAIN, address)})
+            device_entry = async_get_device(
+                device_reg,
+                identifiers={(DOMAIN, address)},
+                config_entry_id=config_entry.entry_id,
+            )
 
             if device_entry is not None and device_entry.serial_number is not None:
                 serial_number = device_entry.serial_number

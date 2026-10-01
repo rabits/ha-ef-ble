@@ -263,6 +263,7 @@ non-obvious conventions:
   class Device(DeviceBase, ProtobufProps):
       """STREAM AC"""
 
+
   def pb_field(
       attr: Any,
       transform: Callable[[Any], Any] | None = None,

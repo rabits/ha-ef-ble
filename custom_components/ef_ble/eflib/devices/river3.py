@@ -99,7 +99,7 @@ class Device(DeviceBase, ProtobufProps):
     dc_charging_type = pb_field(pb.pv_chg_type, DcChargingType.from_value)
     dc_charging_max_amps = pb_field(pb.plug_in_info_pv_dc_amp_max)
     dc_charging_amps_min = option_field(
-        UNLOCK_DC_CHARGING_MINIMUM, enabled=1, disabled=4
+        UNLOCK_DC_CHARGING_MINIMUM, enabled=0, disabled=4
     )
 
     remaining_time_charging = pb_field(pb.cms_chg_rem_time)

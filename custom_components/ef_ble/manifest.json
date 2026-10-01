@@ -227,8 +227,8 @@
     "loggers": ["custom_components.ef_ble"],
 
     "requirements": [
-        "ecdsa>=0.19",
-        "PyCryptodome>=3.23",
+        "ecdsa~=0.19",
+        "PyCryptodome~=3.23",
         "protobuf>=6.30"
     ],
 

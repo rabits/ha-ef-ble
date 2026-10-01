@@ -135,7 +135,7 @@ class Delta3Base(DeviceBase, ProtobufProps):
     )
     dc_charging_current_max = _DcChargingMaxField(pd335_sys_pb2.PV_CHG_VOL_SPEC_12V)
     dc_charging_amps_min = option_field(
-        UNLOCK_DC_CHARGING_MINIMUM, enabled=1, disabled=4
+        UNLOCK_DC_CHARGING_MINIMUM, enabled=0, disabled=4
     )
 
     def __init__(

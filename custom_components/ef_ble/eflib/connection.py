@@ -49,6 +49,11 @@ from .logging_util import ConnectionLogger, LogOptions, caller_chain
 from .packet import InvalidPacket, Packet
 from .props.utils import classproperty
 
+# The device answers the check when it still holds a verified binding for this account,
+# and the refresh when it does not; the app picks between them the same way
+AUTH_CHECK = 0x86
+AUTH_REFRESH = 0x85
+
 MAX_RECONNECT_ATTEMPTS = 2
 MAX_CONNECTION_ATTEMPTS = 10
 
@@ -236,6 +241,7 @@ class Connection:
         packet_version: int = 0x03,
         encrypt_type: int = 7,
         auth_header_dst: int = 0x35,
+        verified: bool = True,
     ) -> None:
         self._ble_dev = ble_dev
         self._address = ble_dev.address
@@ -246,6 +252,7 @@ class Connection:
         self._packet_parse = packet_parse
         self._packet_version = packet_version
         self._encrypt_type = encrypt_type
+        self._verified = verified
         self._encryption: EncryptionStrategy | None = None
         self._initial_session_key: bytes = b""
         self._frame_assembler: FrameAssembler | None = None
@@ -824,9 +831,14 @@ class Connection:
 
     @_auth_stage(ConnectionState.AUTHENTICATING)
     async def _auto_authentication(self):
+        # A device that no longer holds a verified binding refuses the check and can
+        # only be repaired by writing the secret back, which is what the app does when
+        # the advertisement says the binding is not verified
+        command = AUTH_CHECK if self._verified else AUTH_REFRESH
         self._logger.info(
             "autoAuthentication: Sending secretKey consists of user id and device "
-            "serial number",
+            "serial number (%s)",
+            "checking" if self._verified else "refreshing an unverified binding",
         )
 
         # Building payload for auth
@@ -839,7 +851,7 @@ class Connection:
             0x21,
             self._auth_header_dst,
             0x35,
-            0x86,
+            command,
             payload,
             0x01,
             0x01,
@@ -1151,7 +1163,7 @@ class Connection:
             is_auth_reply = (
                 packet.src == self._auth_header_dst
                 and packet.cmd_set == 0x35
-                and packet.cmd_id == 0x86
+                and packet.cmd_id in (AUTH_CHECK, AUTH_REFRESH)
             )
             authenticating = self._state == ConnectionState.AUTHENTICATING
 

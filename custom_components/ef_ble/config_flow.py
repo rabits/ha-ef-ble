@@ -74,6 +74,7 @@ from .eflib.exceptions import AuthErrors
 from .eflib.logging_util import LogOptions
 from .eflib.login import EcoFlowLogin, Region
 from .proxy import connectable_proxies
+from .registry import async_get_device
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -805,7 +806,11 @@ class OptionsFlowHandler(OptionsFlow):
         """Resolve the device class from the serial number stored in the device registry"""
         address = self.config_entry.data.get(CONF_ADDRESS)
         registry = dr.async_get(self.hass)
-        device_entry = registry.async_get_device(identifiers={(DOMAIN, address)})
+        device_entry = async_get_device(
+            registry,
+            identifiers={(DOMAIN, address)},
+            config_entry_id=self.config_entry.entry_id,
+        )
         if device_entry is None or not device_entry.serial_number:
             return None
         return eflib.device_class_from_sn(device_entry.serial_number)

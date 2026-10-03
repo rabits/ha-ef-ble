@@ -1,0 +1,160 @@
+syntax = "proto3";
+
+package jt_s1_heatingrod;
+
+
+enum HRCmdSets {
+  HR_NONE_CMD_SETS = 0;
+  HR_CMD_SETS = 212;
+}
+
+enum HRCmdId {
+  HR_CMD_ID_NONE = 0;
+  HR_CMD_ID_TIMERTASK_REPORT = 2;
+  HR_CMD_ID_HRCHARGING_PARAM_REPORT = 8;
+  HR_CMD_ID_HRCHARGING_PARAM_SET = 99;
+  HR_CMD_ID_HRCHARGING_INIT_SET = 100;
+  HR_CMD_ID_TIMER_TASK_SET = 101;
+  HR_CMD_ID_TIMER_TASK_GET = 102;
+  HR_CMD_ID_HRCHARGING_ENERGY_STREAM_REPORT = 33;
+  HR_CMD_ID_ENERGY_STREAM_DETAIL = 34;
+  HR_CMD_ID_HRCHARGING_CTRL = 48;
+  HR_CMD_ID_HRCHARGING_RUN_DATA_GET = 50;
+}
+
+message HeatingRodParamSet {
+  optional string hr_sn = 1;
+  optional uint32 run_sta_ctrl = 2;
+  optional uint32 mode = 3;
+  optional uint32 target_temp = 4;
+  optional uint32 target_power = 5;
+  optional uint32 water_tank_volume = 6;
+  optional uint32 dry_heat_ignore = 7;
+}
+
+message HeatingRodParamSetAck {
+  optional string hr_sn = 1;
+  optional int32 result = 2;
+}
+
+message HRChargingParamReport {
+  optional string hr_sn = 1;
+  optional uint32 mode = 2;
+  optional uint32 online_bits = 3;
+  optional uint32 heating_power = 4;
+  optional uint32 target_power = 5;
+  optional float temp = 6;
+  optional float target_temp = 7;
+  optional uint32 run_stat = 8;
+  optional uint32 error_code = 9;
+  optional uint32 water_tank_volume = 10;
+  optional uint32 selfcheck_percent = 11;
+  optional uint32 run_flag = 12;
+}
+
+message HeatingRodEnergyStreamShow {
+  repeated HeatingRodEnergyStream hr_energy_stream = 1;
+}
+
+message HeatingRodEnergyStream {
+  optional string hr_sn = 1;
+  optional float hr_pwr = 2;
+  optional float temp = 3;
+  optional float from_pv = 4;
+  optional float from_bat = 5;
+  optional float from_grid = 6;
+}
+
+message HeatingRodEnergyStreamItem {
+  optional string hr_sn = 1;
+  optional float hr_pwr = 2;
+  optional uint32 temp = 3;
+  optional fixed32 timestamp = 4;
+  optional float from_pv = 5;
+  optional float from_bat = 6;
+  optional float from_grid = 7;
+}
+
+message HeatingRodStreamDetail {
+  repeated HeatingRodEnergyStreamItem hr_energy_stream = 1;
+  optional uint32 sys_seq = 2;
+}
+
+message HeatingRodStreamDetailAck {
+  optional uint32 sys_seq = 1;
+  optional uint32 sys_energy_num = 2;
+}
+
+message HeatingRodRunDataGet {
+  optional string hr_sn = 1;
+}
+
+message HeatingRodRunDataAck {
+  optional string hr_sn = 1;
+  optional uint32 heating_power = 2;
+  optional uint32 target_power = 3;
+  optional uint32 temp = 4;
+  optional uint32 target_temp = 5;
+  optional uint32 run_stat = 6;
+  optional uint32 error_code = 7;
+  optional uint32 water_tank_volume = 8;
+  optional uint32 target_run_stat = 9;
+  optional bool online = 10;
+  optional uint32 selfcheck_percent = 11;
+  optional uint32 run_flag_bit = 12;
+}
+
+message HeatingRodCtrl {
+  optional string hr_sn = 1;
+  optional uint32 heating_rod_ctrl = 2;
+  optional uint32 heating_rod_power = 3;
+  optional uint32 heating_rod_temp = 4;
+  optional uint32 water_tank_volume = 5;
+  optional uint32 run_flag_bit = 6;
+  optional uint32 dry_heat_ignore = 7;
+}
+
+message HeatingRodCtrlAck {
+  optional string hr_sn = 1;
+  optional int32 result = 2;
+}
+
+message HeatingRodTimerTaskCfgSet {
+  optional string hr_sn = 1;
+  optional HeatingRodTimerTaskCfg timer_task = 2;
+}
+
+message HeatingRodTimerTaskCfg {
+  optional uint32 is_cfg = 1;
+  optional uint32 task_index = 2;
+  optional bool is_enable = 3;
+  optional bool is_effect = 4;
+  optional uint32 type = 5;
+  optional int32 param = 6;
+  optional uint32 time_mode = 7;
+  optional uint32 time_param = 8;
+  repeated uint32 time_table = 9;
+}
+
+message HeatingRodTimerTaskCfgAck {
+  optional string hr_sn = 1;
+  optional uint32 type = 2;
+  optional uint32 task_index = 3;
+  optional int32 result = 4;
+}
+
+message HeatingRodTimerTaskGet {
+  optional string hr_sn = 1;
+}
+
+message HeatingRodTimerTaskReport {
+  optional string hr_sn = 1;
+  repeated HeatingRodTimerTaskCfg time_task_cfg = 2;
+}
+
+message HeatingRodRemoteListSync {
+}
+
+message HeatingRodRemoteListSyncAck {
+  repeated string hr_sn = 1;
+}

@@ -1,0 +1,221 @@
+syntax = "proto3";
+
+package jt_s1_edev;
+
+
+enum EcoDevCmdSets {
+  EDEV_NONE_CMD_SETS = 0;
+  EDEV_CMD_SETS = 240;
+  EDEV_CMD_SETS_SUB = 242;
+}
+
+enum EDevCmdId {
+  EDEV_CMD_ID_NONE = 0;
+  EDEV_CMD_ID_EDEV_BIND_LIST_REPORT = 1;
+  EDEV_CMD_ID_EDEV_PRIORITY_REPORT = 2;
+  EDEV_CMD_ID_PARAM_REPORT = 3;
+  EDEV_CMD_ID_TIMERTASK_REPORT = 4;
+  EDEV_CMD_ID_SYS_REPORT = 5;
+  EDEV_CMD_ID_EDEV_GET = 97;
+  EDEV_CMD_ID_EDEV_BIND = 98;
+  EDEV_CMD_ID_EDEV_PRIORITY_SET = 99;
+  EDEV_CMD_ID_EDEV_ONOFF_SET = 100;
+  EDEV_CMD_ID_EDEV_MODE_SET = 101;
+  EDEV_CMD_ID_EDEV_PARAM_SET = 102;
+  EDEV_CMD_ID_EDEV_PARAM_POINT_SET = 103;
+  EDEV_CMD_ID_EDEV_PARAM_POINT_GET = 104;
+  EDEV_CMD_ID_TIMER_TASK_SET = 106;
+  EDEV_CMD_ID_TIMER_TASK_GET = 107;
+  EDEV_CMD_ID_EXPEND_CTRL = 108;
+  EDEV_CMD_ID_EDEV_BIND_LIST_GET = 109;
+  EDEV_CMD_ID_EDEV_PRIORITY_GET = 111;
+  EDEV_CMD_ID_BATCH_OP = 112;
+  EDEV_CMD_ID_WATTH_SHOW = 33;
+  EDEV_CMD_ID_WATTH_HISTORY = 34;
+  EDEV_CMD_ID_WATTH_TOTAL = 35;
+  EDEV_CMD_ID_REMOTE_LIST_SYNC = 36;
+  EDEV_CMD_ID_EDEV_RUN_DATA_GET = 38;
+  EDEV_CMD_ID_EDEV_REMOTE_CTRL = 40;
+  EDEV_CMD_ID_JT_TO_REMOTE_HEARTBEAT = 41;
+  EDEV_CMD_ID_ORDERS_DETAIL = 43;
+  EDEV_CMD_ID_EDEV_RUN_DATA_SYNC = 44;
+  EDEV_CMD_ID_REMOTE_TO_JT_HEARTBEAT = 45;
+  EDEV_CMD_ID_MASTER_TO_SLAVE_PARAM_SYNC = 46;
+}
+
+enum EDevCmdSubId {
+  EDEV_SUB_CMD_ID_NONE = 0;
+  EDEV_SUB_CMD_ID_14A_EEBUS_DATA_GET = 98;
+  EDEV_SUB_CMD_ID_14A_EEBUS_CTRL = 99;
+  EMS_SUB_CMD_ID_14A_ROLE_HISTORY_REPORT = 52;
+  EMS_SUB_CMD_ID_14A_EEBUS_DATA_SYNC = 53;
+}
+
+message EdevBaseInfo {
+  optional uint32 dev_addr = 1;
+  optional string dev_sn = 2;
+  optional uint32 sub_addr = 3;
+}
+
+message EDevGet {
+  optional uint32 dev_addr = 1;
+}
+
+message EDevGetItem {
+  optional EdevBaseInfo dev_info = 1;
+}
+
+message EDevGetAck {
+  repeated EDevGetItem dev_list = 1;
+  optional uint32 local_connected = 2;
+}
+
+message EDevBind {
+  optional EdevBaseInfo dev_info = 1;
+  optional bool bind_flg = 2;
+  optional uint32 commute_type = 3;
+}
+
+message EDevBindAck {
+  optional EdevBaseInfo dev_info = 1;
+  optional bool bind_flg = 2;
+  optional int32 result = 3;
+  optional uint32 commute_type = 4;
+}
+
+message EDevBindItem {
+  optional EdevBaseInfo dev_info = 1;
+  optional uint32 commute_type = 2;
+  optional uint32 online_bits = 3;
+  optional uint32 dev_prio = 4;
+}
+
+message EDevBindListReport {
+  optional uint32 dev_addr = 1;
+  repeated EDevBindItem dev_item = 2;
+}
+
+message EDevBindListGet {
+  optional EdevBaseInfo dev_info = 1;
+}
+
+message EDevPriorityItem {
+  optional EdevBaseInfo dev_info = 1;
+  optional uint32 dev_prio = 2;
+  optional bool enable = 3;
+  optional uint32 type = 4;
+  optional bytes data = 5;
+}
+
+message EDevPriorityListSet {
+  repeated EDevPriorityItem dev_prio_set = 1;
+}
+
+message EDevPriorityListSetAck {
+  optional int32 result = 1;
+}
+
+message EDevPriorityListReport {
+  repeated EDevPriorityItem dev_prio_report = 1;
+}
+
+message EDevPriorityListReportGet {
+}
+
+message EDevTimerTaskCfg {
+  optional uint32 is_cfg = 1;
+  optional uint32 task_index = 2;
+  optional bool is_enable = 3;
+  optional bool is_effect = 4;
+  optional uint32 type = 5;
+  optional uint32 time_mode = 6;
+  optional uint32 time_param = 7;
+  repeated uint32 time_table = 8;
+  repeated int32 param = 9;
+  optional uint32 task_type = 10;
+  repeated uint32 current_table = 11;
+  optional bool delay_start = 12;
+}
+
+message EDevTimerTaskCfgSet {
+  optional EdevBaseInfo dev_info = 1;
+  optional EDevTimerTaskCfg timer_task = 2;
+}
+
+message EDevTimerTaskCfgSetAck {
+  optional EdevBaseInfo dev_info = 1;
+  optional uint32 type = 2;
+  optional uint32 task_index = 3;
+  optional int32 result = 4;
+}
+
+message EDevTimerTaskGet {
+  optional EdevBaseInfo dev_info = 1;
+}
+
+message EDevTimerTaskReport {
+  optional EdevBaseInfo dev_info = 1;
+  repeated EDevTimerTaskCfg time_task_cfg = 2;
+}
+
+message EDevEnergyStreamShowItem {
+  optional EdevBaseInfo dev_info = 1;
+  optional float pwr = 2;
+  optional float from_pv = 4;
+  optional float from_bat = 5;
+  optional float from_grid = 6;
+}
+
+message EDevEnergyStreamShow {
+  repeated EDevEnergyStreamShowItem energy = 1;
+}
+
+message EDevOnOffSet {
+  optional EdevBaseInfo dev_info = 1;
+  optional uint32 on_off_set = 2;
+}
+
+message EDevOnOffSetAck {
+  optional EdevBaseInfo dev_info = 1;
+  optional uint32 result = 2;
+}
+
+message EDevRemotCtrlSet {
+  optional EdevBaseInfo dev_info = 1;
+  optional bytes data = 2;
+}
+
+message EDevRemotCtrlSetAck {
+  optional EdevBaseInfo dev_info = 1;
+  optional uint32 result = 2;
+}
+
+message EDevMasterToSlaveParamSync {
+  optional EdevBaseInfo dev_info = 1;
+  optional bytes data = 2;
+}
+
+message EDevModeSet {
+  optional EdevBaseInfo dev_info = 1;
+  optional uint32 mode = 2;
+}
+
+message EDevModeSetAck {
+  optional EdevBaseInfo dev_info = 1;
+  optional uint32 result = 2;
+}
+
+message EDevParamSet {
+  optional EdevBaseInfo dev_info = 1;
+  optional bytes data = 2;
+}
+
+message EDevParamSetAck {
+  optional EdevBaseInfo dev_info = 1;
+  optional uint32 result = 2;
+}
+
+message EDevParamReport {
+  optional EdevBaseInfo dev_info = 1;
+  optional bytes data = 2;
+}

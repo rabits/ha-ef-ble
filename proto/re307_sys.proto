@@ -1,0 +1,209 @@
+syntax = "proto3";
+
+package re307_sys;
+
+
+enum WorkMode {
+  WORKMODE_SELFUSE = 0;
+  WORKMODE_TOU = 1;
+  WORKMODE_BACKUP = 2;
+  WORKMODE_DBG = 3;
+  WORKMODE_AC_MAKEUP = 4;
+  WORKMODE_DRM_MODE = 5;
+  WORKMODE_REMOTE_SCHED = 6;
+  WORKMODE_STANDBY_MODE = 7;
+  WORKMODE_SOC_CALIB = 8;
+  WORKMODE_TIMER_MODE = 9;
+}
+
+enum SgReadyMode {
+  SG_AUTO = 0;
+  SG_MANUAL = 1;
+}
+
+enum RunStaDef {
+  RUNSTA_STANDBY = 0;
+  RUNSTA_RUN = 1;
+  RUNSTA_STOP = 2;
+}
+
+enum PeakShavingStatus {
+  NO_PEAK_SHAVING_TASK = 0;
+  PEAK_SHAVING_TASK_EXIST = 1;
+  PEAK_SHAVING_TASK_ACTIVE = 2;
+}
+
+message SgReadyStatParam {
+  optional bool ems_sg_stat_en = 1;
+  optional uint32 ems_sg_stat = 2;
+  optional uint32 ems_sg_pwr = 3;
+  optional uint32 ems_sg_soc = 4;
+}
+
+message SgReadyParam {
+  optional SgReadyMode ems_sg_mode = 1;
+  repeated SgReadyStatParam ems_sg_param = 2;
+  optional uint32 ems_sg_rate_pwr = 3;
+  optional uint32 ems_sg_swit_time = 4;
+}
+
+message EVChargingSnList {
+  repeated string ev_sn = 1;
+}
+
+message EmsChangeReport {
+  optional WorkMode ems_word_mode = 3;
+  optional uint32 ems_backup_event = 4;
+  optional uint32 ems_keep_soc = 6;
+  optional uint32 sys_bat_chg_up_limit = 11;
+  optional uint32 sys_bat_dsg_down_limit = 12;
+  optional uint32 sys_bat_backup_ratio = 15;
+  optional uint32 ems_feed_mode = 16;
+  optional uint32 ems_feed_ratio = 17;
+  optional uint32 ems_feed_pwr = 18;
+  optional uint32 sys_meter_cfg = 19;
+  optional uint32 sys_type_cfg = 20;
+  optional bool rate_ctrl_swtich = 133;
+  optional uint32 sys_rate_ctrl_time = 134;
+  optional uint32 dura_time = 135;
+  optional uint32 ems_ctrl_led_type = 151;
+  optional uint32 ems_ctrl_led_bright = 152;
+  optional bool sys_mul_peak_switch = 180;
+  optional uint32 sys_mul_peak_time = 181;
+  optional SgReadyParam ems_sg_ready = 182;
+  optional bool ems_sg_ready_en = 183;
+  optional uint32 ems_sg_run_stat = 184;
+  optional uint32 user_role = 228;
+  optional uint32 chg_dsg_mode = 229;
+  optional float chg_dsg_pwr = 230;
+  optional bool energy_efficient_enable = 300;
+  optional uint32 sys_zone = 301;
+  optional uint32 sys_time_tab = 302;
+  optional uint32 breaker_capacity_max = 350;
+  optional bool breaker_enable_state = 351;
+  optional uint32 dev_soc = 352;
+  optional uint32 sys_switch_bit = 353;
+  optional uint32 modbus_online_status = 354;
+  optional float tou_offset = 355;
+  optional EmsPeakShavingReport ems_peak_shaving_report = 356;
+  optional EmsAllPeakTaskReport ems_all_peak_task_report = 357;
+  optional bool sys_rcr_enable = 500;
+  optional uint32 sys_effect_bit = 501;
+  optional uint32 sys_rcr_per = 502;
+  optional EmsAllTimerTaskReport timer_task = 503;
+  optional bool sys_three_phase_ctrl_enable = 504;
+}
+
+message EmsStateChangeReport {
+  optional uint32 sys_work_sta = 1;
+  optional uint32 sys_grid_sta = 2;
+  optional uint32 bp_chg_dsg_sta = 5;
+  optional uint32 bp_soc = 7;
+  optional uint32 ems_sys_self_check_stat = 8;
+  optional uint32 bp_online_sum = 9;
+  optional uint32 sys_on_off_machine_stat = 10;
+  optional uint32 bp_total_chg_energy = 13;
+  optional uint32 bp_total_dsg_energy = 14;
+  optional uint32 ems_stop_all = 185;
+  optional sint32 iot_4g_on = 186;
+  optional sint32 iot_4g_sta = 187;
+  optional sint32 iot_4g_pdp = 188;
+  optional sint32 iot_4g_err = 189;
+  optional uint32 sys_cal_stat = 223;
+  optional uint32 eth_wan_stat = 224;
+  optional uint32 wifi_sta_stat = 225;
+  optional string wireless_4g_iccid = 226;
+  optional uint32 virtual_hard_edition = 227;
+  optional uint32 sys_heat_stat = 190;
+  optional uint32 pcs_ac_warning_code = 191;
+  optional uint32 pcs_relay_self_check_sta = 192;
+  optional uint32 pcs_run_fsm_state = 193;
+  optional uint32 mppt1_fault_code = 194;
+  optional uint32 mppt2_fault_code = 195;
+  optional uint32 mppt1_warning_code = 196;
+  optional uint32 mppt2_warning_code = 197;
+  optional uint32 bp_line_off_flag = 198;
+  optional uint32 bp_restart_flag = 199;
+  optional uint32 bp_reverse_flag = 200;
+  optional uint32 bat_relay_close_fail_flag = 201;
+  optional uint32 bat_soft_relay_status = 202;
+  optional uint32 bat_realy_status = 203;
+  optional uint32 pcs_relay_state_show = 204;
+  optional uint32 ems_work_state = 205;
+  optional EVChargingSnList ev_bind_list = 206;
+  optional uint32 afci_fault_cnt_ch1 = 207;
+  optional float afci_fault_value_ch1 = 208;
+  optional float afci_fault_max_value_ch1 = 209;
+  optional float afci_protect_value_ch1 = 210;
+  optional uint32 afci_fault_flag_ch1 = 211;
+  optional uint32 afci_fault_cnt_ch2 = 212;
+  optional float afci_fault_value_ch2 = 213;
+  optional float afci_fault_max_value_ch2 = 214;
+  optional float afci_protect_value_ch2 = 215;
+  optional uint32 afci_fault_flag_ch2 = 216;
+  optional uint32 afci_self_test_cmd_state = 217;
+  optional uint32 afci_enable_cmd_state = 218;
+  optional uint32 afci_fault_clear_state = 219;
+  optional uint32 afci_sellf_test_result = 220;
+  optional uint32 afci_switch_freq_ch1 = 221;
+  optional uint32 afci_switch_freq_ch2 = 222;
+  optional uint32 sys_state_bit = 266;
+  optional uint32 slave_modbus_addr = 267;
+  optional uint32 end_timestamp = 268;
+  optional uint32 duration = 269;
+  optional uint32 dev_max_power = 270;
+  optional RunStaDef pcs_run_sta = 300;
+  optional uint32 pcs_ac_err_code = 301;
+  optional uint32 pcs_dc_err_code = 302;
+  optional uint32 mppt3_fault_code = 303;
+  optional uint32 mppt3_warning_code = 304;
+  optional bool lower_power_stat = 305;
+  optional bool ems_acmake_stat = 306;
+}
+
+message EmsTimerTaskCfg {
+  optional uint32 role = 1;
+  optional uint32 is_cfg = 2;
+  optional uint32 task_index = 3;
+  optional bool is_enable = 4;
+  optional bool is_effect = 5;
+  optional uint32 type = 6;
+  optional uint32 sys_chg_dsg_pwr = 7;
+  optional uint32 time_mode = 8;
+  optional uint32 time_param = 9;
+  repeated uint32 time_table = 10;
+}
+
+message EmsAllTimerTaskReport {
+  repeated EmsTimerTaskCfg time_task_cfg = 1;
+}
+
+message EmsPeakShavingReport {
+  optional PeakShavingStatus peak_shaving_status = 1;
+  optional float peak_shaving_max_power = 2;
+  optional float peak_shaving_energy = 3;
+  optional float peak_shaving_soc = 4;
+  optional float peak_shaving_times = 5;
+  optional float peak_shaving_control_energy = 6;
+}
+
+message EmsAllPeakTaskReport {
+  repeated EmsPeakTaskCfg peak_task_cfg = 1;
+}
+
+message PeaktaskInfo {
+  optional uint32 peak_pwr_max = 1;
+  optional uint32 peak_energy_max = 2;
+  optional uint32 peak_soc = 3;
+}
+
+message EmsPeakTaskCfg {
+  optional uint32 role = 1;
+  optional uint32 is_cfg = 2;
+  optional uint32 task_index = 3;
+  optional bool is_enable = 4;
+  optional bool is_effect = 5;
+  optional uint32 type = 6;
+  optional PeaktaskInfo Info = 7;
+  optional bytes peak_sub_info = 8;
+}

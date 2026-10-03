@@ -12,7 +12,12 @@ from typing import (
 
 from google.protobuf.message import Message
 
-from .protobuf_field import ProtobufField
+from .protobuf_field import (
+    ProtobufField,
+    TransformIfMissing,
+    proto_attr_name,
+    proto_has_attr,
+)
 
 if TYPE_CHECKING:
     from .protobuf_props import ProtobufProps
@@ -80,6 +85,19 @@ class ProtobufCompositeRepeatedField[T_ITEM, T_OUT](
 
     @abc.abstractmethod
     def get_value(self, item: T_ITEM) -> T_OUT | None: ...
+
+
+@dataclass(frozen=True)
+class ItemKey:
+    """Which item of a repeated field to read, by an attribute it carries"""
+
+    attr: Any
+    value: Any
+
+
+def item_key[T_ATTR](attr: T_ATTR, value: T_ATTR) -> ItemKey:
+    """Select the item whose `attr` equals `value`, both typed by the item's message"""
+    return ItemKey(attr, value)
 
 
 def _raise[T_IN](v: T_IN, exc: type[Exception]) -> T_IN:
@@ -150,3 +168,71 @@ def repeated_pb_field_type[T_ITEM, T_OUT](
         pb_field = list_field
 
     return CustomPerItemRepeatedField
+
+
+@overload
+def repeated_pb_field[T_ITEM, T_ATTR](
+    list_field: Sequence[T_ITEM],
+    item_attr: T_ATTR,
+    transform: None = None,
+    *,
+    where: "ItemKey | None" = None,
+) -> ProtobufCompositeRepeatedField[T_ITEM, T_ATTR]: ...
+
+
+@overload
+def repeated_pb_field[T_ITEM, T_ATTR, T_OUT](
+    list_field: Sequence[T_ITEM],
+    item_attr: T_ATTR,
+    transform: Callable[[T_ATTR], T_OUT],
+    *,
+    where: "ItemKey | None" = None,
+) -> ProtobufCompositeRepeatedField[T_ITEM, T_OUT]: ...
+
+
+def repeated_pb_field(
+    list_field: Sequence[Any],
+    item_attr: Any,
+    transform: Callable[[Any], Any] | None = None,
+    *,
+    where: "ItemKey | None" = None,
+) -> ProtobufCompositeRepeatedField[Any, Any]:
+    """
+    Create a field reading one attribute out of a repeated protobuf message
+
+    The value comes from the first item that reports the attribute, which is what a
+    device wants when the list carries an entry per unit of a linked system and the one
+    on the other end of the link reports only itself. Pass `where` instead when the list
+    carries an entry per unit and each names itself, so one field reads one unit.
+
+    Parameters
+    ----------
+    list_field
+        Accessor for the repeated field, from `proto_attr_mapper`
+    item_attr
+        Accessor for the attribute to read off an item, from `proto_attr_mapper` of the
+        item's own message type
+    transform, optional
+        Function applied to the raw value. Wrap it in `TransformIfMissing` to have it
+        called with `None` for an item that omits the attribute, which is how a
+        measurement reports its off value instead of holding the last one
+    where, optional
+        `item_key(attr, value)` selecting which item to read, for a list whose entries
+        identify themselves rather than arriving in a fixed order
+    """
+    apply = transform if transform is not None else lambda value: value
+    process_if_missing = isinstance(transform, TransformIfMissing)
+    attr_name = proto_attr_name(item_attr)
+    key_name = None if where is None else proto_attr_name(where.attr)
+
+    class _RepeatedItemField(ProtobufCompositeRepeatedField[Any, Any]):
+        pb_field = list_field
+
+        def get_value(self, item: Message) -> Any:
+            if key_name is not None and getattr(item, key_name) != where.value:  # pyright: ignore[reportOptionalMemberAccess]
+                return None
+            if not proto_has_attr(item, item_attr):
+                return apply(None) if process_if_missing else None
+            return apply(getattr(item, attr_name))
+
+    return _RepeatedItemField()

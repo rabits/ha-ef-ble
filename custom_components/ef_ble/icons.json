@@ -137,6 +137,15 @@
       "grid_power": {
         "default": "mdi:transmission-tower"
       },
+      "grid_import_power": {
+        "default": "mdi:transmission-tower-import"
+      },
+      "grid_export_power": {
+        "default": "mdi:transmission-tower-export"
+      },
+      "grid_meter_power": {
+        "default": "mdi:meter-electric-outline"
+      },
       "in_use_power": {
         "default": "mdi:home-lightning-bolt-outline"
       },

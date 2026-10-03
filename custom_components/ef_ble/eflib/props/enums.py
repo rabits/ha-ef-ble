@@ -1,12 +1,13 @@
 import logging
 from enum import IntEnum
+from typing import Self
 
 _LOGGER = logging.getLogger(__name__)
 
 
 class IntFieldValue(IntEnum):
     @classmethod
-    def from_value(cls, value: int):
+    def from_value(cls, value: int) -> Self:
         try:
             return cls(value)
         except ValueError:

@@ -1,0 +1,279 @@
+syntax = "proto3";
+
+package jt_s1_edev_convert;
+
+
+enum CmdSets {
+  NONE_CMD_SETS = 0;
+  EDEV_CONVERT_CMD_SETS = 241;
+}
+
+enum EdevConvertCmdId {
+  CMD_ID_NONE = 0;
+  EDEV_CMD_ID_PARAM_REPORT = 3;
+  EDEV_CMD_ID_EDEV_PARAM_SET = 102;
+  EDEV_CMD_ID_BATCH_BIND = 113;
+  EDEV_CMD_ID_EDEV_BIND_LIST_GET = 109;
+  EDEV_CMD_ID_EDEV_RUN_DATA_SYNC = 44;
+  EDEV_CMD_ID_EDEV_REMOTE_CTRL = 40;
+}
+
+enum PileExpendCmd {
+  PILE_EXPEND_NONE = 0;
+  PILE_EXPEND_VEHICLE_SET = 1;
+}
+
+message EdevBaseInfo {
+  optional uint32 dev_addr = 1;
+  optional string dev_sn = 2;
+  optional uint32 sub_addr = 3;
+}
+
+message EDevParamSet {
+  optional EdevBaseInfo dev_info = 1;
+  optional EDevSmartPlugParam plugParam = 2;
+  optional EDevSmartPlugThirdParam thirdPlugParam = 3;
+  optional EDevPileParamSet pileParamSet = 4;
+}
+
+message EDevParamSetAck {
+  optional EdevBaseInfo dev_info = 1;
+  optional uint32 result = 2;
+}
+
+message EDevExpendCtrl {
+  optional EdevBaseInfo dev_info = 1;
+  optional uint32 expend_cmd = 2;
+  optional EDevPileVehicleSet pileVehicleSet = 3;
+}
+
+message EDevExpendCtrlAck {
+  optional EdevBaseInfo dev_info = 1;
+  optional uint32 expend_cmd = 2;
+  optional int32 result = 3;
+}
+
+message EDevParamReport {
+  optional EdevBaseInfo dev_info = 1;
+  optional EDevSmartPlugParamReport plugParam = 2;
+  optional EDevSmartPlugThirdParamReport thirdPlugParamReport = 3;
+  optional EDevPileChargingParamReport pileChargingParamReport = 4;
+}
+
+message BatchBind {
+  repeated EdevBaseInfo dev_info = 1;
+  optional bool bind_flg = 2;
+  optional uint32 commute_type = 3;
+}
+
+message BatchBindAck {
+  repeated BatchBindAckItem bindAckItem = 1;
+  optional bool bind_flg = 2;
+  optional int32 result = 3;
+  optional uint32 commute_type = 4;
+  optional uint32 remain_num = 5;
+}
+
+message BatchBindAckItem {
+  optional EdevBaseInfo dev_info = 1;
+  optional int32 result = 2;
+}
+
+message EDevRemotCtrlSet {
+  optional EdevBaseInfo dev_info = 1;
+  optional EDevSmartPlugCtrl mart_plug_ctrl = 2;
+  optional EDevSmartThirdPlugCtrl third_plug_ctrl = 3;
+  optional PileRemoteCtrl pilremoteCtrl = 4;
+}
+
+message EDevRunDataSync {
+  repeated EDevRunData runData = 1;
+}
+
+message EDevRunData {
+  optional EdevBaseInfo dev_info = 1;
+  optional EDevSmartPlugRunDataSync plugRunData = 2;
+  optional EDevSmartPlugThirdRunDataSync third_plug_runData = 3;
+  optional EDevPileChargingRunData pile_charging_runData = 4;
+  optional uint32 remote_online_state = 31;
+  optional fixed32 edev_version = 32;
+}
+
+message EDevSmartPlugRunDataSync {
+  optional float real_pwr = 1;
+  optional uint32 switch_stat = 2;
+  optional bool remote_online = 3;
+  optional bytes error_code = 4;
+}
+
+message EDevSmartPlugCtrl {
+  optional uint32 switch_stat = 1;
+}
+
+message EDevSmartPlugParam {
+  optional float household_pwr = 1;
+  optional float max_pwr = 2;
+}
+
+message EDevSmartPlugParamReport {
+  optional float household_pwr = 1;
+  optional float max_pwr = 2;
+  optional uint32 switch_stat = 3;
+  optional bytes error_code = 4;
+}
+
+message EDevSmartThirdPlugCtrl {
+  optional uint32 switch_stat = 1;
+  optional uint32 sub_type = 2;
+  repeated EDevSmartPlugThirdSocketCtrlItem socket_ctrl = 3;
+}
+
+message EDevSmartPlugThirdSocketCtrlItem {
+  optional string socket_sn = 1;
+  optional uint32 socket_idx = 2;
+  optional uint32 ctrl_stat = 3;
+}
+
+message EDevSmartPlugThirdRunDataSync {
+  optional float real_pwr = 1;
+  optional uint32 switch_stat = 2;
+  optional bool remote_online = 3;
+  optional uint32 sub_type = 4;
+  optional uint32 socket_num = 5;
+  repeated EDevSmartPlugThirdSocketReportItem socket_info = 6;
+  optional bytes error_code = 7;
+}
+
+message EDevSmartPlugThirdSocketReportItem {
+  optional string socket_sn = 1;
+  optional uint32 socket_idx = 2;
+  optional uint32 socket_stat = 3;
+  optional float socket_pwr = 4;
+}
+
+message EDevSmartPlugThirdParamReport {
+  optional float household_pwr = 1;
+  optional float max_pwr = 2;
+  optional uint32 switch_stat = 3;
+  optional uint32 sub_idx = 4;
+  optional uint32 socket_num = 5;
+  repeated EDevSmartPlugThirdSocketReportItem socket_info = 6;
+  optional bytes error_code = 7;
+}
+
+message EDevSmartPlugThirdParam {
+  optional float household_pwr = 1;
+  optional float max_pwr = 2;
+}
+
+message EDevPileVehicleSet {
+  optional string default_vehicle_id = 1;
+  optional string charge_vehicle_id = 2;
+  optional uint32 default_vehicle_comsumption = 3;
+  optional uint32 current_vehicle_comsumption = 4;
+}
+
+message EDevPileParamSet {
+  optional uint32 switch_bits = 1;
+  optional uint32 work_mode = 2;
+  optional uint32 current_ouput_max = 3;
+  optional uint32 solar_current_min = 4;
+  optional uint32 phase_specified = 5;
+  optional uint32 user_current_set = 6;
+  optional SmartModeParameter smart_mode = 7;
+  optional bytes ext_param = 21;
+}
+
+message EDevPileOrderRealStatus {
+  optional uint32 order_id = 1;
+  optional uint32 order_state = 2;
+  optional fixed32 order_start_timestamp = 3;
+  optional fixed32 order_end_timestamp = 4;
+  optional uint32 order_charging_energy = 5;
+  optional uint32 order_time = 6;
+}
+
+message EDevPileDebugInfo {
+  optional uint32 charging_current = 1;
+  optional uint32 phase_req = 2;
+}
+
+message EDevPileChargingParamReport {
+  optional EDevPileParamSet param_set = 1;
+  optional uint32 flag_state = 2;
+  optional uint32 online_bits = 3;
+  optional uint32 charging_status = 4;
+  optional bytes error_code = 5;
+  optional uint32 charging_pwr = 6;
+  optional EDevPileVehicleSet vehicle_info = 7;
+  optional EDevPileOrderRealStatus order_real_status = 8;
+  repeated EDevPileVoltCurrInfo volt_curr = 9;
+  optional uint32 grid_phase_input = 10;
+  optional EDevPileDebugInfo dbg_info = 21;
+}
+
+message SmartModeParameter {
+  optional uint32 time_to_use_car = 1;
+  optional uint32 target_type = 2;
+  optional uint32 charge_target = 3;
+  optional uint32 distance_target = 4;
+}
+
+message PileRemoteParamSet {
+  optional uint32 switch_bits = 1;
+  optional uint32 work_mode = 2;
+  repeated EDevTimerTaskCfg timer_task = 3;
+  optional float current_ouput_max = 4;
+  optional EDevPileVehicleSet vehicle_info = 5;
+  optional float solar_current_min = 6;
+  optional uint32 phase_specified = 7;
+  optional uint32 user_current_set = 8;
+  optional bytes ext_param = 21;
+  optional SmartModeParameter smart_info = 31;
+}
+
+message EDevPileVoltCurrInfo {
+  optional uint32 volt = 1;
+  optional uint32 curr = 2;
+}
+
+message EDevPileChargingRunData {
+  repeated EDevPileVoltCurrInfo volt_curr = 1;
+  optional uint32 obd_phase_detect = 2;
+  optional uint32 grid_phase_input = 3;
+  optional uint32 charging_pwr = 4;
+  optional uint32 charging_energy = 5;
+  optional uint32 charging_status = 6;
+  optional bytes error_code = 7;
+  optional PileRemoteParamSet param_set = 8;
+}
+
+message EDevPilePO2EVHeartBeat {
+  optional PileRemoteParamSet param_set = 1;
+  repeated uint32 power_from = 2;
+}
+
+message EDevPileEV2POHeartBeat {
+  optional PileRemoteParamSet param_set = 1;
+}
+
+message PileRemoteCtrl {
+  optional uint32 charging_ctrl = 1;
+  optional float charging_current = 2;
+  optional uint32 work_mode = 3;
+  optional uint32 phase_req = 4;
+  repeated uint32 power_from = 5;
+}
+
+message EDevTimerTaskCfg {
+  optional uint32 is_cfg = 1;
+  optional uint32 task_index = 2;
+  optional bool is_enable = 3;
+  optional bool is_effect = 4;
+  optional uint32 type = 5;
+  optional uint32 time_mode = 6;
+  optional uint32 time_param = 7;
+  repeated uint32 time_table = 8;
+  repeated int32 param = 9;
+  optional uint32 task_type = 10;
+}

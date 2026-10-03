@@ -4,6 +4,7 @@ import functools
 import hashlib
 import logging
 import struct
+import sys
 import time
 import traceback
 from collections import deque
@@ -256,6 +257,7 @@ class Connection:
         self._last_errors = deque(maxlen=10)
         self._disconnect_log: deque[dict[str, Any]] = deque(maxlen=10)
         self._client: BleakClient | None = None
+        self._disconnect_task: asyncio.Task[None] | None = None
         self._connected = asyncio.Event()
         self._disconnected = asyncio.Event()
         self._retry_on_disconnect = False
@@ -409,6 +411,7 @@ class Connection:
                 return
 
             self._set_state(ConnectionState.ESTABLISHING_CONNECTION)
+            await self._disconnect_client()
             self._logger.info("Connecting to device")
             # Clear any ghost connection BlueZ is still holding for this device (e.g.
             # left over from a bad disconnect); otherwise new connection attempts can be
@@ -487,18 +490,25 @@ class Connection:
             self._auth_task.cancel()
         self._auth_task = self._add_task(self._run_auth())
 
-    def disconnected(self, *args, **kwargs) -> None:
+    def disconnected(self, client: BleakClient | None = None) -> None:
+        # Ignore callbacks from old clients or retries still owned by the connector.
+        if client is not None and client is not self._client:
+            return
+
         # Traces the trigger: an unsolicited bleak drop shows bleak/asyncio frames here,
         # whereas a drop we requested shows our own `disconnect` chain.
         trigger = caller_chain()
         self._logger.warning("Disconnected from device (%s)", trigger)
-        self._client = None
 
         # NOTE(gnox): don't trigger disconnect/reconnect logic while
         # establish_connection is still retrying internally (bleak_retry_connector
         # manages its own retries and will raise on final failure)
         if self._state is ConnectionState.ESTABLISHING_CONNECTION:
             return
+
+        # A dropped BLE link can still own an open D-Bus socket.
+        self._start_client_disconnect()
+        self._client = None
 
         if (inbox := self._inbox) is not None:
             # Woken rather than cancelled, see `_stop_data_pump`
@@ -579,23 +589,34 @@ class Connection:
         await self._stop_data_pump()
         self._cancel_tasks()
 
-        if self._client is not None and self._client.is_connected:
+        if self._client is not None:
             self._set_state(ConnectionState.DISCONNECTING, reason=reason)
-            await self._disconnect_client()
+        await self._disconnect_client()
 
-        self._client = None
         if self._state == ConnectionState.DISCONNECTING:
             self._set_state(ConnectionState.DISCONNECTED, reason=reason)
 
+    def _start_client_disconnect(self) -> asyncio.Task[None] | None:
+        if self._client is not None and (
+            self._disconnect_task is None or self._disconnect_task.done()
+        ):
+            # Keep cleanup outside `_tasks`: unload cancels that set before waiting.
+            self._disconnect_task = asyncio.create_task(
+                self._close_client(self._client, caller_chain())
+            )
+        return self._disconnect_task
+
     async def _disconnect_client(self) -> None:
-        if self._client is None or not self._client.is_connected:
-            return
-        trigger = caller_chain()
+        if (task := self._start_client_disconnect()) is not None:
+            # The BLE callback can cancel the auth task awaiting this cleanup.
+            await asyncio.shield(task)
+
+    async def _close_client(self, client: BleakClient, trigger: str) -> None:
         self._logger.debug("Disconnecting BLE client (%s)", trigger)
         outcome = "ok"
         try:
             async with asyncio.timeout(DISCONNECT_TIMEOUT):
-                await self._client.disconnect()
+                await client.disconnect()
         except (EOFError, BleakError) as e:
             outcome = f"already_down: {e}"
             self._logger.warning("Disconnect failed (already down): %s", e)
@@ -616,9 +637,38 @@ class Connection:
                 type(e).__name__,
                 trigger,
             )
+        finally:
+            self._close_bluez_transport(client)
+            if self._client is client:
+                self._client = None
         self._disconnect_log.append(
             {"time": time.time(), "trigger": trigger, "outcome": outcome}
         )
+
+    @staticmethod
+    def _close_bluez_transport(client: BleakClient) -> None:
+        if sys.platform != "linux":
+            return
+
+        from bleak.backends.bluezdbus.client import (  # noqa: PLC0415 - Linux only
+            BleakClientBlueZDBus,
+        )
+
+        backend = client._backend
+        if not isinstance(backend, BleakClientBlueZDBus) or backend._bus is None:
+            return
+
+        # Bleak 3.0.2 skips bus cleanup when disconnect raises or is cancelled.
+        # No public force-close API exists; retire only this client's BlueZ resources.
+        backend._is_connected = False
+        if backend._disconnect_monitor_event is not None:
+            backend._disconnect_monitor_event.set()
+            backend._disconnect_monitor_event = None
+        backend._cleanup_all()
+        backend._bus.disconnect()
+        backend._bus = None
+        if backend._disconnected_callback is not None:
+            backend._disconnected_callback()
 
     async def wait_connected(self, timeout: int = 20):
         """Will release when connection is happened and authenticated"""
@@ -1081,7 +1131,7 @@ class Connection:
         self._logger.error("Data path stopped: %r", error)
         self._inbox = None
         self._set_state(ConnectionState.ERROR_UNKNOWN, error)
-        # Nothing reads the inbox now, and `_disconnect_client` is a no-op once gone
+        # Nothing reads the inbox now; a missing link still needs disconnect handling.
         if self.is_connected:
             self._add_task(self._disconnect_client())
         else:

@@ -7,6 +7,9 @@ on:
 jobs:
   tests:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ['3.13', '3.14']
     name: Run python tests
     steps:
       - name: Check out code from GitHub
@@ -19,6 +22,8 @@ jobs:
       - name: Setup Python 3.x
         uses: actions/setup-python@v5
         with:
-          python-version: 3.x
+          python-version: ${{ matrix.python-version }}
+      - name: Install private D-Bus test dependency
+        run: sudo apt-get update -qq && sudo apt-get install --no-install-recommends -y dbus
       - name: Tests
         run: uv run pytest tests/eflib

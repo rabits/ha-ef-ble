@@ -242,7 +242,7 @@
             },
             "data_description": {
               "unlock_ac_charging_minimum": "Allows setting the AC charging speed below the minimum the EcoFlow app enforces. 1 W stops the device drawing from the grid without unplugging it, which is what solar-surplus automations need; charging that slowly is less efficient and may generate additional heat.",
-              "unlock_dc_charging_minimum": "Allows setting the DC charging speed below the minimum the EcoFlow app enforces. The value caps the current drawn from the DC input, so a lower one keeps the device within what a weak source can give - a fuse-limited car socket, a small supply or a single panel - instead of stalling it by asking for more."
+              "unlock_dc_charging_minimum": "⚠️ WARNING: this may damage your device. The EcoFlow app limits are likely there for a reason, and running the DC input below them for long periods can wear its components; damage caused this way may not be covered by warranty. Use at your own risk.\n\nAllows setting the DC charging speed below the minimum the EcoFlow app enforces, down to 0 A. 0 A is not off: the device can still draw a small current from the input. The value caps the current drawn from the DC input, so a lower one keeps the device within what a weak source can give - a fuse-limited car socket, a small supply or a single panel - instead of stalling it by asking for more."
             }
           },
           "diagnostics_options": {
@@ -334,7 +334,7 @@
     },
     "charging_minimum_applied": {
       "title": "Charging controls on {device_name} now stop at the EcoFlow app's minimum unless you unlock it in the device options",
-      "description": "The AC and DC charging controls now refuse values below the minimum the EcoFlow app enforces, so an automation that sets a lower value will fail with an out-of-range error.\n\nTo keep setting values below the minimum, turn on the matching option under Configure for this device. The Delta 2 and Delta 2 Max also gained an AC Charging switch, which stops the device drawing from the grid without needing a very low charging speed.\n\nThe minimums for this device are {minimums}."
+      "description": "The AC and DC charging controls now refuse values below the minimum the EcoFlow app enforces, so an automation that sets a lower value will fail with an out-of-range error.\n\n⚠️ WARNING: going below these minimums may damage your device. EcoFlow likely set them for a reason, running below them for long periods can wear its components, and damage caused this way may not be covered by warranty. Only unlock them if you accept that risk.\n\nTo keep setting values below the minimum, turn on the matching option under Configure for this device. The Delta 2 and Delta 2 Max also gained an AC Charging switch, which stops the device drawing from the grid without needing a very low charging speed.\n\nThe minimums for this device are {minimums}."
     }
   },
   "entity": {

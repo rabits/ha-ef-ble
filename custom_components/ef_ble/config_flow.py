@@ -455,7 +455,8 @@ class EFBLEConfigFlow(ConfigFlow, domain=DOMAIN):
         self._email = user_input.get("login", {}).get(CONF_EMAIL, "")
         password = user_input.get("login", {}).get(CONF_PASSWORD, "")
         region = user_input.get("login", {}).get(CONF_REGION, "")
-        user_id = user_input.get(CONF_USER_ID, "").strip()
+        fixed_user_id = getattr(device, "AUTH_USER_ID", None)
+        user_id = fixed_user_id or user_input.get(CONF_USER_ID, "").strip()
         advanced = user_input.get(CONF_ADVANCED_CONNECTION_OPTIONS, {})
         timeout = advanced.get(CONF_CONNECTION_TIMEOUT, DEFAULT_CONNECTION_TIMEOUT)
         packet_version = PacketVersion.from_str(user_input.get(CONF_PACKET_VERSION))
@@ -474,7 +475,7 @@ class EFBLEConfigFlow(ConfigFlow, domain=DOMAIN):
 
         self._user_id = user_id
 
-        if error := self._check_user_id(user_id):
+        if fixed_user_id is None and (error := self._check_user_id(user_id)):
             return error
 
         (

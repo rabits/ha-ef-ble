@@ -198,6 +198,7 @@ ECOFLOW_DEVICE_LIST = {
 
     "BK01":{"name": "EcoFlow STREAM Microinverter", "packets": "v3"},
     "BK02":{"name": "EcoFlow STREAM Microinverter", "packets": "v3"},
+    "N011":{"name": "EcoFlow STREAM Microinverter (US)", "packets": "v3"},
     "BK12":{"name": "EcoFlow STREAM Pro", "packets": "v3"},
     "BK31":{"name": "EcoFlow STREAM AC Pro", "packets": "v3"},
     "BK41":{"name": "EcoFlow STREAM Max", "packets": "v3"},

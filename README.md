@@ -486,7 +486,7 @@ Click on any device below to see available sensors, switches, and controls:
 </details>
 
 <details>
-<summary><b>STREAM Microinverter US</b></summary>
+<summary><b>STREAM Microinverter (US)</b></summary>
 
 <br>
 

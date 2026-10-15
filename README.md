@@ -486,6 +486,34 @@ Click on any device below to see available sensors, switches, and controls:
 </details>
 
 <details>
+<summary><b>STREAM Microinverter US</b></summary>
+
+<br>
+
+| *Sensors*                         | *Sliders*            |
+|-----------------------------------|----------------------|
+| Grid Power                        | Maximum Output Power |
+| Grid Voltage                      |                      |
+| Grid Current                      |                      |
+| Grid Frequency                    |                      |
+| Grid Connection Status            |                      |
+| PV (1) Power                      |                      |
+| PV (1) Current                    |                      |
+| PV (1) Voltage                    |                      |
+| PV (2) Power                      |                      |
+| PV (2) Current                    |                      |
+| PV (2) Voltage                    |                      |
+| PV (3) Power                      |                      |
+| PV (3) Current                    |                      |
+| PV (3) Voltage                    |                      |
+| PV (4) Power                      |                      |
+| PV (4) Current                    |                      |
+| PV (4) Voltage                    |                      |
+| WiFi RSSI (disabled)              |                      |
+
+</details>
+
+<details>
 <summary><b>PowerStream</b></summary>
 
 <br>

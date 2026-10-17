@@ -353,6 +353,9 @@
       "channel_is_enabled": {
         "name": "Channel {channel} Enabled"
       },
+      "port_enabled": {
+        "name": "{name} Enabled"
+      },
       "channel_is_connected": {
         "name": "Channel {channel} Connected"
       },
@@ -509,6 +512,9 @@
       },
       "port_power": {
         "name": "{name} Power"
+      },
+      "port_enabled": {
+        "name": "{name} Enabled"
       },
       "port_energy_today": {
         "name": "{name} Energy Today"
@@ -1181,6 +1187,9 @@
       }
     },
     "switch": {
+      "port_control": {
+        "name": "{name} Port"
+      },
       "circuit_is_enabled": {
         "name": "C{circuit} {name}"
       },

@@ -107,6 +107,14 @@ def battery_charging(
 _shp2_channel_range = range(1, shp2.Device.NUM_OF_CHANNELS + 1)
 
 
+def port_enabled(name: str) -> EcoflowBinarySensorEntityDescription:
+    return power(
+        translation_key="port_enabled",
+        translation_placeholders={"name": name},
+        entity_category=EntityCategory.DIAGNOSTIC,
+    )
+
+
 def shp2_channel(
     fn: Callable[..., EcoflowBinarySensorEntityDescription],
     translation_key: str,
@@ -134,9 +142,16 @@ _BINARY_SENSORS: Final[dict[str, BinarySensorEntityDescription]] = {
     "error_occurred": problem(
         enabled=False,
         entity_category=EntityCategory.DIAGNOSTIC,
-        state_attribute_fields=["error_code"],
+        state_attribute_fields=["error_code", "device_error_codes"],
     ),
     "bms_run_state": power(enabled=False, entity_category=EntityCategory.DIAGNOSTIC),
+    # Rapid Pro 320W port state telemetry
+    "usb_c1_port_enabled": port_enabled("USB-C 1"),
+    "usb_c2_port_enabled": port_enabled("USB-C 2"),
+    "usb_c3_port_enabled": port_enabled("USB-C 3"),
+    "usb_c4_port_enabled": port_enabled("USB-C 4"),
+    "usb_a1_port_enabled": port_enabled("USB-A 1"),
+    "pogo_port_enabled": port_enabled("Pogo"),
     # SHP2 backup channel binary sensors
     "ch{n}_backup_is_ready": shp2_channel(
         battery, "channel_backup_is_ready", enabled=False

@@ -1171,6 +1171,9 @@
       }
     },
     "switch": {
+      "port_control": {
+        "name": "Порт {name}"
+      },
       "circuit_is_enabled": {
         "name": "C{circuit} {name}"
       },

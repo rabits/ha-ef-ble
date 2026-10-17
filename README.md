@@ -555,6 +555,26 @@ Click on any device below to see available sensors, switches, and controls:
 </details>
 
 <details>
+<summary><b>Rapid Pro 320W Charger</b></summary>
+
+<br>
+
+| *Sensors*                                  | *Binary Sensors*                        | *Switches*      |
+|--------------------------------------------|-----------------------------------------|-----------------|
+| Battery Level                              | USB-C 1-4 / USB-A 1 / Pogo Port Enabled | USB-C 1-4 Port  |
+| State of Health (disabled)                 | Error Occurred (disabled)               | USB-A 1 Port    |
+| Cell Temperature (disabled)                |                                         | Pogo Port       |
+| Input Power                                |                                         |                 |
+| Output Power                               |                                         |                 |
+| USB-C 1-4 / USB-A 1 / Pogo Power           |                                         |                 |
+| USB-C 1-4 / USB-A 1 / Pogo Voltage         |                                         |                 |
+| USB-C 1-4 / USB-A 1 / Pogo Current         |                                         |                 |
+| Remaining Time Charging (disabled)         |                                         |                 |
+| Remaining Time Discharging (disabled)      |                                         |                 |
+
+</details>
+
+<details>
 <summary><b>Wave 3</b></summary>
 
 <br>

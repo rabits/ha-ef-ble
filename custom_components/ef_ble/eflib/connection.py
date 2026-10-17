@@ -237,6 +237,7 @@ class Connection:
         packet_version: int = 0x03,
         encrypt_type: int = 7,
         auth_header_dst: int = 0x35,
+        auth_token_lowercase: bool = False,
     ) -> None:
         self._ble_dev = ble_dev
         self._address = ble_dev.address
@@ -263,6 +264,7 @@ class Connection:
         self._retry_on_disconnect = False
         self._retry_on_disconnect_delay = 10
         self._auth_header_dst = auth_header_dst
+        self._auth_token_lowercase = auth_token_lowercase
 
         self._tasks: set[asyncio.Task] = set()
         self._call_later_handles: dict[str, asyncio.TimerHandle] = {}
@@ -881,8 +883,9 @@ class Connection:
 
         # Building payload for auth
         md5_data = hashlib.md5((self._user_id + self._dev_sn).encode("ASCII")).digest()
-        # We need upper case in MD5 data here
-        payload = ("".join(f"{c:02X}" for c in md5_data)).encode("ASCII")
+        # Most devices require uppercase hexadecimal, while P521 accepts lowercase.
+        hex_format = "02x" if self._auth_token_lowercase else "02X"
+        payload = ("".join(format(c, hex_format) for c in md5_data)).encode("ASCII")
 
         # Forming packet - use detected protocol version (V2 or V3)
         packet = Packet(

@@ -22,7 +22,7 @@ class GridStatus(IntFieldValue):
 class Device(DeviceBase, ProtobufProps):
     """STREAM Microinverter"""
 
-    SN_PREFIX = (b"BK01", b"BK02", b"N011")
+    SN_PREFIX = (b"BK01", b"BK02")
     NAME_PREFIX = "EF-BK"
 
     pv_power_1 = pb_field(pb.pow_get_pv, pround(2))

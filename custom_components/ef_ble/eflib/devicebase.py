@@ -354,6 +354,10 @@ class DeviceBase(abc.ABC):
                     packet_parse=self.packet_parse,
                     packet_version=self.packet_version,
                     encrypt_type=self.scan_record.encrypt_type,
+                    verified=(
+                        self.scan_record.verified
+                        or not self.scan_record.support_verified
+                    ),
                     auth_header_dst=self.auth_header_dst,
                 )
                 .with_logging_options(self._logger.options)

@@ -6,6 +6,12 @@ body:
   - type: markdown
     attributes:
       value: |
+        **IMPORTANT:** Sorry, but since v1.3.0 we can't add support to new devices into this integration ([details](https://github.com/rabits/ha-ef-ble/discussions/521))
+
+        Below is outdated original message:
+
+        ---
+
         Thanks for helping expand device coverage! Please skim the wiki first:
 
         - **[Requesting Support for New Devices](https://github.com/rabits/ha-ef-ble/wiki/Requesting-Support-for-New-Devices)**

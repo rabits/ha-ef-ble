@@ -35,6 +35,8 @@ and accessories through **Bluetooth LE**, allowing you to:
 
 ## Supported Devices
 
+**IMPORTANT:** According to agreement with Ecoflow we can't add new devices after release v1.3.0. ([details](https://github.com/rabits/ha-ef-ble/discussions/521))
+
 Click on any device below to see available sensors, switches, and controls:
 
 <br>

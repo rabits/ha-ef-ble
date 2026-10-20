@@ -11,6 +11,7 @@ from homeassistant.helpers.restore_state import ExtraStoredData, RestoreEntity
 from .const import DOMAIN, MANUFACTURER
 from .eflib import DeviceBase
 from .eflib.device_mappings import battery_name_from_device
+from .registry import async_get_device
 
 
 class EcoflowEntity(Entity):
@@ -145,7 +146,14 @@ class EcoflowBatteryAddonEntity(EcoflowEntity):
 
         registry = dr.async_get(self.hass)
         identifier = (DOMAIN, f"{self._device.address}_battery_{self._battery_index}")
-        device_entry = registry.async_get_device(identifiers={identifier})
+        registry_entry = getattr(self, "registry_entry", None)
+        device_entry = async_get_device(
+            registry,
+            identifiers={identifier},
+            config_entry_id=(
+                registry_entry.config_entry_id if registry_entry is not None else None
+            ),
+        )
         if device_entry is None:
             return
 

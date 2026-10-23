@@ -485,3 +485,20 @@ async def test_shp3_set_channel_force_charge_off_on_disabled_channel(device):
     ctrl = _config_write(device, packet).cfg_panel_backup_ch2_ctrl
     assert ctrl.ctrl_force_chg == 2
     assert ctrl.ctrl_en == 2
+
+
+async def test_shp3_reports_device_error_codes(device):
+    assert device.error_occurred is False
+    assert device.device_error_codes == []
+
+    msg = dev_apl_comm_pb2.DisplayPropertyUpload()
+    msg.dev_errcode_list.dev_errcode.extend([0, 0])
+    device.update_from_message(msg)
+    assert device.device_error_codes == [0, 0]
+    assert device.error_occurred is False
+
+    msg = dev_apl_comm_pb2.DisplayPropertyUpload()
+    msg.dev_errcode_list.dev_errcode.extend([0, 7])
+    device.update_from_message(msg)
+    assert device.device_error_codes == [0, 7]
+    assert device.error_occurred is True

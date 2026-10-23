@@ -215,8 +215,17 @@ async def test_shp3_parses_circuit_status_and_settings(device, packet_sequence):
     assert device.storm_guard is True
 
 
+def _seed_split_link(device: Device, circuit: int, link: int | None):
+    msg = dev_apl_comm_pb2.DisplayPropertyUpload()
+    sta = getattr(msg, f"load_ch{circuit}_sta")
+    sta.ch_name = f"Circuit {circuit}"
+    if link is not None:
+        sta.splitphase.link_ch = link
+    device.update_from_message(msg)
+
+
 async def test_shp3_set_circuit_power_writes_ctrl_info(device):
-    device.set_value("circuit_split_link_28", 0)
+    _seed_split_link(device, 28, None)
     await device.set_circuit_power(28, True)
 
     packet = device._conn.send_packet.await_args.args[0]
@@ -234,9 +243,28 @@ async def test_shp3_set_circuit_power_skips_when_split_info_missing(device):
     device._conn.send_packet.assert_not_awaited()
 
 
+async def test_shp3_single_pole_circuit_without_splitphase_is_not_split(device):
+    # Panel omits splitphase entirely for single-pole circuits
+    msg = dev_apl_comm_pb2.DisplayPropertyUpload()
+    msg.load_ch8_sta.ch_name = "Circuit 8"
+    msg.load_ch2_sta.splitphase.link_ch = 4
+    device.update_from_message(msg)
+
+    assert device.circuit_split_link[8] == 0
+    assert device.circuit_split_info_loaded[8] is True
+    assert device.circuit_split_link[2] == 4
+    assert device.circuit_split_link[9] is None
+
+    await device.set_circuit_power(8, False)
+
+    packet = device._conn.send_packet.await_args.args[0]
+    config = _config_write(device, packet)
+    assert config.cfg_load_ch8_ctrl_info.chanel_enable_ctrl == 2
+
+
 async def test_shp3_set_circuit_power_gangs_split_phase(device, packet_sequence):
     # Seed a split-phase link (slot 2 <-> slot 4) as the panel would report it.
-    device.set_value("circuit_split_link_2", 4)
+    _seed_split_link(device, 2, 4)
 
     await device.set_circuit_power(2, True)
 

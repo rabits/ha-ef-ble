@@ -1207,6 +1207,9 @@ class Connection:
                 and packet.cmd_id == 0x86
             )
             authenticating = self._state == ConnectionState.AUTHENTICATING
+            # Other 0x35 packets (e.g. the 0x89 status) may arrive ahead of the 0x86
+            # reply and must not confirm auth, or a rejected/lost reply goes unnoticed
+            is_auth_exchange = self._is_auth_reply(packet)
 
             if is_auth_reply and authenticating:
                 await self._check_auth(packet)
@@ -1217,7 +1220,7 @@ class Connection:
                 self._set_state(ConnectionState.AUTHENTICATED)
                 self._connected.set()
             else:
-                if authenticating and not is_auth_reply:
+                if authenticating and not is_auth_exchange:
                     self._connection_attempt = 0
                     self._reconnect_attempt = 0
                     self._logger.info("Auth completed - first data packet received")

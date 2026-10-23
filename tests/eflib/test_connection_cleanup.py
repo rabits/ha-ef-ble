@@ -10,6 +10,8 @@ from bleak.backends.device import BLEDevice
 
 from custom_components.ef_ble.eflib import connection as connection_module
 from custom_components.ef_ble.eflib.connection import Connection, ConnectionState
+from custom_components.ef_ble.eflib.exceptions import AuthErrors
+from custom_components.ef_ble.eflib.packet import Packet
 
 type TransportClient = Callable[..., tuple[Mock, socket.socket]]
 
@@ -261,3 +263,22 @@ async def test_disconnect_log_keeps_calling_context(
     await request_cleanup()
 
     assert "request_cleanup" in connection.disconnect_log[-1]["trigger"]
+
+
+async def test_status_packet_before_auth_reply_does_not_confirm_auth(
+    connection: Connection,
+):
+    connection._client = Mock()
+    connection._disconnect_client = AsyncMock()
+    connection._data_parse = AsyncMock(return_value=True)
+    connection._set_state(ConnectionState.AUTHENTICATING)
+
+    status = Packet(0x35, 0x21, 0x35, 0x89, bytes.fromhex("0100"), 0x01, 0x01, 0x03)
+    rejected = Packet(0x35, 0x21, 0x35, 0x86, bytes.fromhex("06"), 0x01, 0x01, 0x03)
+
+    await connection._process_packets([status])
+    assert connection._state == ConnectionState.AUTHENTICATING
+
+    with pytest.raises(AuthErrors.WrongKey):
+        await connection._process_packets([rejected])
+    assert connection._state == ConnectionState.ERROR_AUTH_FAILED

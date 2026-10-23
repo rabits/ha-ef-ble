@@ -43,7 +43,15 @@
         }
       }
     },
+    "event": {
+      "connection": {
+        "default": "mdi:bluetooth-connect"
+      }
+    },
     "sensor": {
+      "connection_state": {
+        "default": "mdi:bluetooth"
+      },
       "input_power": {
         "default": "mdi:home-lightning-bolt-outline"
       },

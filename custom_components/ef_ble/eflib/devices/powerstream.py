@@ -170,7 +170,7 @@ class Device(DeviceBase, ProtobufProps):
     @controls.switch(feed_protect)
     async def set_feed_protect(self, enabled: bool):
         await self._send_ble_packet(
-            wn511_sys_pb2.feed_protect_pack(feed_protect=enabled),
+            wn511_sys_pb2.feed_protect_pack(feed_protect=int(enabled)),
             cmd_id=0x8F,
         )
 

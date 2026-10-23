@@ -214,17 +214,21 @@ class Device(DeviceBase, ProtobufProps):
         count=NUM_OF_CIRCUITS,
         name_template="circuit_name_{n}",
     )
+    # The panel omits the splitphase message entirely for single-pole circuits, so
+    # read the message itself: absent means "not split" (0) once the circuit's
+    # load_ch{n}_sta has been received
     circuit_split_link = pb_field_group(
-        pb.load_ch1_sta.splitphase.link_ch,
+        pb.load_ch1_sta.splitphase,
         match="load_ch{n}_sta",
         count=NUM_OF_CIRCUITS,
+        transform=TransformIfMissing(lambda split: split.link_ch if split else 0),
         name_template="circuit_split_link_{n}",
     )
     circuit_split_info_loaded = pb_field_group(
-        pb.load_ch1_sta.splitphase.link_ch,
+        pb.load_ch1_sta.splitphase,
         match="load_ch{n}_sta",
         count=NUM_OF_CIRCUITS,
-        transform=lambda value: value is not None,
+        transform=TransformIfMissing(lambda _: True),
         name_template="circuit_split_info_loaded_{n}",
     )
 

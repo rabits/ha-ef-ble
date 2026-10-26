@@ -175,7 +175,7 @@ class Device(DeviceBase, ProtobufProps):
         match="load_ch{n}_sample_info",
         count=NUM_OF_CIRCUITS,
         transform=TransformIfMissing[float, float](
-            lambda v: round(v, 2) if v is not None else 0.0
+            lambda v: out_power(v) if v is not None else 0.0
         ),
         name_template="circuit_power_{n}",
     )

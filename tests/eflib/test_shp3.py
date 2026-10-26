@@ -118,10 +118,10 @@ async def test_shp3_exact_values_from_known_packets(device, packet_sequence):
         Device.l2_voltage: 120.2,
         Device.l1_current: 8.84,
         Device.l2_current: 13.26,
-        Device.circuit_power[1]: -85.58,
+        Device.circuit_power[1]: 85.58,
         Device.circuit_voltage[1]: 118.7,
         Device.circuit_current[1]: 0.87,
-        Device.circuit_power[28]: -934.39,
+        Device.circuit_power[28]: 934.39,
     }
 
     for field, expected_value in expected.items():

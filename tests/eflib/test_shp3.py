@@ -502,3 +502,9 @@ async def test_shp3_reports_device_error_codes(device):
     device.update_from_message(msg)
     assert device.device_error_codes == [0, 7]
     assert device.error_occurred is True
+
+    msg = dev_apl_comm_pb2.DisplayPropertyUpload()
+    msg.dev_errcode_list.SetInParent()
+    device.update_from_message(msg)
+    assert device.device_error_codes == []
+    assert device.error_occurred is False

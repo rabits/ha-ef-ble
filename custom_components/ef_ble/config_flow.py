@@ -35,7 +35,7 @@ from homeassistant.helpers.selector import (
 )
 from homeassistant.helpers.storage import Store
 
-from . import eflib
+from . import eflib, replace
 from .const import (
     CONF_ADVANCED_CONNECTION_OPTIONS,
     CONF_BLUEZ_START_NOTIFY,
@@ -128,6 +128,9 @@ class PacketVersion(enum.StrEnum):
             return PacketVersion.V3
 
 
+CONF_REPLACE_BACKUP = "backup_confirmed"
+
+
 class EFBLEConfigFlow(ConfigFlow, domain=DOMAIN):
     """EcoFlow BLE ConfigFlow"""
 
@@ -161,6 +164,8 @@ class EFBLEConfigFlow(ConfigFlow, domain=DOMAIN):
         self._pending_user_input: dict[str, Any] = {}
         self._pending_errors: dict[str, Any] = {}
         self._origin_step: str = "bluetooth_confirm"
+        self._replace_entry_id: str | None = None
+        self._replace_done: bool = False
 
     async def async_step_bluetooth(
         self, discovery_info: BluetoothServiceInfoBleak
@@ -362,7 +367,16 @@ class EFBLEConfigFlow(ConfigFlow, domain=DOMAIN):
     async def async_step_reconfigure(
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
-        """Reconfiguration of the picked device."""
+        """Choose between changing the device's settings and replacing the unit."""
+        return self.async_show_menu(
+            step_id="reconfigure",
+            menu_options=["reconfigure_settings", "replace_device"],
+        )
+
+    async def async_step_reconfigure_settings(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Settings of the picked device."""
         reconfigure_entry = self._get_reconfigure_entry()
         device: eflib.DeviceBase | None = getattr(
             reconfigure_entry, "runtime_data", None
@@ -383,7 +397,7 @@ class EFBLEConfigFlow(ConfigFlow, domain=DOMAIN):
                 errors["base"] = "unknown"
 
         return self.async_show_form(
-            step_id="reconfigure",
+            step_id="reconfigure_settings",
             data_schema=(
                 schema_builder()
                 .user_id(reconfigure_entry.data.get(CONF_USER_ID, ""))
@@ -392,6 +406,169 @@ class EFBLEConfigFlow(ConfigFlow, domain=DOMAIN):
             ),
             errors=errors,
         )
+
+    async def async_step_replace_device(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Pick the unit that takes over from the one this entry is set up for."""
+        entry = self._get_reconfigure_entry()
+
+        old_serial = replace.old_unit_serial(self.hass, entry)
+        old_class = eflib.device_class_from_sn(old_serial) if old_serial else None
+        if old_serial is None or old_class is None:
+            return self.async_abort(reason="old_unit_unknown")
+
+        if user_input is not None:
+            self._discovered_device = self._device_by_display_name[
+                user_input[CONF_ADDRESS]
+            ]
+            return await self.async_step_replace_confirm()
+
+        self._device_by_display_name = {}
+        skipped: list[str] = []
+        current_addresses = {
+            e.data.get(CONF_ADDRESS) for e in self._async_current_entries()
+        }
+        for discovery_info in async_discovered_service_info(self.hass):
+            address = discovery_info.address
+            if address in current_addresses:
+                continue
+            device = eflib.NewDevice(
+                discovery_info.device, discovery_info.advertisement
+            )
+            if device is None:
+                continue
+            if eflib.is_unsupported(device):
+                skipped.append(f"{address}: unsupported model")
+            elif type(device) is not old_class:
+                skipped.append(f"{address}: {device.device}, a different model")
+            else:
+                self._set_name_from_discovery(discovery_info, device.name)
+                name = f"{self._local_names[address]} - {device.device}"
+                self._device_by_display_name[f"{name} ({address})"] = device
+
+        if not self._device_by_display_name:
+            _LOGGER.debug("Replace: no candidates, skipped %s", skipped)
+            return self.async_abort(
+                reason="no_matching_devices",
+                description_placeholders={
+                    "skipped": "\n".join(f"- {line}" for line in skipped)
+                    or "- no other EcoFlow device was discovered"
+                },
+            )
+
+        return self.async_show_form(
+            step_id="replace_device",
+            description_placeholders={"name": entry.title},
+            data_schema=(
+                schema_builder()
+                .required(CONF_ADDRESS, vol.In(list(self._device_by_display_name)))
+                .build()
+            ),
+        )
+
+    async def async_step_replace_confirm(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """
+        Confirm the replacement and test the login on the new unit
+
+        The new unit has to be bound to the same EcoFlow account as the old one, so the
+        test logs in with the entry's own user ID. Nothing is changed unless that works.
+        """
+        assert self._discovered_device is not None
+        device = self._discovered_device
+        entry = self._get_reconfigure_entry()
+        errors = dict(self._pending_errors)
+
+        if user_input is not None and not user_input.get(CONF_REPLACE_BACKUP):
+            errors = {"base": "backup_not_confirmed"}
+        elif user_input is not None:
+            self._pending_errors = {}
+            self._replace_entry_id = entry.entry_id
+            self._user_id_validated = False
+            self._user_id = (
+                getattr(device, "AUTH_USER_ID", None)
+                or str(entry.data.get(CONF_USER_ID, "")).strip()
+            )
+            if not self._user_id:
+                return self.async_abort(reason="old_unit_unknown")
+
+            advanced = entry.data.get(CONF_ADVANCED_CONNECTION_OPTIONS, {})
+            self._connect_timeout = advanced.get(
+                CONF_CONNECTION_TIMEOUT, DEFAULT_CONNECTION_TIMEOUT
+            )
+            (
+                device.with_packet_version(
+                    PacketVersion.from_str(entry.data.get(CONF_PACKET_VERSION)).to_num()
+                )
+                .with_diagnostics_on_exception(True)
+                .with_connection_options(
+                    Connection.Options(timeout=self._connect_timeout)
+                )
+            )
+            return await self._async_start_connection({}, "replace_confirm")
+
+        placeholders = {
+            "old_name": entry.title,
+            "new_name": f"{device.device} ({self._local_names[device.address]})",
+            "note": (
+                "Both units report the same serial number, so only the Bluetooth "
+                "address changes.\n\n"
+                if device.serial_number == replace.old_unit_serial(self.hass, entry)
+                else ""
+            ),
+        }
+        self.context["title_placeholders"] = placeholders
+        return self.async_show_form(
+            step_id="replace_confirm",
+            errors=errors,
+            description_placeholders=placeholders,
+            data_schema=vol.Schema(
+                {vol.Required(CONF_REPLACE_BACKUP, default=False): bool}
+            ),
+        )
+
+    async def _async_finish_replace(self) -> ConfigFlowResult:
+        """Move the entry's registry entries to the new unit once its login worked"""
+        if self._replace_done:
+            return self.async_abort(reason="replace_successful")
+
+        assert self._discovered_device is not None
+        device = self._discovered_device
+        entry = self._get_reconfigure_entry()
+
+        try:
+            replace_plan = replace.plan(
+                self.hass,
+                entry,
+                device.address,
+                device.serial_number,
+                other_entries=(
+                    e.data.get(CONF_ADDRESS) for e in self._async_current_entries()
+                ),
+            )
+        except replace.ReplaceError as err:
+            return self.async_abort(reason=err.reason)
+
+        if not await self.hass.config_entries.async_unload(entry.entry_id):
+            return self.async_abort(reason="replace_unload_failed")
+
+        try:
+            replace.apply(
+                self.hass,
+                entry,
+                replace_plan,
+                title=device.name,
+                local_name=self._local_names.get(device.address),
+            )
+        except replace.ReplaceError as err:
+            self.hass.config_entries.async_schedule_reload(entry.entry_id)
+            return self.async_abort(reason=err.reason)
+
+        self._replace_done = True
+        self.hass.config_entries.async_schedule_reload(entry.entry_id)
+        return self.async_abort(reason="replace_successful")
 
     @staticmethod
     @callback
@@ -615,6 +792,8 @@ class EFBLEConfigFlow(ConfigFlow, domain=DOMAIN):
             return await self._async_step_origin()
 
         errors = self._connect_result
+        if not errors and self._user_id_validated and self._replace_entry_id:
+            return await self._async_finish_replace()
         if not errors and self._user_id_validated:
             if self._entry_created:
                 return self.async_abort(reason="already_configured")

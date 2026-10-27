@@ -35,8 +35,6 @@ and accessories through **Bluetooth LE**, allowing you to:
 
 ## Supported Devices
 
-**IMPORTANT:** According to agreement with Ecoflow we can't add new devices after release v1.3.0. ([details](https://github.com/rabits/ha-ef-ble/discussions/521))
-
 Click on any device below to see available sensors, switches, and controls:
 
 <br>
@@ -827,6 +825,24 @@ via Bluetooth LE.
 > [!TIP]
 > For detailed configuration help, FAQ, and troubleshooting common issues (like BLE
 > disconnections), see the [**Wiki**](https://github.com/rabits/ha-ef-ble/wiki)
+
+### Replacing a device
+
+If you swap a unit for a new one of the same model, you don't have to lose its history.
+Open the device's integration entry, choose **Reconfigure** and then **Replace this device
+with a new unit**. The entities, their history and statistics, dashboards and automations
+move to the new unit.
+
+- The new unit must be bound to the **same EcoFlow account (User ID)** as the old one. The
+  replacement logs in with the entry's User ID before anything is changed
+- Only a unit that is **not already set up** in the integration is listed. If you added it
+  already, remove it from the integration first
+- Only units of the **same model** are listed. A replacement that keeps the old unit's serial
+  number (EcoFlow sometimes re-flashes the same serial) is supported too; then only the
+  Bluetooth address changes
+- Settings stored on the unit itself, such as charge limits, are not copied
+- **Make a Home Assistant backup first.** The flow asks you to confirm it, because the
+  change to the device and entity registries can't be undone from the integration
 
 ---
 

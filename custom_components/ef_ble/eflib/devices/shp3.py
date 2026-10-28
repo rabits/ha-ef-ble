@@ -320,6 +320,8 @@ class Device(DeviceBase, ProtobufProps):
 
     storm_guard = pb_field(pb.storm_pattern_enable)
 
+    _device_error_info = pb_field(pb.dev_errcode_list)
+
     _mode_panel = pb_field(
         pb.panle_energy_strategy_operate_mode, _operating_mode_from_message
     )
@@ -334,6 +336,16 @@ class Device(DeviceBase, ProtobufProps):
         pb.panle_energy_strategy_operate_mode.operate_mix_scheduled_open,
         TransformIfMissing(bool),
     )
+
+    @computed_field
+    def device_error_codes(self) -> list[int]:
+        if self._device_error_info is None:
+            return []
+        return list(self._device_error_info.dev_errcode)
+
+    @computed_field
+    def error_occurred(self) -> bool:
+        return any(self.device_error_codes)
 
     @computed_field
     def operating_mode_select(self) -> OperatingMode | None:

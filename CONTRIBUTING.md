@@ -74,6 +74,10 @@ relevant field is actually populated.
 
 ### Requesting support for a new device
 
+New devices can't be added after release v1.3.0, by agreement with EcoFlow
+([details](https://github.com/rabits/ha-ef-ble/discussions/521)), so requests for
+models that aren't already listed in the README can't be accepted.
+
 If you own an EcoFlow device that isn't listed in the README's
 [Supported Devices](README.md#supported-devices) section, use the
 [New device support](https://github.com/rabits/ha-ef-ble/issues/new?template=device_request.yaml)
@@ -206,26 +210,17 @@ Using LLMs / AI coding assistants is fine - most of us do nowadays. What matters
 tested that it works, and can respond to review feedback without going back to the model
 for every answer.
 
-**Adding support for a new device is the one place where fully vibe-coded PRs are
-actively welcome.** It's genuinely easier to start from a rough LLM draft plus a
-diagnostics dump than from a blank module - even an imperfect draft gives us a concrete
-starting point, your field mappings, and proof that the device is reachable. Open the
-PR, link the diagnostics file, describe what you tested on the hardware, and be honest
-about which parts you didn't verify.
+New devices can't be added after release v1.3.0 (see the notice in the
+[README](README.md#supported-devices)), so new-device PRs, vibe-coded or not, won't
+be merged.
 
-That said: **we will not merge a vibe-coded new-device PR as-is.** Expect us to use it
-as a reference and rewrite the parts that need to match project patterns - renaming
-fields to line up with existing device modules, consolidating duplicated logic into
-shared transforms, dropping invented APIs, adjusting controls to the conventions in
-`eflib/entity/`, adding tests, and so on. The final commit that lands usually won't
-look much like your original branch. If that's not how you want your contribution
-handled, open an issue with the diagnostics dump instead and we'll pick it up from
-there.
+If you work with an AI agent, point it at [AGENTS.md](AGENTS.md): it lists the rules
+agent-written PRs most often break, from test scope to the code that needs extra care.
 
-For everything else (bug fixes, refactors, changes to existing devices, protocol /
-packet handling), the bar is higher: unread LLM output, code the author can't explain,
-or changes that ignore existing patterns won't be reviewed in place. Re-read your diff
-top-to-bottom before opening the PR.
+For bug fixes, refactors, changes to existing devices and protocol / packet handling,
+the bar is high: unread LLM output, code the author can't explain, or changes that
+ignore existing patterns won't be reviewed in place. Re-read your diff top-to-bottom
+before opening the PR.
 
 ## Style guide
 

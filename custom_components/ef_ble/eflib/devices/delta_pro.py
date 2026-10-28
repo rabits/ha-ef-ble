@@ -83,7 +83,7 @@ class Device(DeviceBase, RawDataProps):
 
     input_power = raw_field(rd_pd.watts_in_sum)
     output_power = raw_field(rd_pd.watts_out_sum)
-    dc_output_power = raw_field(rd_pd.car_watts)
+    dc_output_power = raw_field(rd_mppt.car_out_watts, pdiv(10, 1))
 
     dc_12v_port = raw_field(rd_mppt.car_state, lambda x: x == 1)
     energy_backup = raw_field(rd_pd.watth_is_config, lambda x: x == 1)

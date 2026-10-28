@@ -2,6 +2,7 @@ import pytest
 from pytest_mock import MockerFixture
 
 from custom_components.ef_ble.eflib.devices.delta_pro import Device
+from custom_components.ef_ble.eflib.model import DirectMpptHeartbeatPack
 
 
 @pytest.fixture
@@ -210,3 +211,18 @@ async def test_delta_pro_exact_values_from_known_packets(device, packet_sequence
         assert actual_value == expected_value, (
             f"{field_name}: expected {expected_value!r}, got {actual_value!r}"
         )
+
+
+async def test_delta_pro_dc_output_power_from_mppt_car_out_watts(
+    device, packet_sequence
+):
+    """12 V output power comes from the MPPT heartbeat, in tenths of a watt."""
+    for hex_packet in packet_sequence:
+        packet = await device.packet_parse(bytes.fromhex(hex_packet))
+        await device.data_parse(packet)
+
+    mppt = DirectMpptHeartbeatPack.from_bytes(packet.payload)
+    mppt.car_out_watts = 60
+    device.update_from_data(mppt)
+
+    assert device.get_value(Device.dc_output_power) == 6.0

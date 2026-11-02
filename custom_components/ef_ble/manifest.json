@@ -129,6 +129,12 @@
             "connectable": true
         },
         {
+            "local_name": "EF-ES8*",
+            "manufacturer_id": 46517,
+            "manufacturer_data_start": [19, 69, 83, 56, 49],
+            "connectable": true
+        },
+        {
             "local_name": "EF-R35*",
             "manufacturer_id": 46517,
             "manufacturer_data_start": [19, 82, 51, 53],

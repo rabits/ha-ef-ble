@@ -27,6 +27,10 @@ test = [
   "pytest-asyncio",
   "pytest-mock",
 ]
+diag = [
+  "aiohttp",
+  "rich",
+]
 hass = [
   "aiousbwatcher",
   "homeassistant>=2024.7",

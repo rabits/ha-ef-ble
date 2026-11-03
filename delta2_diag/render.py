@@ -42,6 +42,23 @@ _BITS = frozenset(
 _PERCENT = frozenset({"real_soh", "calendar_soh", "cycle_soh"})
 _HEX_PREVIEW = 16
 
+# The DELTA 2 sends these but leaves them unfilled or fills them with values that
+# contradict the rest of the heartbeat, on both units captured so far. Comment a line
+# out to show that field again.
+_HIDDEN = frozenset(
+    {
+        "cell_temp",  # 0 °C on every sensor while the cells read 31-33 °C
+        "hw_ver",  # "V0.0.1" on every unit, looks like a placeholder
+        "ecloud_ocv",  # always 0xffff
+        "bms_sn",  # all zeros
+        "accu_chg_cap",  # discharged is 42-77 % of charged, impossible for LFP
+        "accu_dsg_cap",  # see `accu_chg_cap`
+        "real_soh",  # always 0
+        "calendar_soh",  # always 0
+        "cycle_soh",  # about 50000, not a percentage
+    }
+)
+
 _KNOWN_PACKETS = {
     (0x02, 0x20, 0x02): "PD: ports and total power",
     (0x03, 0x20, 0x02): "EMS: charge management",
@@ -149,9 +166,12 @@ def _cells(cell_vol: tuple[int, ...]) -> Table:
 
 
 def _field_table(hb: BmsHeartbeat, payload: bytes) -> Table:
+    hidden = [name for name in hb.spans if name in _HIDDEN]
     table = Table(
         title="All fields (? means the field's position or meaning is not confirmed yet)",
         title_justify="left",
+        caption=f"Hidden as unreliable: {', '.join(hidden)}" if hidden else None,
+        caption_justify="left",
     )
     table.add_column("Offset", justify="right")
     table.add_column("Field")
@@ -160,7 +180,7 @@ def _field_table(hb: BmsHeartbeat, payload: bytes) -> Table:
     table.add_column("Value")
     table.add_column("")
     for name, layout in layout_fields():
-        if (span := hb.spans.get(name)) is None:
+        if (span := hb.spans.get(name)) is None or name in _HIDDEN:
             continue
         raw = payload[span.start : span.stop]
         preview = raw[:_HEX_PREVIEW].hex(" ") + (
@@ -247,6 +267,10 @@ def _opt(value: object) -> str | None:
     return None if value is None else str(value)
 
 
+def _shown(hb: BmsHeartbeat, name: str) -> Any:
+    return None if name in _HIDDEN else getattr(hb, name)
+
+
 def _ah(mah: int | None) -> str | None:
     return None if mah is None else f"{mah / 1000:.3f} Ah ({mah} mAh)"
 
@@ -263,12 +287,12 @@ def _soh(hb: BmsHeartbeat) -> str | None:
     if hb.soh is None:
         return None
     parts = [f"{hb.soh} % (reported by BMS)"]
-    for label, value in (
-        ("actual", hb.real_soh),
-        ("calendar", hb.calendar_soh),
-        ("cycle", hb.cycle_soh),
+    for label, name in (
+        ("actual", "real_soh"),
+        ("calendar", "calendar_soh"),
+        ("cycle", "cycle_soh"),
     ):
-        if value is not None:
+        if (value := _shown(hb, name)) is not None:
             note = "" if 0 <= value <= 100 else " (implausible)"
             parts.append(f"{label} {value:.2f}{note}")
     return "; ".join(parts)
@@ -309,8 +333,8 @@ def _temperatures(hb: BmsHeartbeat) -> str | None:
         f"cells {hb.min_cell_temp} … {hb.max_cell_temp} °C",
         f"MOSFET {hb.min_mos_temp} … {hb.max_mos_temp} °C",
     ]
-    if hb.cell_temp is not None:
-        parts.append(f"cell sensors: {', '.join(map(str, hb.cell_temp))} °C")
+    if (cell_temp := _shown(hb, "cell_temp")) is not None:
+        parts.append(f"cell sensors: {', '.join(map(str, cell_temp))} °C")
     return "; ".join(parts)
 
 
@@ -326,15 +350,14 @@ def _errors(hb: BmsHeartbeat) -> str | None:
 
 
 def _totals(hb: BmsHeartbeat) -> str | None:
-    if hb.accu_chg_cap is None or hb.accu_dsg_cap is None:
-        return None
-    parts = [
-        f"charged {hb.accu_chg_cap / 1000:.1f} Ah",
-        f"discharged {hb.accu_dsg_cap / 1000:.1f} Ah",
-    ]
+    parts = []
+    if (charged := _shown(hb, "accu_chg_cap")) is not None:
+        parts.append(f"charged {charged / 1000:.1f} Ah")
+    if (discharged := _shown(hb, "accu_dsg_cap")) is not None:
+        parts.append(f"discharged {discharged / 1000:.1f} Ah")
     if hb.accu_chg_energy is not None and hb.accu_dsg_energy is not None:
         parts.append(f"energy {hb.accu_chg_energy} / {hb.accu_dsg_energy} Wh")
-    return ", ".join(parts)
+    return ", ".join(parts) or None
 
 
 def _firmware(hb: BmsHeartbeat) -> str | None:
@@ -343,13 +366,17 @@ def _firmware(hb: BmsHeartbeat) -> str | None:
     parts = [f"BMS {_version(hb.sys_ver)}"]
     if hb.sys_loader_ver is not None:
         parts.append(f"bootloader {_version(hb.sys_loader_ver)}")
-    if hb.hw_ver:
-        parts.append(f"board {hb.hw_ver}")
+    if hw_ver := _shown(hb, "hw_ver"):
+        parts.append(f"board {hw_ver}")
     if hb.bms_heartbeat_ver is not None:
         parts.append(f"packet format 0x{hb.bms_heartbeat_ver:04x}")
     return ", ".join(parts)
 
 
 def _serials(hb: BmsHeartbeat) -> str | None:
-    serials = [sn for sn in (hb.bms_sn, hb.pack_sn) if sn and sn.strip("0")]
+    serials = [
+        sn
+        for name in ("bms_sn", "pack_sn")
+        if (sn := _shown(hb, name)) and sn.strip("0")
+    ]
     return ", ".join(serials) or None

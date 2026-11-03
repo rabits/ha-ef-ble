@@ -9,8 +9,8 @@ so every offset after `cell_vol` moves with the cell and sensor counts. Signedne
 comes from the proto: what is `int32` there is signed here.
 
 `confirmed` marks fields whose position and meaning were cross-checked in captures
-(cell extremes against the cell array, `all_err_code` against `err_code`, accumulated
-charge against cycles, energy against charge, capacities against the model's rating).
+(cell extremes against the cell array, `all_err_code` against `err_code`, energy
+against charge, capacities against the model's rating).
 The others sit at a plausible position, but their width or meaning is a guess.
 """
 
@@ -113,8 +113,8 @@ class BmsHeartbeat:
     chg_dsg_state: int | None = _at("B", "", "Charge/discharge state")
     all_err_code: int | None = _at("I", "", "All error codes (bits)", confirmed=True)
     all_bms_fault: int | None = _at("I", "", "All faults (bits)")
-    accu_chg_cap: int | None = _at("I", "mAh", "Lifetime charged", confirmed=True)
-    accu_dsg_cap: int | None = _at("I", "mAh", "Lifetime discharged", confirmed=True)
+    accu_chg_cap: int | None = _at("I", "mAh", "Lifetime charged")
+    accu_dsg_cap: int | None = _at("I", "mAh", "Lifetime discharged")
     real_soh: float | None = _at("f", "%", "Actual SOH")
     calendar_soh: float | None = _at("f", "%", "Calendar SOH")
     cycle_soh: float | None = _at("f", "%", "Cycle SOH")

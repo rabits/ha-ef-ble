@@ -354,6 +354,18 @@
         "state": {
           "off": "mdi:battery-off-outline"
         }
+      },
+      "beeper": {
+        "default": "mdi:volume-high",
+        "state": {
+          "off": "mdi:volume-off"
+        }
+      },
+      "ac_xboost": {
+        "default": "mdi:lightning-bolt-circle"
+      },
+      "ac_always_on": {
+        "default": "mdi:power-plug-battery"
       }
     },
     "select": {
@@ -407,6 +419,12 @@
           "sleep": "mdi:power-sleep",
           "eco": "mdi:leaf"
         }
+      },
+      "screen_timeout": {
+        "default": "mdi:monitor-off"
+      },
+      "unit_timeout": {
+        "default": "mdi:power-sleep"
       }
     },
     "number": {
@@ -469,6 +487,12 @@
       },
       "discharging_power_limit": {
         "default": "mdi:battery-arrow-down"
+      },
+      "generator_auto_start_level": {
+        "default": "mdi:engine"
+      },
+      "generator_auto_stop_level": {
+        "default": "mdi:engine-off"
       }
     },
     "climate": {

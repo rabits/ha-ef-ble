@@ -6,6 +6,7 @@ from bleak.backends.scanner import AdvertisementData
 
 from ..device_options import (
     UNLOCK_AC_CHARGING_MINIMUM,
+    UNLOCK_DC_CHARGING_MINIMUM,
     option_field,
 )
 from ..devicebase import DeviceBase
@@ -21,6 +22,7 @@ from ..model import (
 )
 from ..packet import Packet
 from ..props import Field, computed_field
+from ..props.enums import IntFieldValue
 from ..props.raw_data_field import dataclass_attr_mapper, raw_field
 from ..props.raw_data_props import RawDataProps
 from ..props.transforms import pdiv, pround
@@ -53,6 +55,32 @@ rd_ems = dataclass_attr_mapper(DirectEmsDeltaHeartbeatPack)
 rd_inv = dataclass_attr_mapper(DirectInvDeltaHeartbeatPack)
 rd_mppt = dataclass_attr_mapper(DirectMpptHeartbeatPack)
 rd_kit = dataclass_attr_mapper(AllKitDetailData)
+
+
+class ScreenTimeout(IntFieldValue):
+    """Seconds until the screen turns off"""
+
+    UNKNOWN = -1
+
+    NEVER = 0
+    SEC_10 = 10
+    SEC_30 = 30
+    MIN_1 = 60
+    MIN_5 = 300
+    MIN_30 = 1800
+
+
+class UnitTimeout(IntFieldValue):
+    """Minutes without a load until the unit turns off"""
+
+    UNKNOWN = -1
+
+    NEVER = 0
+    MIN_30 = 30
+    HOUR_1 = 60
+    HOUR_2 = 120
+    HOUR_6 = 360
+    HOUR_12 = 720
 
 
 class Device(DeviceBase, RawDataProps):
@@ -122,6 +150,9 @@ class Device(DeviceBase, RawDataProps):
     ac_input_voltage = raw_field(rd_inv.ac_in_vol, pdiv(1000, 2))
     ac_input_current = raw_field(rd_inv.ac_in_amp, pdiv(1000, 2))
     ac_ports = raw_field(rd_inv.cfg_ac_enabled, lambda x: x == 1)
+    ac_xboost = raw_field(rd_inv.cfg_ac_xboost, lambda x: x == 1)
+    ac_always_on = raw_field(rd_pd.ac_auto_config, lambda x: x == 1)
+    _min_ac_out_soc = raw_field(rd_pd.min_ac_out_soc)
 
     dc_input_power = raw_field(rd_mppt.in_watts, pdiv(10, 1))
     dc_input_voltage = raw_field(rd_mppt.in_vol, pdiv(10, 1))
@@ -149,11 +180,20 @@ class Device(DeviceBase, RawDataProps):
     anderson_out_power = raw_field(rd_mppt.dcdc_12v_watts)
 
     dc_12v_port = raw_field(rd_mppt.car_state, lambda x: x == 1)
+    dc_charging_max_amps = raw_field(rd_mppt.cfg_dc_chg_current, pdiv(1000))
+    dc_charging_amps_min = option_field(
+        UNLOCK_DC_CHARGING_MINIMUM, enabled=0, disabled=4
+    )
     energy_backup = raw_field(rd_pd.watth_is_config, lambda x: x == 1)
     energy_backup_battery_level = raw_field(rd_pd.backup_soc)
 
-    # beep_mode: 0 = buzzer on, 1 = buzzer off (inverted in protocol)
-    # buzzer = raw_field(rd_pd.beep_mode, lambda x: x == 0)
+    generator_auto_start_level = raw_field(rd_ems.open_oil_eb_soc)
+    generator_auto_stop_level = raw_field(rd_ems.close_oil_eb_soc)
+
+    # 0 turns the beeper on, 1 turns it off
+    beeper = raw_field(rd_pd.beep_mode, lambda x: x == 0)
+    screen_timeout = raw_field(rd_pd.lcd_off_sec, ScreenTimeout.from_value)
+    unit_timeout = raw_field(rd_pd.standby_min, UnitTimeout.from_value)
 
     usbc_output_power = raw_field(rd_pd.typec1_watts)
     usbc2_output_power = raw_field(rd_pd.typec2_watts)
@@ -336,13 +376,31 @@ class Device(DeviceBase, RawDataProps):
         payload = bytes([1 if enabled else 0, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF])
         await self._send_config_packet(0x04, 0x42, payload)
 
-    async def enable_xboost(self, enabled: bool):
+    @controls.switch(ac_xboost)
+    async def enable_ac_xboost(self, enabled: bool):
         payload = bytes([0xFF, 1 if enabled else 0, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF])
         await self._send_config_packet(0x04, 0x42, payload)
+
+    @controls.switch(ac_always_on)
+    async def enable_ac_always_on(self, enabled: bool):
+        # The command also sets the minimum level, so it repeats the current one
+        if self._min_ac_out_soc is None:
+            self._logger.warning("AC always on not set: minimum level not known yet")
+            return
+        payload = bytes([1 if enabled else 0, self._min_ac_out_soc])
+        await self._send_config_packet(0x02, 0x5F, payload)
 
     @controls.outlet(dc_12v_port)
     async def enable_dc_12v_port(self, enabled: bool):
         await self._send_config_packet(self._mppt_dst, 0x51, enabled.to_bytes())
+
+    @controls.current(
+        dc_charging_max_amps, min=dynamic(dc_charging_amps_min), max=8, step=2
+    )
+    async def set_dc_charging_amps_max(self, value: float):
+        milliamps = int(value * 1000).to_bytes(4, "little")
+        await self._send_config_packet(self._mppt_dst, 0x47, milliamps)
+        return True
 
     @controls.battery(
         battery_charge_limit_max, min=dynamic(battery_charge_limit_min), max=100
@@ -388,15 +446,31 @@ class Device(DeviceBase, RawDataProps):
         payload = bytes([0x01 if enabled else 0, value, 0x00, 0x00])
         await self._send_config_packet(0x02, 0x5E, payload)
 
-    async def enable_solar_priority(self, enabled: bool):
-        await self._send_config_packet(0x02, 0x5C, bytes([1 if enabled else 0]))
+    @controls.battery(generator_auto_start_level, min=0, max=30)
+    async def set_generator_auto_start_level(self, value: float):
+        await self._send_config_packet(0x03, 0x34, int(value).to_bytes())
+        return True
 
-    async def set_buzzer(self, enabled: bool):
+    @controls.battery(generator_auto_stop_level, min=50, max=100)
+    async def set_generator_auto_stop_level(self, value: float):
+        await self._send_config_packet(0x03, 0x35, int(value).to_bytes())
+        return True
+
+    @controls.switch(beeper)
+    async def enable_beeper(self, enabled: bool):
         await self._send_config_packet(0x02, 0x26, bytes([0 if enabled else 1]))
 
-    async def set_screen_timeout(self, seconds: int):
-        payload = bytes([seconds & 0xFF, (seconds >> 8) & 0xFF, 0xFF])
+    @controls.select(screen_timeout, options=ScreenTimeout)
+    async def set_screen_timeout(self, value: ScreenTimeout):
+        payload = value.to_bytes(2, "little") + bytes([0xFF])
         await self._send_config_packet(0x02, 0x27, payload)
+
+    @controls.select(unit_timeout, options=UnitTimeout)
+    async def set_unit_timeout(self, value: UnitTimeout):
+        await self._send_config_packet(0x02, 0x21, value.to_bytes(2, "little"))
+
+    async def enable_solar_priority(self, enabled: bool):
+        await self._send_config_packet(0x02, 0x5C, bytes([1 if enabled else 0]))
 
     async def set_screen_brightness(self, value: int):
         await self._send_config_packet(0x02, 0x27, bytes([0xFF, 0xFF, value]))
@@ -407,15 +481,6 @@ class Device(DeviceBase, RawDataProps):
     async def set_dc_standby_time(self, minutes: int):
         await self._send_config_packet(0x05, 0x54, minutes.to_bytes(2, "little"))
 
-    async def set_system_standby_time(self, minutes: int):
-        await self._send_config_packet(0x02, 0x21, minutes.to_bytes(2, "little"))
-
-    async def set_car_charging_current(self, amps: int):
-        await self._send_config_packet(0x05, 0x47, amps.to_bytes(4, "little"))
-
     async def set_dc_charging_type(self, type_id: int):
         # 0 car 1 adapter ?
         await self._send_config_packet(0x05, 0x52, bytes([type_id]))
-
-    async def enable_ac_always_on(self, enabled: bool):
-        await self._send_config_packet(0x02, 0x4A, bytes([1 if enabled else 0]))

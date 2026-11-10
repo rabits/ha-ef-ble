@@ -651,6 +651,9 @@ Click on any device below to see available sensors, switches, and controls:
 | USB A QC (2) Power                  |             |                   |
 | Extra Battery Level ¹               |             |                   |
 | Extra Battery Temperature ¹         |             |                   |
+| Extra Battery Voltage ¹             |             |                   |
+| Extra Battery Input Power ¹         |             |                   |
+| Extra Battery Output Power ¹        |             |                   |
 | Battery Voltage (disabled)          |             |                   |
 | Max Cell Voltage (disabled)         |             |                   |
 | Min Cell Voltage (disabled)         |             |                   |

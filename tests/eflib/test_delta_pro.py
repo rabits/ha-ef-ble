@@ -255,6 +255,9 @@ async def test_delta_pro_exact_values_from_known_packets(device, packet_sequence
         Device.battery_temperature: 25,
         Device.cell_temperature: 26,
         Device.state_of_health: 98,
+        Device.battery_remaining_capacity: 112320,
+        Device.battery_full_capacity: 144000,
+        Device.battery_cycles: 12,
         Device.ac_output_voltage: 230.0,
     }
 
@@ -320,6 +323,9 @@ async def test_delta_pro_extra_battery_heartbeat_fills_only_its_own_slot(
         min_cell_vol=3_401,
         input_watts=922,
         output_watts=37,
+        remain_cap=70_001,
+        full_cap=79_360,
+        cycles=72,
     )
 
     assert await device.data_parse(packet)
@@ -331,6 +337,9 @@ async def test_delta_pro_extra_battery_heartbeat_fills_only_its_own_slot(
         "min_cell_voltage": 3.401,
         "input_power": 922,
         "output_power": 37,
+        "remaining_capacity": 70_001,
+        "full_capacity": 79_360,
+        "cycles": 72,
     }
     for name, value in expected.items():
         assert device.get_value(f"battery_{num}_{name}") == value, name

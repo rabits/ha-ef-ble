@@ -217,6 +217,15 @@
       },
       "state_of_health": {
         "default": "mdi:battery-heart"
+      },
+      "battery_remaining_capacity": {
+        "default": "mdi:battery-50"
+      },
+      "battery_full_capacity": {
+        "default": "mdi:battery"
+      },
+      "battery_cycles": {
+        "default": "mdi:counter"
       }
     },
     "switch": {

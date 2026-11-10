@@ -696,6 +696,15 @@
       "state_of_health": {
         "name": "Стан здоров'я батареї"
       },
+      "battery_remaining_capacity": {
+        "name": "Залишкова ємність"
+      },
+      "battery_full_capacity": {
+        "name": "Повна ємність"
+      },
+      "battery_cycles": {
+        "name": "Цикли заряду"
+      },
       "engine_state": {
         "name": "Стан двигуна",
         "state": {

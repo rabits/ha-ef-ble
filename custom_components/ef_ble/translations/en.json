@@ -728,6 +728,15 @@
       "state_of_health": {
         "name": "State of Health"
       },
+      "battery_remaining_capacity": {
+        "name": "Remaining Capacity"
+      },
+      "battery_full_capacity": {
+        "name": "Full Capacity"
+      },
+      "battery_cycles": {
+        "name": "Charge Cycles"
+      },
       "engine_state": {
         "name": "Engine State",
         "state": {

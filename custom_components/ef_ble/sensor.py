@@ -153,6 +153,19 @@ def energy_storage(
     )
 
 
+def charge_capacity(
+    key: str = "", enabled: bool = True, **kwargs: Unpack[_SensorKwargs]
+) -> EcoflowSensorEntityDescription:
+    return EcoflowSensorEntityDescription(
+        key=key,
+        native_unit_of_measurement="mAh",
+        state_class=SensorStateClass.MEASUREMENT,
+        suggested_display_precision=0,
+        entity_registry_enabled_default=enabled,
+        **kwargs,
+    )
+
+
 def voltage(
     key: str = "",
     *,
@@ -794,6 +807,15 @@ _SENSORS: Final[dict[str, SensorEntityDescription]] = {
     "state_of_health": percentage(
         enabled=False, entity_category=EntityCategory.DIAGNOSTIC
     ),
+    "battery_remaining_capacity": charge_capacity(enabled=False),
+    "battery_full_capacity": charge_capacity(
+        enabled=False, entity_category=EntityCategory.DIAGNOSTIC
+    ),
+    "battery_cycles": raw(
+        enabled=False,
+        state_class=SensorStateClass.TOTAL_INCREASING,
+        entity_category=EntityCategory.DIAGNOSTIC,
+    ),
     # Smart Generator
     "xt150_battery_level": battery(),
     "engine_state": enum(options=smart_generator.EngineOpen),
@@ -957,6 +979,20 @@ _BATTERY_ADDON_SENSORS: Final = {
     ),
     "battery_{n}_input_power": power(precision=0, translation_key="input_power"),
     "battery_{n}_output_power": power(precision=0, translation_key="output_power"),
+    "battery_{n}_remaining_capacity": charge_capacity(
+        enabled=False, translation_key="battery_remaining_capacity"
+    ),
+    "battery_{n}_full_capacity": charge_capacity(
+        enabled=False,
+        entity_category=EntityCategory.DIAGNOSTIC,
+        translation_key="battery_full_capacity",
+    ),
+    "battery_{n}_cycles": raw(
+        enabled=False,
+        state_class=SensorStateClass.TOTAL_INCREASING,
+        entity_category=EntityCategory.DIAGNOSTIC,
+        translation_key="battery_cycles",
+    ),
 }
 
 

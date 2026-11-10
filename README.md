@@ -662,6 +662,9 @@ Click on any device below to see available sensors, switches, and controls:
 | Charge Time Remaining (disabled)    |             |                   |
 | Discharge Time Remaining (disabled) |             |                   |
 | AC Output Voltage (disabled)        |             |                   |
+| Remaining Capacity (disabled)       |             |                   |
+| Full Capacity (disabled)            |             |                   |
+| Charge Cycles (disabled)            |             |                   |
 
 <sup>¹ Per extra battery (up to 2)</sup>
 

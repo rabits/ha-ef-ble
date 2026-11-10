@@ -89,6 +89,9 @@ class Device(DeviceBase, RawDataProps):
     battery_temperature = raw_field(rd_bms.temp)
     cell_temperature = raw_field(rd_bms.max_cell_temp)
     state_of_health = raw_field(rd_bms.soh)
+    battery_remaining_capacity = raw_field(rd_bms.remain_cap)
+    battery_full_capacity = raw_field(rd_bms.full_cap)
+    battery_cycles = raw_field(rd_bms.cycles)
 
     battery_1_enabled = Field[bool]()
     battery_1_battery_level = Field[float]()
@@ -99,6 +102,9 @@ class Device(DeviceBase, RawDataProps):
     battery_1_min_cell_voltage = raw_field(rd_bms_1.min_cell_vol, pdiv(1000, 3))
     battery_1_input_power = raw_field(rd_bms_1.input_watts)
     battery_1_output_power = raw_field(rd_bms_1.output_watts)
+    battery_1_remaining_capacity = raw_field(rd_bms_1.remain_cap)
+    battery_1_full_capacity = raw_field(rd_bms_1.full_cap)
+    battery_1_cycles = raw_field(rd_bms_1.cycles)
 
     battery_2_enabled = Field[bool]()
     battery_2_battery_level = Field[float]()
@@ -109,6 +115,9 @@ class Device(DeviceBase, RawDataProps):
     battery_2_min_cell_voltage = raw_field(rd_bms_2.min_cell_vol, pdiv(1000, 3))
     battery_2_input_power = raw_field(rd_bms_2.input_watts)
     battery_2_output_power = raw_field(rd_bms_2.output_watts)
+    battery_2_remaining_capacity = raw_field(rd_bms_2.remain_cap)
+    battery_2_full_capacity = raw_field(rd_bms_2.full_cap)
+    battery_2_cycles = raw_field(rd_bms_2.cycles)
 
     ac_output_power = raw_field(rd_inv.output_watts)
     ac_output_voltage = raw_field(rd_inv.inv_out_vol, pdiv(1000, 2))

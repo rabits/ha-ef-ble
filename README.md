@@ -672,6 +672,8 @@ Click on any device below to see available sensors, switches, and controls:
 | AC Output Voltage (disabled)        |             |                   |
 | Inverter DC Temperature (disabled)  |             |                   |
 | MPPT Temperature (disabled)         |             |                   |
+| MPPT Output Power (disabled)        |             |                   |
+| MPPT Output Voltage (disabled)      |             |                   |
 | Remaining Capacity (disabled)       |             |                   |
 | Full Capacity (disabled)            |             |                   |
 | Charge Cycles (disabled)            |             |                   |

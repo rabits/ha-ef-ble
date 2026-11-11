@@ -744,6 +744,13 @@ _SENSORS: Final[dict[str, SensorEntityDescription]] = {
     # Delta Pro
     "inverter_dc_temperature": port_temperature("Inverter DC"),
     "mppt_temperature": port_temperature("MPPT"),
+    "mppt_output_power": port_power(
+        "MPPT Output",
+        enabled=False,
+        precision=1,
+        entity_category=EntityCategory.DIAGNOSTIC,
+    ),
+    "mppt_output_voltage": port_voltage("MPPT Output", precision=1),
     # River 3, Delta 3
     "input_energy": energy(),
     "output_energy": energy(),

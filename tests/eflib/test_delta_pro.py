@@ -273,6 +273,8 @@ async def test_delta_pro_exact_values_from_known_packets(device, packet_sequence
         Device.inverter_temperature: 0,
         Device.inverter_dc_temperature: 0,
         Device.mppt_temperature: 37,
+        Device.mppt_output_power: 1.8,
+        Device.mppt_output_voltage: 48.8,
     }
 
     for field_name, expected_value in expected.items():
@@ -309,6 +311,8 @@ async def test_delta_pro_mppt_output_power_scale(
     ("kind", "raw_attr", "raw_value", "field_name", "expected"),
     [
         (_MPPT, "mppt_temp", 26, Device.mppt_temperature, 26),
+        (_MPPT, "out_watts", 13, Device.mppt_output_power, 1.3),
+        (_MPPT, "out_vol", 512, Device.mppt_output_voltage, 51.2),
         (_INV, "out_temp", 48, Device.inverter_temperature, 48),
         (_INV, "dc_in_temp", 50, Device.inverter_dc_temperature, 50),
         (_PD, "chg_power_ac", 4_694_133, Device.ac_input_energy, 4_694_133),

@@ -169,6 +169,11 @@ class Device(DeviceBase, RawDataProps):
 
     input_power = raw_field(rd_pd.watts_in_sum)
     output_power = raw_field(rd_pd.watts_out_sum)
+    # Lifetime counters in Wh; the AC input one also counts the pass-through power
+    ac_input_energy = raw_field(rd_pd.chg_power_ac)
+    ac_output_energy = raw_field(rd_pd.dsg_power_ac)
+    dc_input_energy = raw_field(rd_pd.chg_sun_power)
+    dc_output_energy = raw_field(rd_pd.dsg_power_dc)
     dc_output_power = raw_field(rd_mppt.car_out_watts, pdiv(10, 1))
     anderson_out_power = raw_field(rd_mppt.dcdc_12v_watts)
 

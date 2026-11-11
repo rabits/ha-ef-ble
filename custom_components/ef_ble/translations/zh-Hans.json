@@ -582,6 +582,9 @@
       "dc_output_power": {
         "name": "直流输出功率"
       },
+      "dc_output_energy": {
+        "name": "直流输出能量"
+      },
       "dc12v_output_power": {
         "name": "DC 12V 输出功率"
       },

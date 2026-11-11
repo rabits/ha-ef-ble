@@ -649,6 +649,10 @@ Click on any device below to see available sensors, switches, and controls:
 | USB A (2) Output Power              |             |                   |
 | USB A QC (1) Power                  |             |                   |
 | USB A QC (2) Power                  |             |                   |
+| AC Input Energy                     |             |                   |
+| AC Output Energy                    |             |                   |
+| DC Input Energy                     |             |                   |
+| DC Output Energy                    |             |                   |
 | Extra Battery Level ¹               |             |                   |
 | Extra Battery Temperature ¹         |             |                   |
 | Extra Battery Voltage ¹             |             |                   |

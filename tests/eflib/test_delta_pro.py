@@ -6,11 +6,13 @@ from custom_components.ef_ble.eflib.model import (
     DirectBmsMDeltaHeartbeatPack,
     DirectInvDeltaHeartbeatPack,
     DirectMpptHeartbeatPack,
+    DirectPdHeartbeatPack,
 )
 from custom_components.ef_ble.eflib.model.base import RawData
 from custom_components.ef_ble.eflib.packet import Packet
 
 # Index of each heartbeat in `packet_sequence`, with its source address and model
+_PD = (2, 0x02, DirectPdHeartbeatPack)
 _BMS = (3, 0x03, DirectBmsMDeltaHeartbeatPack)
 
 
@@ -239,6 +241,10 @@ async def test_delta_pro_exact_values_from_known_packets(device, packet_sequence
         Device.dc_output_power: 0,
         Device.usbc_output_power: 0,
         Device.usba_output_power: 0,
+        Device.ac_input_energy: 0,
+        Device.ac_output_energy: 0,
+        Device.dc_input_energy: 0,
+        Device.dc_output_energy: 200,
         Device.dc_12v_port: False,
         Device.energy_backup: False,
         Device.energy_backup_battery_level: 50,
@@ -290,6 +296,25 @@ async def test_delta_pro_mppt_output_power_scale(
     mppt = DirectMpptHeartbeatPack.from_bytes(packet.payload)
     setattr(mppt, raw_attr, raw_value)
     device.update_from_data(mppt)
+
+    assert device.get_value(field_name) == expected
+
+
+@pytest.mark.parametrize(
+    ("kind", "raw_attr", "raw_value", "field_name", "expected"),
+    [
+        (_PD, "chg_power_ac", 4_694_133, Device.ac_input_energy, 4_694_133),
+        (_PD, "dsg_power_ac", 4_225_958, Device.ac_output_energy, 4_225_958),
+        (_PD, "chg_sun_power", 571, Device.dc_input_energy, 571),
+        (_PD, "dsg_power_dc", 24_070, Device.dc_output_energy, 24_070),
+    ],
+    ids=lambda value: value if isinstance(value, str) else None,
+)
+async def test_delta_pro_maps_heartbeat_field(
+    device, packet_sequence, kind, raw_attr, raw_value, field_name, expected
+):
+    """Each value differs from the reference packet, so a wrong source field fails"""
+    device.update_from_data(_reference(packet_sequence, kind, **{raw_attr: raw_value}))
 
     assert device.get_value(field_name) == expected
 

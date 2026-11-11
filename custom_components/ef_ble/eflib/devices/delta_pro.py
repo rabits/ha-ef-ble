@@ -86,8 +86,8 @@ class Device(DeviceBase, RawDataProps):
             return None
         if self._ac_chg_rated_power > 200:
             return self._ac_chg_rated_power
-        # The app offers up to 2800 W to a 230 V unit that reports no rated power
-        return 2800 if (self._cfg_ac_out_voltage or 0) >= 200_000 else 1800
+        # 230 V units that report a rated power report 2900 W, the cloud's limit too
+        return 2900 if (self._cfg_ac_out_voltage or 0) >= 200_000 else 1800
 
     input_power = raw_field(rd_pd.watts_in_sum)
     output_power = raw_field(rd_pd.watts_out_sum)

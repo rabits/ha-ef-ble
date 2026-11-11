@@ -49,6 +49,13 @@ rd_mppt = dataclass_attr_mapper(DirectMpptHeartbeatPack)
 rd_kit = dataclass_attr_mapper(AllKitDetailData)
 
 
+def _signed_milliamps_to_amps(value: int) -> float:
+    """The shared heartbeat reads `amp` unsigned, but the pack sends a signed int32"""
+    if value >= 1 << 31:
+        value -= 1 << 32
+    return round(value / 1000, 2)
+
+
 class Device(DeviceBase, RawDataProps):
     """Delta Pro"""
 
@@ -92,6 +99,23 @@ class Device(DeviceBase, RawDataProps):
     battery_remaining_capacity = raw_field(rd_bms.remain_cap)
     battery_full_capacity = raw_field(rd_bms.full_cap)
     battery_cycles = raw_field(rd_bms.cycles)
+    battery_current = raw_field(rd_bms.amp, _signed_milliamps_to_amps)
+
+    @computed_field
+    def battery_input_power(self) -> float | None:
+        power = self._main_battery_power()
+        return None if power is None else max(0, power)
+
+    @computed_field
+    def battery_output_power(self) -> float | None:
+        power = self._main_battery_power()
+        return None if power is None else -min(0, power)
+
+    def _main_battery_power(self) -> float | None:
+        """Plus while charging; volts × amps, as the pack watts can stay at 0"""
+        if self.battery_voltage is None or self.battery_current is None:
+            return None
+        return round(self.battery_voltage * self.battery_current, 1)
 
     battery_1_enabled = Field[bool]()
     battery_1_battery_level = Field[float]()

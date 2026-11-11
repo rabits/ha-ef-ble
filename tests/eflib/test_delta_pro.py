@@ -258,6 +258,9 @@ async def test_delta_pro_exact_values_from_known_packets(device, packet_sequence
         Device.battery_remaining_capacity: 112320,
         Device.battery_full_capacity: 144000,
         Device.battery_cycles: 12,
+        Device.battery_current: 0.0,
+        Device.battery_input_power: 0,
+        Device.battery_output_power: 0,
         Device.ac_output_voltage: 230.0,
     }
 
@@ -358,6 +361,45 @@ async def test_delta_pro_main_pack_heartbeat_does_not_fill_an_extra_battery(
     assert device.get_value(Device.battery_level) is None
     assert device.get_value(Device.battery_1_cell_temperature) is None
     assert device.get_value(Device.battery_2_cell_temperature) is None
+
+
+@pytest.mark.parametrize(
+    ("amp", "expected"),
+    [
+        (6_481, 6.48),
+        ((1 << 32) - 6_481, -6.48),
+        ((1 << 31) - 1, 2_147_483.65),
+        (1 << 31, -2_147_483.65),
+    ],
+    ids=["charging", "discharging", "int32_max", "int32_min"],
+)
+async def test_delta_pro_battery_current_is_signed(
+    device, packet_sequence, amp, expected
+):
+    assert await device.data_parse(_heartbeat(packet_sequence, _BMS, amp=amp))
+
+    assert device.battery_current == expected
+
+
+@pytest.mark.parametrize(
+    ("amp", "input_power", "output_power"),
+    [
+        (12_340, 614.0, 0),
+        (0, 0, 0),
+        ((1 << 32) - 6_481, 0, 322.4),
+    ],
+    ids=["charging", "idle", "discharging"],
+)
+async def test_delta_pro_battery_power_splits_by_direction(
+    device, packet_sequence, amp, input_power, output_power
+):
+    """The power comes from volts × amps, as a main pack can send 0 watts both ways"""
+    packet = _heartbeat(packet_sequence, _BMS, vol=49_762, amp=amp)
+
+    assert await device.data_parse(packet)
+
+    assert device.battery_input_power == input_power
+    assert device.battery_output_power == output_power
 
 
 async def test_delta_pro_unknown_pack_slot_is_left_unprocessed(device, packet_sequence):

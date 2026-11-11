@@ -655,6 +655,9 @@ Click on any device below to see available sensors, switches, and controls:
 | Extra Battery Input Power ¹         |             |                   |
 | Extra Battery Output Power ¹        |             |                   |
 | Battery Voltage (disabled)          |             |                   |
+| Battery Current (disabled)          |             |                   |
+| Battery Input Power (disabled)      |             |                   |
+| Battery Output Power (disabled)     |             |                   |
 | Max Cell Voltage (disabled)         |             |                   |
 | Min Cell Voltage (disabled)         |             |                   |
 | Cell Temperature (disabled)         |             |                   |

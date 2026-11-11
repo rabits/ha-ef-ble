@@ -14,6 +14,8 @@ from custom_components.ef_ble.eflib.packet import Packet
 # Index of each heartbeat in `packet_sequence`, with its source address and model
 _PD = (2, 0x02, DirectPdHeartbeatPack)
 _BMS = (3, 0x03, DirectBmsMDeltaHeartbeatPack)
+_INV = (4, 0x04, DirectInvDeltaHeartbeatPack)
+_MPPT = (5, 0x05, DirectMpptHeartbeatPack)
 
 
 def _reference(packet_sequence, kind: tuple[int, int, type[RawData]], **fields):
@@ -268,6 +270,9 @@ async def test_delta_pro_exact_values_from_known_packets(device, packet_sequence
         Device.battery_input_power: 0,
         Device.battery_output_power: 0,
         Device.ac_output_voltage: 230.0,
+        Device.inverter_temperature: 0,
+        Device.inverter_dc_temperature: 0,
+        Device.mppt_temperature: 37,
     }
 
     for field_name, expected_value in expected.items():
@@ -303,6 +308,9 @@ async def test_delta_pro_mppt_output_power_scale(
 @pytest.mark.parametrize(
     ("kind", "raw_attr", "raw_value", "field_name", "expected"),
     [
+        (_MPPT, "mppt_temp", 26, Device.mppt_temperature, 26),
+        (_INV, "out_temp", 48, Device.inverter_temperature, 48),
+        (_INV, "dc_in_temp", 50, Device.inverter_dc_temperature, 50),
         (_PD, "chg_power_ac", 4_694_133, Device.ac_input_energy, 4_694_133),
         (_PD, "dsg_power_ac", 4_225_958, Device.ac_output_energy, 4_225_958),
         (_PD, "chg_sun_power", 571, Device.dc_input_energy, 571),

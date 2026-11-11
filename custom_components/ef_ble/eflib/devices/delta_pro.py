@@ -148,11 +148,14 @@ class Device(DeviceBase, RawDataProps):
     ac_input_power = raw_field(rd_inv.input_watts)
     ac_input_voltage = raw_field(rd_inv.ac_in_vol, pdiv(1000, 2))
     ac_input_current = raw_field(rd_inv.ac_in_amp, pdiv(1000, 2))
+    inverter_temperature = raw_field(rd_inv.out_temp)
+    inverter_dc_temperature = raw_field(rd_inv.dc_in_temp)
     ac_ports = raw_field(rd_inv.cfg_ac_enabled, lambda x: x == 1)
 
     dc_input_power = raw_field(rd_mppt.in_watts, pdiv(10, 1))
     dc_input_voltage = raw_field(rd_mppt.in_vol, pdiv(10, 1))
     dc_input_current = raw_field(rd_mppt.in_amp, pdiv(100, 2))
+    mppt_temperature = raw_field(rd_mppt.mppt_temp)
 
     ac_charging_speed = raw_field(rd_inv.cfg_slow_chg_watts)
     _ac_chg_rated_power = raw_field(rd_inv.ac_chg_rated_power)

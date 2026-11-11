@@ -741,6 +741,9 @@ _SENSORS: Final[dict[str, SensorEntityDescription]] = {
     "ac_inverter_temperature": port_temperature("AC Inverter"),
     "ac_inverter_error_code": port_error_code("AC Inverter"),
     "system_temperature": port_temperature("System"),
+    # Delta Pro
+    "inverter_dc_temperature": port_temperature("Inverter DC"),
+    "mppt_temperature": port_temperature("MPPT"),
     # River 3, Delta 3
     "input_energy": energy(),
     "output_energy": energy(),

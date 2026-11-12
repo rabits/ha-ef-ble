@@ -1,0 +1,1285 @@
+{
+  "config": {
+    "abort": {
+      "already_configured": "裝置已設定完成",
+      "not_supported": "不支援此裝置",
+      "no_devices_found": "找不到支援的 EcoFlow 裝置。請確認您的裝置沒有透過藍牙連線到 EcoFlow App。",
+      "reconfigure_successful": "重新設定成功"
+    },
+    "error": {
+      "cannot_connect": "無法連線",
+      "invalid_auth": "驗證無效",
+      "unknown": "發生未預期的錯誤，請查看記錄檔以取得詳細資訊",
+      "email_empty": "電子郵件不可為空白",
+      "password_empty": "密碼不可為空白",
+      "device_auth_failed": "裝置驗證失敗 - {reason_failed}",
+      "auth_failed_need_refresh_token": "驗證失敗 - 需要重新整理權杖，請再試一次",
+      "auth_failed_device_internal_error": "驗證失敗 - 裝置內部錯誤",
+      "auth_failed_device_already_bound": "驗證失敗 - 裝置已綁定至其他帳號",
+      "auth_failed_need_bind_install_first": "驗證失敗 - 裝置需要先透過 EcoFlow App 完成綁定",
+      "auth_failed_app_send_data_error": "驗證失敗 - 傳送資料至裝置時發生錯誤",
+      "auth_failed_wrong_key": "驗證失敗 - 金鑰錯誤，使用者 ID 不正確、屬於其他地區或屬於其他帳號",
+      "auth_failed_unknown": "驗證失敗 - 未知錯誤，請查看記錄檔以取得更多資訊",
+      "auth_failed_key_info": "驗證失敗 - 無法取得金鑰資訊",
+      "bt_timeout": "無法連線至裝置 - 連線逾時",
+      "bt_not_found": "找不到裝置 - 若此錯誤反覆發生，請嘗試重新整理藍牙整合",
+      "bt_general_error": "無法連線至裝置 - 請查看記錄檔以取得更多詳細資訊",
+      "error_try_refresh": "裝置在完成驗證前就已中斷連線 - 請查看記錄檔以取得更多資訊",
+      "error_try_refresh_unsupported": "裝置在完成驗證前就已中斷連線 - 請嘗試變更封包版本。若仍無法解決，且重新載入後再次送出也無效，此裝置可能使用不同的驗證程序，需要進行逆向工程。"
+    },
+    "step": {
+      "bluetooth_confirm": {
+        "title": "已探索到的裝置設定",
+        "data": {
+          "user_id": "EcoFlow 使用者 ID",
+          "address": "藍牙裝置",
+          "update_period": "更新週期"
+        },
+        "data_description": {
+          "update_period": "處理下一次裝置更新前要等待的秒數。設為 0 代表立即處理所有更新（會導致大量資料庫寫入）。"
+        },
+        "sections": {
+          "login": {
+            "name": "EcoFlow 登入（若已有使用者 ID 可略過）",
+            "description": "填入登入資訊並按下「送出」後，系統會自動帶入您的 EcoFlow 使用者 ID，且此表單會自行清空。只需要使用者 ID 即可，因此除非此區塊為空白，否則無法進入下一頁。",
+            "data": {
+              "email": "電子郵件 / 手機號碼",
+              "password": "密碼",
+              "region": "地區"
+            },
+            "data_description": {
+              "region": "請選擇與您帳號相符的 EcoFlow API 主機。「自動」會對電子郵件使用 api.ecoflow.com，對手機號碼使用 api-cn。您的帳號所在的主機可能與實際地理位置不同，因此若收到「帳號不存在」的訊息，請嘗試明確選擇主機。"
+            }
+          },
+          "log_options": {
+            "name": "記錄選項",
+            "description": "詳細的記錄選項。其中多數選項會讓記錄檔快速膨脹，請避免長時間啟用。",
+            "data": {
+              "log_masked": "遮蔽敏感資訊（公開分享記錄檔時很實用）",
+              "log_connection": "記錄裝置連線的請求與回應",
+              "log_messages": "記錄反序列化後的裝置更新訊息",
+              "log_packets": "記錄封包物件",
+              "log_encrypted_payloads": "記錄加密的酬載",
+              "log_payloads": "記錄解密後的酬載",
+              "log_bleak": "啟用 bleak 偵錯記錄等級（不會遮蔽，也不會只篩選此裝置）"
+            }
+          },
+          "advanced_connection_options": {
+            "name": "進階連線選項",
+            "description": "這些選項會影響藍牙連線的行為。僅在遇到連線問題時才需要變更。",
+            "data": {
+              "connection_timeout": "連線逾時",
+              "connection_delay": "連線延遲",
+              "preferred_proxy": "偏好的藍牙代理",
+              "preferred_proxy_timeout": "偏好代理逾時",
+              "bluez_start_notify": "使用 BlueZ 開始通知"
+            },
+            "data_description": {
+              "connection_timeout": "等待裝置連線並完成驗證的秒數。",
+              "connection_delay": "另一部 EcoFlow 裝置剛連線完成時，連線前要等待的秒數。Home Assistant 會自行決定每個連線要經過哪個藍牙代理，並對正忙於連線的代理降低優先順序，因此同一時間上線的裝置，可能在整個連線期間都被分配到較遠的代理。將它們錯開連線，能讓每部裝置有更大機會透過最近的代理連線。沒有與其他裝置同時上線的裝置則不會被延遲。設為 0 即可對此裝置停用此功能。",
+              "preferred_proxy": "盡可能讓此裝置透過指定的藍牙轉接器或代理連線，例如放在它旁邊的那一個。Home Assistant 會自行選擇連線路徑，無法指定使用特定路徑，因此本整合會等到您選擇的代理剛好是 Home Assistant 本來就會選擇的那一個時，才在那一刻進行連線。因此訊號比其他代理弱的代理可能永遠不會被選中。清單是在開啟此頁面時取得的，只包含目前在線的轉接器與代理，所以若缺少某一個，請讓它重新上線後再重新開啟此頁面。除非裝置持續透過錯誤的代理連線，否則請維持「任何可用的代理」。",
+              "preferred_proxy_timeout": "在改用任何可用的代理連線之前，等待偏好代理的秒數。已上線的代理通常會立即被選中，因此只有在它仍在啟動時才會用到此設定 - 重新啟動 Home Assistant 後，代理可能需要一段時間才能恢復，在此之前或等待時間用完之前，裝置都會保持離線。設為 0 即可立即透過當下最佳的代理連線。",
+              "bluez_start_notify": "若在多部 BLE 裝置同時連線時經常斷線，或在記錄檔中看到 `AcquireNotify: Read error` ／ `Unexpected EOF on notification file handle`，請嘗試啟用此選項。"
+            }
+          }
+        }
+      },
+      "user": {
+        "title": "新增 EcoFlow 裝置",
+        "description": "標示為 **[Unsupported]** 的裝置不會提供任何感測器，但可用來提供資料，以協助實作支援。更多資訊請參閱[此 wiki]({wiki_link})頁面。",
+        "data": {
+          "address": "藍牙裝置"
+        }
+      },
+      "device_confirm": {
+        "title": "{name} 設定選項",
+        "data": {
+          "user_id": "EcoFlow 使用者 ID",
+          "address": "藍牙裝置",
+          "update_period": "更新週期"
+        },
+        "data_description": {
+          "update_period": "處理下一次裝置更新前要等待的秒數。設為 0 代表立即處理所有更新（會導致大量資料庫寫入）。"
+        },
+        "sections": {
+          "login": {
+            "name": "EcoFlow 登入（若已有使用者 ID 可略過）",
+            "description": "填入登入資訊並按下「送出」後，系統會自動帶入您的 EcoFlow 使用者 ID，且此表單會自行清空。只需要使用者 ID 即可，因此除非此區塊為空白，否則無法進入下一頁。",
+            "data": {
+              "email": "電子郵件 / 手機號碼",
+              "password": "密碼",
+              "region": "地區"
+            },
+            "data_description": {
+              "region": "請選擇與您帳號相符的 EcoFlow API 主機。「自動」會對電子郵件使用 api.ecoflow.com，對手機號碼使用 api-cn。您的帳號所在的主機可能與實際地理位置不同，因此若收到「帳號不存在」的訊息，請嘗試明確選擇主機。"
+            }
+          },
+          "log_options": {
+            "name": "記錄選項",
+            "description": "詳細的記錄選項。其中多數選項會讓記錄檔快速膨脹，請避免長時間啟用。",
+            "data": {
+              "log_masked": "遮蔽敏感資訊（公開分享記錄檔時很實用）",
+              "log_connection": "記錄裝置連線的請求與回應",
+              "log_messages": "記錄反序列化後的裝置更新訊息",
+              "log_packets": "記錄封包物件",
+              "log_encrypted_payloads": "記錄加密的酬載",
+              "log_payloads": "記錄解密後的酬載",
+              "log_bleak": "啟用 bleak 偵錯記錄等級（不會遮蔽，也不會只篩選此裝置）"
+            }
+          },
+          "advanced_connection_options": {
+            "name": "進階連線選項",
+            "description": "這些選項會影響藍牙連線的行為。僅在遇到連線問題時才需要變更。",
+            "data": {
+              "connection_timeout": "連線逾時",
+              "connection_delay": "連線延遲",
+              "preferred_proxy": "偏好的藍牙代理",
+              "preferred_proxy_timeout": "偏好代理逾時",
+              "bluez_start_notify": "使用 BlueZ 開始通知"
+            },
+            "data_description": {
+              "connection_timeout": "等待裝置連線並完成驗證的秒數。",
+              "connection_delay": "另一部 EcoFlow 裝置剛連線完成時，連線前要等待的秒數。Home Assistant 會自行決定每個連線要經過哪個藍牙代理，並對正忙於連線的代理降低優先順序，因此同一時間上線的裝置，可能在整個連線期間都被分配到較遠的代理。將它們錯開連線，能讓每部裝置有更大機會透過最近的代理連線。沒有與其他裝置同時上線的裝置則不會被延遲。設為 0 即可對此裝置停用此功能。",
+              "preferred_proxy": "盡可能讓此裝置透過指定的藍牙轉接器或代理連線，例如放在它旁邊的那一個。Home Assistant 會自行選擇連線路徑，無法指定使用特定路徑，因此本整合會等到您選擇的代理剛好是 Home Assistant 本來就會選擇的那一個時，才在那一刻進行連線。因此訊號比其他代理弱的代理可能永遠不會被選中。清單是在開啟此頁面時取得的，只包含目前在線的轉接器與代理，所以若缺少某一個，請讓它重新上線後再重新開啟此頁面。除非裝置持續透過錯誤的代理連線，否則請維持「任何可用的代理」。",
+              "preferred_proxy_timeout": "在改用任何可用的代理連線之前，等待偏好代理的秒數。已上線的代理通常會立即被選中，因此只有在它仍在啟動時才會用到此設定 - 重新啟動 Home Assistant 後，代理可能需要一段時間才能恢復，在此之前或等待時間用完之前，裝置都會保持離線。設為 0 即可立即透過當下最佳的代理連線。",
+              "bluez_start_notify": "若在多部 BLE 裝置同時連線時經常斷線，或在記錄檔中看到 `AcquireNotify: Read error` ／ `Unexpected EOF on notification file handle`，請嘗試啟用此選項。"
+            }
+          }
+        }
+      },
+      "unsupported_device": {
+        "title": "{name} 設定選項",
+        "description": "此裝置目前尚不支援，但可連線以收集原始資料。更多資訊請參閱[此 wiki]({wiki_link})頁面。",
+        "data": {
+          "user_id": "EcoFlow 使用者 ID",
+          "update_period": "更新週期",
+          "packet_version": "封包版本"
+        },
+        "data_description": {
+          "update_period": "處理下一次裝置更新前要等待的秒數。預設值 0 代表立即處理所有更新（可能導致大量資料庫寫入）。",
+          "packet_version": "要使用的封包版本 - 取決於此裝置的世代與韌體。若連線或驗證失敗，請嘗試不同的版本。\n請注意，部分裝置可能使用本整合尚未支援的封包版本。"
+        },
+        "sections": {
+          "login": {
+            "name": "EcoFlow 登入（若已有使用者 ID 可略過）",
+            "description": "填入登入資訊並按下「送出」後，系統會自動帶入您的 EcoFlow 使用者 ID，且此表單會自行清空。只需要使用者 ID 即可，因此除非此區塊為空白，否則無法進入下一頁。",
+            "data": {
+              "email": "電子郵件 / 手機號碼",
+              "password": "密碼",
+              "region": "地區"
+            },
+            "data_description": {
+              "region": "請選擇與您帳號相符的 EcoFlow API 主機。「自動」會對電子郵件使用 api.ecoflow.com，對手機號碼使用 api-cn。您的帳號所在的主機可能與實際地理位置不同，因此若收到「帳號不存在」的訊息，請嘗試明確選擇主機。"
+            }
+          },
+          "log_options": {
+            "name": "記錄選項",
+            "description": "進階記錄選項。其中多數設定會產生大量記錄輸出，建議不要長時間啟用。",
+            "data": {
+              "log_masked": "遮蔽敏感資訊（公開分享記錄檔時很實用）",
+              "log_connection": "記錄裝置連線的請求與回應",
+              "log_messages": "記錄反序列化後的裝置更新訊息",
+              "log_packets": "記錄封包物件",
+              "log_encrypted_payloads": "記錄加密的酬載",
+              "log_payloads": "記錄解密後的酬載",
+              "log_bleak": "啟用 bleak 偵錯記錄等級（不會遮蔽，也不會只篩選此裝置）"
+            }
+          },
+          "advanced_connection_options": {
+            "name": "進階連線選項",
+            "description": "這些選項會影響藍牙連線的行為。僅在遇到連線問題時才需要變更。",
+            "data": {
+              "connection_timeout": "連線逾時",
+              "connection_delay": "連線延遲",
+              "preferred_proxy": "偏好的藍牙代理",
+              "preferred_proxy_timeout": "偏好代理逾時",
+              "bluez_start_notify": "使用 BlueZ 開始通知"
+            },
+            "data_description": {
+              "connection_timeout": "等待裝置連線並完成驗證的秒數。",
+              "connection_delay": "另一部 EcoFlow 裝置剛連線完成時，連線前要等待的秒數。Home Assistant 會自行決定每個連線要經過哪個藍牙代理，並對正忙於連線的代理降低優先順序，因此同一時間上線的裝置，可能在整個連線期間都被分配到較遠的代理。將它們錯開連線，能讓每部裝置有更大機會透過最近的代理連線。沒有與其他裝置同時上線的裝置則不會被延遲。設為 0 即可對此裝置停用此功能。",
+              "preferred_proxy": "盡可能讓此裝置透過指定的藍牙轉接器或代理連線，例如放在它旁邊的那一個。Home Assistant 會自行選擇連線路徑，無法指定使用特定路徑，因此本整合會等到您選擇的代理剛好是 Home Assistant 本來就會選擇的那一個時，才在那一刻進行連線。因此訊號比其他代理弱的代理可能永遠不會被選中。清單是在開啟此頁面時取得的，只包含目前在線的轉接器與代理，所以若缺少某一個，請讓它重新上線後再重新開啟此頁面。除非裝置持續透過錯誤的代理連線，否則請維持「任何可用的代理」。",
+              "preferred_proxy_timeout": "在改用任何可用的代理連線之前，等待偏好代理的秒數。已上線的代理通常會立即被選中，因此只有在它仍在啟動時才會用到此設定 - 重新啟動 Home Assistant 後，代理可能需要一段時間才能恢復，在此之前或等待時間用完之前，裝置都會保持離線。設為 0 即可立即透過當下最佳的代理連線。",
+              "bluez_start_notify": "若在多部 BLE 裝置同時連線時經常斷線，或在記錄檔中看到 `AcquireNotify: Read error` ／ `Unexpected EOF on notification file handle`，請嘗試啟用此選項。"
+            }
+          }
+        }
+      },
+      "reconfigure": {
+        "data": {
+          "user_id": "EcoFlow 使用者 ID",
+          "extra_battery": "已啟用的額外電池"
+        }
+      },
+      "connect": {
+        "title": "正在連線至裝置"
+      }
+    },
+    "progress": {
+      "connecting": "正在建立與 {name} 的藍牙連線...",
+      "exchanging_keys": "已連線至 {name}，正在交換加密金鑰...",
+      "authenticating": "正在向 {name} 進行驗證...",
+      "finalizing": "正在完成連線檢查..."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "{device_name} 的選項",
+        "data": {
+          "update_period": "更新週期"
+        },
+        "data_description": {
+          "update_period": "處理下一次裝置更新前要等待的秒數。設為 0 代表立即處理所有更新（會導致大量資料庫寫入）。"
+        },
+        "sections": {
+          "device_options": {
+            "name": "裝置選項",
+            "description": "此裝置型號專屬的進階選項。除非您清楚自己在做什麼，否則請勿變更。",
+            "data": {
+              "unlock_ac_charging_minimum": "解除交流充電速度下限",
+              "unlock_dc_charging_minimum": "解除直流充電速度下限"
+            },
+            "data_description": {
+              "unlock_ac_charging_minimum": "允許將交流充電速度設為低於 EcoFlow App 強制的下限。設為 1 W 即可讓裝置停止從市電取電而不必拔掉插頭，這正是太陽能剩餘電力自動化所需要的；以這麼慢的速度充電效率較低，且可能產生額外的熱。",
+              "unlock_dc_charging_minimum": "⚠️ 警告：這可能會損壞您的裝置。EcoFlow App 的限制很可能是有原因的，長時間讓直流輸入低於這些限制運作可能會使其零組件磨損；以此方式造成的損壞可能不在保固範圍內。請自行承擔風險。\n\n允許將直流充電速度設為低於 EcoFlow App 強制的下限，最低可到 0 A。0 A 並不等於關閉：裝置仍可能從輸入端汲取少量電流。此數值會限制從直流輸入汲取的電流，因此較低的數值能讓裝置維持在較弱電源（例如有保險絲限制的車用插座、小型電源供應器或單片太陽能板）所能提供的範圍內，而不是因為要求更多電流而停擺。"
+            }
+          },
+          "diagnostics_options": {
+            "name": "診斷",
+            "description": "設定診斷資料的收集與加密。",
+            "data": {
+              "diagnostics_on_exception": "發生例外時儲存診斷資料",
+              "collect_packets": "啟用封包收集",
+              "collect_packets_amount": "要儲存的封包數量",
+              "diagnostics_encrypt": "加密診斷資料"
+            },
+            "data_description": {
+              "diagnostics_on_exception": "啟用後，會從每次連線嘗試開始時收集封包。若發生連線錯誤，收集到的資料會自動儲存到磁碟以供偵錯。",
+              "collect_packets": "啟用此選項後會開始儲存封包以產生診斷資訊 - 啟用後請等待一分鐘再下載診斷資訊，且別忘了將它關閉。\n部分裝置的訊息中可能包含可識別身分的資訊，例如您的確切位置，分享前請確認已啟用加密。",
+              "diagnostics_encrypt": "啟用後，敏感的診斷資料（封包、工作階段金鑰、製造商資料）會在納入診斷下載檔之前先加密。僅在需要原始資料進行本機偵錯時才停用。"
+            }
+          },
+          "log_options": {
+            "name": "記錄選項",
+            "description": "詳細的記錄選項。其中多數選項會讓記錄檔快速膨脹，請避免長時間啟用。",
+            "data": {
+              "log_masked": "遮蔽敏感資訊（公開分享記錄檔時很實用）",
+              "log_connection": "記錄裝置連線的請求與回應",
+              "log_messages": "記錄反序列化後的裝置更新訊息",
+              "log_packets": "記錄封包物件",
+              "log_encrypted_payloads": "記錄加密的酬載",
+              "log_payloads": "記錄解密後的酬載",
+              "log_bleak": "啟用 bleak 偵錯記錄等級（不會遮蔽，也不會只篩選此裝置）"
+            }
+          },
+          "advanced_connection_options": {
+            "name": "進階連線選項",
+            "description": "這些選項會影響藍牙連線的行為。僅在遇到連線問題時才需要變更。",
+            "data": {
+              "connection_timeout": "連線逾時",
+              "connection_delay": "連線延遲",
+              "preferred_proxy": "偏好的藍牙代理",
+              "preferred_proxy_timeout": "偏好代理逾時",
+              "bluez_start_notify": "使用 BlueZ 開始通知"
+            },
+            "data_description": {
+              "connection_timeout": "等待裝置連線並完成驗證的秒數。",
+              "connection_delay": "另一部 EcoFlow 裝置剛連線完成時，連線前要等待的秒數。Home Assistant 會自行決定每個連線要經過哪個藍牙代理，並對正忙於連線的代理降低優先順序，因此同一時間上線的裝置，可能在整個連線期間都被分配到較遠的代理。將它們錯開連線，能讓每部裝置有更大機會透過最近的代理連線。沒有與其他裝置同時上線的裝置則不會被延遲。設為 0 即可對此裝置停用此功能。",
+              "preferred_proxy": "盡可能讓此裝置透過指定的藍牙轉接器或代理連線，例如放在它旁邊的那一個。Home Assistant 會自行選擇連線路徑，無法指定使用特定路徑，因此本整合會等到您選擇的代理剛好是 Home Assistant 本來就會選擇的那一個時，才在那一刻進行連線。因此訊號比其他代理弱的代理可能永遠不會被選中。清單是在開啟此頁面時取得的，只包含目前在線的轉接器與代理，所以若缺少某一個，請讓它重新上線後再重新開啟此頁面。除非裝置持續透過錯誤的代理連線，否則請維持「任何可用的代理」。",
+              "preferred_proxy_timeout": "在改用任何可用的代理連線之前，等待偏好代理的秒數。已上線的代理通常會立即被選中，因此只有在它仍在啟動時才會用到此設定 - 重新啟動 Home Assistant 後，代理可能需要一段時間才能恢復，在此之前或等待時間用完之前，裝置都會保持離線。設為 0 即可立即透過當下最佳的代理連線。",
+              "bluez_start_notify": "若在多部 BLE 裝置同時連線時經常斷線，或在記錄檔中看到 `AcquireNotify: Read error` ／ `Unexpected EOF on notification file handle`，請嘗試啟用此選項。"
+            }
+          }
+        }
+      }
+    }
+  },
+  "exceptions": {
+    "unknown_error": {
+      "message": "未知錯誤：{error}"
+    },
+    "unable_to_create_device": {
+      "message": "無法建立 EcoFlow BLE 裝置"
+    },
+    "device_not_present": {
+      "message": "EcoFlow BLE 裝置不存在"
+    },
+    "could_not_connect": {
+      "message": "在 {time} 秒後仍無法連線至裝置，請查看記錄檔。\n錯誤訊息：{error_msg}"
+    },
+    "error_after_connected": {
+      "message": "裝置完成驗證前發生錯誤"
+    },
+    "authentication_failed": {
+      "message": "驗證失敗"
+    },
+    "could_not_reconnect_after_max_attempts": {
+      "message": "連線中斷 {attempts} 次後仍無法重新連線。"
+    },
+    "could_not_connect_no_retry": {
+      "message": "嘗試 {attempts} 次後仍無法連線至裝置"
+    },
+    "failed_after_successful_connection": {
+      "message": "裝置已連線但未進入驗證程序，最後狀態：{last_state}"
+    },
+    "missing_address_or_user_id": {
+      "message": "儲存的設定缺少裝置 {missing}。請移除該裝置後重新新增，以修復此設定項目。"
+    }
+  },
+  "issues": {
+    "max_connection_attempts_reached": {
+      "title": "嘗試 {attempts} 次後仍無法連線至 {device_name}",
+      "description": "嘗試 {attempts} 次後仍無法連線至 {device_name}。請查看記錄檔以取得更多資訊。\n\n為避免記錄檔被大量訊息洗版，已停用自動重試，必須手動重新載入整合。成功連線後此錯誤就會清除。"
+    },
+    "charging_minimum_applied": {
+      "title": "除非在裝置選項中解除，否則 {device_name} 的充電控制現在會停在 EcoFlow App 的下限",
+      "description": "交流與直流充電控制現在會拒絕低於 EcoFlow App 強制下限的數值，因此設定更低數值的自動化會因超出範圍錯誤而失敗。\n\n⚠️ 警告：低於這些下限可能會損壞您的裝置。EcoFlow 很可能是有原因才設定這些下限，長時間低於下限運作可能會使其零組件磨損，以此方式造成的損壞可能不在保固範圍內。只有在您接受此風險時才解除。\n\n若要繼續設定低於下限的數值，請在此裝置的「設定」下開啟對應的選項。Delta 2 與 Delta 2 Max 也新增了交流充電開關，可讓裝置停止從市電取電，而不需要設定非常低的充電速度。\n\n此裝置的下限為 {minimums}。"
+    }
+  },
+  "entity": {
+    "button": {
+      "power_off": {
+        "name": "關機"
+      },
+      "unpause_solar": {
+        "name": "取消暫停太陽能"
+      }
+    },
+    "binary_sensor": {
+      "channel_backup_is_ready": {
+        "name": "通道 {channel} 備用就緒"
+      },
+      "channel_is_enabled": {
+        "name": "通道 {channel} 已啟用"
+      },
+      "port_enabled": {
+        "name": "{name} 已啟用"
+      },
+      "channel_is_connected": {
+        "name": "通道 {channel} 已連接"
+      },
+      "channel_is_ac_open": {
+        "name": "通道 {channel} 交流輸出"
+      },
+      "channel_is_power_output": {
+        "name": "通道 {channel} 功率輸出"
+      },
+      "channel_is_grid_charge": {
+        "name": "通道 {channel} 市電充電"
+      },
+      "channel_is_mppt_charge": {
+        "name": "通道 {channel} 太陽能充電"
+      },
+      "channel_ems_charging": {
+        "name": "通道 {channel} EMS 充電"
+      },
+      "channel_hw_connected": {
+        "name": "通道 {channel} 硬體已連接"
+      },
+      "error_happened": {
+        "name": "錯誤"
+      },
+      "plugged_in_ac": {
+        "name": "已插上交流電"
+      },
+      "battery_connected": {
+        "name": "電池已連接"
+      },
+      "solar_connected": {
+        "name": "太陽能已連接"
+      },
+      "fan_running": {
+        "name": "風扇運轉中"
+      },
+      "storm_mode": {
+        "name": "暴風雨模式"
+      },
+      "grid_is_energized": {
+        "name": "市電已通電"
+      },
+      "backup_channel_signal_line": {
+        "name": "通道 {channel} 訊號線"
+      },
+      "grid_status": {
+        "name": "市電狀態"
+      },
+      "bms_run_state": {
+        "name": "BMS 運行狀態"
+      },
+      "error_occurred": {
+        "name": "發生錯誤"
+      },
+      "backup_force_charge": {
+        "name": "通道 {channel} 強制充電"
+      },
+      "is_charging": {
+        "name": "充電中"
+      },
+      "slow_charging": {
+        "name": "慢充開關"
+      },
+      "ac_allowed": {
+        "name": "允許交流"
+      },
+      "hv_solar_weak": {
+        "name": "高壓太陽能來源過弱"
+      },
+      "lv_solar_weak": {
+        "name": "低壓太陽能來源過弱"
+      },
+      "hv_solar_low_voltage": {
+        "name": "高壓太陽能電壓過低"
+      },
+      "lv_solar_low_voltage": {
+        "name": "低壓太陽能電壓過低"
+      }
+    },
+    "sensor": {
+      "collecting_data": {
+        "name": "正在收集診斷資料"
+      },
+      "battery_level": {
+        "name": "電池電量"
+      },
+      "lcd_battery_level": {
+        "name": "LCD 電池電量"
+      },
+      "bms_battery_level": {
+        "name": "BMS 電池電量"
+      },
+      "battery_time_remaining": {
+        "name": "電池剩餘時間"
+      },
+      "additional_battery_level": {
+        "name": "電池 {index} 電量"
+      },
+      "additional_battery_temperature": {
+        "name": "電池 {index} 電芯溫度"
+      },
+      "battery_level_main": {
+        "name": "主電池電量"
+      },
+      "input_power": {
+        "name": "輸入功率"
+      },
+      "output_power": {
+        "name": "輸出功率"
+      },
+      "remaining_time_charging": {
+        "name": "充電剩餘時間"
+      },
+      "remaining_time_discharging": {
+        "name": "放電剩餘時間"
+      },
+      "ac_plug_state": {
+        "name": "交流插頭狀態",
+        "state": {
+          "unknown": "未知",
+          "unplugged": "未插上",
+          "plugged_in": "已插上",
+          "charging": "充電中",
+          "paused": "已暫停",
+          "charge_complete": "充電完成",
+          "standby": "待機",
+          "updating": "更新中"
+        }
+      },
+      "total_energy": {
+        "name": "總能量"
+      },
+      "grid_power": {
+        "name": "市電功率"
+      },
+      "in_use_power": {
+        "name": "使用中功率"
+      },
+      "power_status": {
+        "name": "電源狀態",
+        "state": {
+          "grid_power": "市電功率",
+          "battery_power": "電池功率",
+          "oil_power": "發電機功率",
+          "emergency_stop": "緊急停止",
+          "off_power": "關閉功率"
+        }
+      },
+      "port_voltage": {
+        "name": "{name} 電壓"
+      },
+      "port_current": {
+        "name": "{name} 電流"
+      },
+      "port_power": {
+        "name": "{name} 功率"
+      },
+      "port_enabled": {
+        "name": "{name} 已啟用"
+      },
+      "port_energy_today": {
+        "name": "{name} 今日能量"
+      },
+      "port_energy": {
+        "name": "{name} 能量"
+      },
+      "port_temperature": {
+        "name": "{name} 溫度"
+      },
+      "port_power_factor": {
+        "name": "{name} 功率因數"
+      },
+      "port_error_code": {
+        "name": "{name} 錯誤碼"
+      },
+      "grid_energy_today": {
+        "name": "今日市電能量"
+      },
+      "grid_energy": {
+        "name": "市電能量"
+      },
+      "circuit_power": {
+        "name": "C{index} {name} 功率"
+      },
+      "circuit_current": {
+        "name": "迴路電流 {index}"
+      },
+      "circuit_voltage": {
+        "name": "迴路電壓 {index}"
+      },
+      "circuit_status": {
+        "name": "C{index} {name} 狀態",
+        "state": {
+          "unknown": "未知",
+          "off": "關",
+          "on_grid": "開（市電）",
+          "on_back": "開（備用）",
+          "em_stop": "緊急停止"
+        }
+      },
+      "backup_channel_type": {
+        "name": "通道 {channel} 類型",
+        "state": {
+          "unknown": "未知",
+          "none": "無",
+          "battery": "電池",
+          "oil": "智慧發電機",
+          "station_charger": "充電站"
+        }
+      },
+      "circuit_name": {
+        "name": "迴路 {index} 名稱"
+      },
+      "channel_power": {
+        "name": "通道功率 {index}"
+      },
+      "input_energy": {
+        "name": "輸入總能量"
+      },
+      "output_energy": {
+        "name": "輸出總能量"
+      },
+      "ac_input_power": {
+        "name": "交流輸入功率"
+      },
+      "ac_input_voltage": {
+        "name": "交流輸入電壓"
+      },
+      "ac_input_current": {
+        "name": "交流輸入電流"
+      },
+      "ac_output_power": {
+        "name": "交流輸出功率"
+      },
+      "ac_output_voltage": {
+        "name": "交流輸出電壓"
+      },
+      "ac_output_current": {
+        "name": "交流輸出電流"
+      },
+      "ac_input_energy": {
+        "name": "交流輸入能量"
+      },
+      "ac_output_energy": {
+        "name": "交流輸出能量"
+      },
+      "dc_input_power": {
+        "name": "直流輸入功率"
+      },
+      "car_input_power": {
+        "name": "車充輸入功率"
+      },
+      "dc_input_energy": {
+        "name": "直流輸入能量"
+      },
+      "dc_output_power": {
+        "name": "直流輸出功率"
+      },
+      "dc12v_output_power": {
+        "name": "直流 12V 輸出功率"
+      },
+      "dc12v_output_energy": {
+        "name": "直流 12V 輸出能量"
+      },
+      "dc12v_output_current": {
+        "name": "直流 12V 輸出電流"
+      },
+      "dc12v_output_voltage": {
+        "name": "直流 12V 輸出電壓"
+      },
+      "usbc_output_power": {
+        "name": "USB C 輸出功率"
+      },
+      "usbc_output_energy": {
+        "name": "USB C 輸出能量"
+      },
+      "usba_output_power": {
+        "name": "USB A 輸出功率"
+      },
+      "usba_output_energy": {
+        "name": "USB A 輸出能量"
+      },
+      "usbc2_output_power": {
+        "name": "USB C (2) 輸出功率"
+      },
+      "usbc3_output_power": {
+        "name": "USB C (3) 輸出功率"
+      },
+      "usbc2_output_energy": {
+        "name": "USB C (2) 輸出能量"
+      },
+      "usba2_output_power": {
+        "name": "USB A (2) 輸出功率"
+      },
+      "usba2_output_energy": {
+        "name": "USB A (2) 輸出能量"
+      },
+      "qc_usb1_output_power": {
+        "name": "USB A QC (1) 功率"
+      },
+      "qc_usb2_output_power": {
+        "name": "USB A QC (2) 功率"
+      },
+      "battery_input_power": {
+        "name": "電池輸入功率"
+      },
+      "battery_output_power": {
+        "name": "電池輸出功率"
+      },
+      "battery_power": {
+        "name": "電池功率"
+      },
+      "inverter_temperature": {
+        "name": "逆變器溫度"
+      },
+      "cell_temperature": {
+        "name": "電芯溫度"
+      },
+      "max_cell_voltage": {
+        "name": "最高電芯電壓"
+      },
+      "min_cell_voltage": {
+        "name": "最低電芯電壓"
+      },
+      "dc_port_input_power": {
+        "name": "直流埠輸入功率"
+      },
+      "dc_port_input_power_2": {
+        "name": "直流埠 (2) 輸入功率"
+      },
+      "dc_port_state": {
+        "name": "直流輸入埠狀態"
+      },
+      "dc_port_2_state": {
+        "name": "直流輸入埠 (2) 狀態"
+      },
+      "input_power_solar": {
+        "name": "太陽能功率"
+      },
+      "input_power_solar_2": {
+        "name": "太陽能功率 (2)"
+      },
+      "ac_lv_output_power": {
+        "name": "交流低壓輸出功率"
+      },
+      "ac_hv_output_power": {
+        "name": "交流高壓輸出功率"
+      },
+      "input_power_solar_lv": {
+        "name": "低壓太陽能功率"
+      },
+      "input_power_solar_hv": {
+        "name": "高壓太陽能功率"
+      },
+      "dc_lv_input_power": {
+        "name": "低壓直流埠輸入功率"
+      },
+      "dc_hv_input_power": {
+        "name": "高壓直流埠輸入功率"
+      },
+      "dc_lv_input_state": {
+        "name": "低壓直流輸入埠狀態"
+      },
+      "dc_hv_input_state": {
+        "name": "高壓直流輸入埠狀態"
+      },
+      "ac_lv_tt30_output_power": {
+        "name": "交流低壓 TT-30 輸出功率"
+      },
+      "state_of_health": {
+        "name": "健康狀態"
+      },
+      "engine_state": {
+        "name": "引擎狀態",
+        "state": {
+          "closed": "關",
+          "opened": "運轉中",
+          "closing": "停止中"
+        }
+      },
+      "xt150_battery_level": {
+        "name": "XT150 電池電量"
+      },
+      "xt150_charge_type": {
+        "name": "XT150 充電類型"
+      },
+      "liquefied_gas_type": {
+        "name": "液化瓦斯類型"
+      },
+      "liquefied_gas": {
+        "name": "液化瓦斯"
+      },
+      "liquefied_gas_consumption": {
+        "name": "液化瓦斯每小時消耗量"
+      },
+      "liquefied_gas_remaining": {
+        "name": "液化瓦斯剩餘量"
+      },
+      "generator_total_output": {
+        "name": "發電機總輸出"
+      },
+      "generator_abnormal_state": {
+        "name": "異常狀態",
+        "state": {
+          "no": "否",
+          "gasoline_low": "汽油不足"
+        }
+      },
+      "sub_battery_soc": {
+        "name": "內部電池電量"
+      },
+      "sub_battery_power": {
+        "name": "內部電池功率"
+      },
+      "sub_battery_state": {
+        "name": "內部電池狀態",
+        "state": {
+          "idle": "閒置",
+          "no_input": "無輸入",
+          "discharging": "放電中",
+          "charging": "充電中",
+          "normal_full": "已滿",
+          "normal_low_pressure": "正常低壓"
+        }
+      },
+      "fuel_type": {
+        "name": "燃料類型"
+      },
+      "battery_temperature": {
+        "name": "電池溫度"
+      },
+      "car_battery_voltage": {
+        "name": "電池電壓"
+      },
+      "dc_power": {
+        "name": "直流功率"
+      },
+      "load_system": {
+        "name": "系統負載"
+      },
+      "load_from_battery": {
+        "name": "電池負載"
+      },
+      "load_from_grid": {
+        "name": "市電負載"
+      },
+      "load_from_pv": {
+        "name": "太陽能供電負載"
+      },
+      "grid_connection_status": {
+        "name": "市電連接狀態",
+        "state": {
+          "unknown": "未知",
+          "not_valid": "無效",
+          "grid_in": "市電輸入",
+          "grid_offline": "市電離線",
+          "feed_grid": "回饋市電"
+        }
+      },
+      "wifi_rssi": {
+        "name": "WiFi RSSI"
+      },
+      "grid_voltage": {
+        "name": "市電電壓"
+      },
+      "grid_frequency": {
+        "name": "市電頻率"
+      },
+      "grid_current": {
+        "name": "市電電流"
+      },
+      "inverter_voltage": {
+        "name": "逆變器電壓"
+      },
+      "inverter_power": {
+        "name": "逆變器功率"
+      },
+      "inverter_current": {
+        "name": "逆變器電流"
+      },
+      "inverter_frequency": {
+        "name": "逆變器頻率"
+      },
+      "llc_temperature": {
+        "name": "LLC 溫度"
+      },
+      "backup_is_ready": {
+        "name": "通道 {channel} 備用就緒"
+      },
+      "backup_ctrl_status": {
+        "name": "通道 {channel} 控制狀態",
+        "state": {
+          "off": "關",
+          "discharge": "放電中",
+          "charge": "充電中",
+          "emergency_stop": "緊急停止",
+          "standby": "待機"
+        }
+      },
+      "backup_force_charge": {
+        "name": "通道 {channel} 強制充電",
+        "state": {
+          "off": "關",
+          "on": "開"
+        }
+      },
+      "backup_relay1_count": {
+        "name": "通道 {channel} 繼電器 1 次數"
+      },
+      "backup_relay2_count": {
+        "name": "通道 {channel} 繼電器 2 次數"
+      },
+      "backup_wakeup_charge": {
+        "name": "通道 {channel} 喚醒充電電量"
+      },
+      "backup_connector_type": {
+        "name": "通道 {channel} 連接器類型"
+      },
+      "channel_serial_number": {
+        "name": "通道 {channel} 序號"
+      },
+      "channel_device_type": {
+        "name": "通道 {channel} 裝置類型"
+      },
+      "channel_full_capacity": {
+        "name": "通道 {channel} 滿載容量"
+      },
+      "channel_rated_power": {
+        "name": "通道 {channel} 額定功率"
+      },
+      "channel_battery_level": {
+        "name": "通道 {channel} 電池電量"
+      },
+      "channel_output_power": {
+        "name": "通道 {channel} 輸出功率"
+      },
+      "channel_battery_temperature": {
+        "name": "通道 {channel} 電池溫度"
+      },
+      "channel_lcd_input_power": {
+        "name": "通道 {channel} LCD 輸入功率"
+      },
+      "channel_pv_status": {
+        "name": "通道 {channel} 太陽能狀態",
+        "state": {
+          "none": "無",
+          "lv": "低壓",
+          "hv": "高壓",
+          "lv_and_hv": "低壓與高壓"
+        }
+      },
+      "channel_pv_lv_input_power": {
+        "name": "通道 {channel} 太陽能低壓輸入功率"
+      },
+      "channel_pv_hv_input_power": {
+        "name": "通道 {channel} 太陽能高壓輸入功率"
+      },
+      "channel_error_count": {
+        "name": "通道 {channel} 錯誤次數"
+      },
+      "ambient_temperature": {
+        "name": "環境溫度"
+      },
+      "ambient_humidity": {
+        "name": "濕度"
+      },
+      "operating_mode": {
+        "name": "運作模式"
+      },
+      "condensate_water_level": {
+        "name": "水位"
+      },
+      "in_drainage": {
+        "name": "排水中"
+      },
+      "drainage_mode": {
+        "name": "排水模式"
+      },
+      "lcd_show_temp_type": {
+        "name": "顯示溫度類型"
+      },
+      "temp_indoor_supply_air": {
+        "name": "室內送風溫度"
+      },
+      "temp_indoor_return_air": {
+        "name": "室內回風溫度"
+      },
+      "temp_outdoor_ambient": {
+        "name": "室外環境溫度"
+      },
+      "temp_condenser": {
+        "name": "冷凝器溫度"
+      },
+      "temp_evaporator": {
+        "name": "蒸發器溫度"
+      },
+      "temp_compressor_discharge": {
+        "name": "壓縮機排氣溫度"
+      },
+      "en_pet_care": {
+        "name": "寵物照護模式"
+      },
+      "battery_charge_limit_min": {
+        "name": "放電限制"
+      },
+      "battery_charge_limit_max": {
+        "name": "充電限制"
+      },
+      "sleep_state": {
+        "name": "睡眠狀態"
+      },
+      "power": {
+        "name": "功率"
+      },
+      "power_battery": {
+        "name": "電池功率"
+      },
+      "power_psdr": {
+        "name": "PSDR 功率"
+      },
+      "power_mppt": {
+        "name": "MPPT 功率"
+      },
+      "water_level": {
+        "name": "水位"
+      },
+      "outlet_temperature": {
+        "name": "出口溫度"
+      },
+      "pv_power_sum": {
+        "name": "太陽能總功率"
+      },
+      "xt60_input_power": {
+        "name": "XT60 輸入功率"
+      },
+      "xt60_1_input_power": {
+        "name": "XT60 (1) 輸入功率"
+      },
+      "xt60_2_input_power": {
+        "name": "XT60 (2) 輸入功率"
+      },
+      "dc_input_voltage": {
+        "name": "直流輸入電壓"
+      },
+      "dc_input_current": {
+        "name": "直流輸入電流"
+      },
+      "ac_5p8_in_type": {
+        "name": "交流 5P8 輸入類型",
+        "state": {
+          "in_idle": "閒置",
+          "in_ac_ev": "電動車充電器",
+          "in_pd303": "智慧家庭配電盤 2",
+          "in_l14_trans": "L14"
+        }
+      },
+      "ac_5p8_out_type": {
+        "name": "交流 5P8 輸出類型",
+        "state": {
+          "out_idle": "閒置",
+          "out_parallel_box": "並聯盒",
+          "out_pd303": "智慧家庭配電盤 2"
+        }
+      },
+      "ac_c20_in_type": {
+        "name": "交流 C20 輸入類型"
+      }
+    },
+    "select": {
+      "led_mode": {
+        "name": "LED"
+      },
+      "dc_charging_type": {
+        "name": "直流充電類型"
+      },
+      "dc_mode": {
+        "name": "直流模式",
+        "state": {
+          "auto": "自動",
+          "solar": "太陽能",
+          "car": "車用"
+        }
+      },
+      "performance_mode": {
+        "name": "效能模式"
+      },
+      "liquefied_gas_unit": {
+        "name": "瓦斯單位"
+      },
+      "charger_mode": {
+        "name": "充電器模式",
+        "state": {
+          "idle": "閒置",
+          "charge": "充電",
+          "reverse_charge": "反向充電",
+          "battery_maintenance": "電池保養"
+        }
+      },
+      "drain_mode": {
+        "name": "排放模式",
+        "state": {
+          "drain_free": "免排水",
+          "external": "外部"
+        }
+      },
+      "smart_backup_mode": {
+        "name": "智慧備用模式",
+        "state": {
+          "none": "無",
+          "time_of_use": "時間電價",
+          "self_powered": "自給自足",
+          "scheduled": "排程任務"
+        }
+      },
+      "operating_mode_select": {
+        "name": "運作模式",
+        "state": {
+          "none": "無",
+          "time_of_use": "時間電價",
+          "self_powered": "自給自足",
+          "scheduled": "排程任務",
+          "intelligent": "智慧排程"
+        }
+      },
+      "energy_strategy": {
+        "name": "能源策略",
+        "state": {
+          "self_powered": "自給自足",
+          "scheduled": "排程",
+          "tou": "時間電價",
+          "intelligent_schedule": "智慧排程"
+        }
+      },
+      "energy_monitoring_mode": {
+        "name": "能源監控",
+        "state": {
+          "semi_automated": "半自動監控",
+          "smart_meter": "智慧電表監控"
+        }
+      },
+      "operating_submode": {
+        "name": "運作子模式",
+        "state": {
+          "none": "無",
+          "normal": "一般",
+          "max": "最大",
+          "sleep": "睡眠",
+          "eco": "節能"
+        }
+      },
+      "power_supply_priority": {
+        "name": "供電優先順序",
+        "state": {
+          "power_supply": "供電",
+          "power_storage": "儲電"
+        }
+      }
+    },
+    "number": {
+      "backup_reserve_level": {
+        "name": "備用保留電量"
+      },
+      "backup_charge_limit": {
+        "name": "充電限制"
+      },
+      "backup_discharge_limit": {
+        "name": "放電限制"
+      },
+      "battery_charge_limit_max": {
+        "name": "電池充電限制"
+      },
+      "battery_charge_limit_min": {
+        "name": "電池放電限制"
+      },
+      "ac_charging_speed": {
+        "name": "交流充電速度"
+      },
+      "ac_c20_charging_power": {
+        "name": "交流 C20 充電功率"
+      },
+      "feed_grid_pow_limit": {
+        "name": "回饋市電功率限制"
+      },
+      "base_load_power": {
+        "name": "基本負載功率"
+      },
+      "load_power": {
+        "name": "負載功率"
+      },
+      "grid_in_power_limit": {
+        "name": "市電輸入功率限制"
+      },
+      "charging_grid_power_limit": {
+        "name": "充電功率限制"
+      },
+      "charging_grid_target_soc": {
+        "name": "充電目標電量"
+      },
+      "feed_grid_mode_power_limit": {
+        "name": "最大輸出功率"
+      },
+      "discharging_power_limit": {
+        "name": "放電功率限制"
+      },
+      "ac_5p8_charging_power": {
+        "name": "交流 5P8 充電功率"
+      },
+      "energy_backup_battery_level": {
+        "name": "備用保留"
+      },
+      "dc_charging_max_amps": {
+        "name": "直流充電最大電流"
+      },
+      "dc_charging_max_amps_2": {
+        "name": "直流 (2) 充電最大電流"
+      }
+    },
+    "climate": {
+      "climate": {
+        "name": "空調",
+        "state_attributes": {
+          "fan_mode": {
+            "state": {
+              "medium_low": "中低",
+              "medium_high": "中高"
+            }
+          }
+        }
+      }
+    },
+    "switch": {
+      "port_control": {
+        "name": "{name} 埠"
+      },
+      "circuit_is_enabled": {
+        "name": "C{circuit} {name}"
+      },
+      "channel_is_enabled": {
+        "name": "通道 {channel}"
+      },
+      "ch_force_charge": {
+        "name": "通道 {channel} 強制充電"
+      },
+      "eps_mode": {
+        "name": "EPS 模式"
+      },
+      "storm_guard": {
+        "name": "暴風雨防護"
+      },
+      "dc_ports": {
+        "name": "直流埠"
+      },
+      "ac_ports": {
+        "name": "交流埠"
+      },
+      "ac_charging": {
+        "name": "交流充電"
+      },
+      "ac_lv_port": {
+        "name": "交流低壓埠"
+      },
+      "ac_hv_port": {
+        "name": "交流高壓埠"
+      },
+      "dc_12v_port": {
+        "name": "直流 12V 埠"
+      },
+      "energy_backup": {
+        "name": "備用保留"
+      },
+      "usb_ports": {
+        "name": "USB 埠"
+      },
+      "ac_ports_2": {
+        "name": "交流埠 (2)"
+      },
+      "disable_grid_bypass": {
+        "name": "停用市電旁路"
+      },
+      "energy_strategy_self_powered": {
+        "name": "自給自足模式"
+      },
+      "energy_strategy_scheduled": {
+        "name": "排程模式"
+      },
+      "energy_strategy_tou": {
+        "name": "時間電價模式"
+      },
+      "ac_1": {
+        "name": "交流 (1)"
+      },
+      "ac_2": {
+        "name": "交流 (2)"
+      },
+      "feed_grid": {
+        "name": "回饋市電"
+      },
+      "charging_task_enabled": {
+        "name": "充電任務"
+      },
+      "discharging_task_enabled": {
+        "name": "放電任務"
+      },
+      "feed_protect": {
+        "name": "回饋控制"
+      }
+    }
+  },
+  "selector": {
+    "ecoflow_region": {
+      "options": {
+        "auto": "自動（電子郵件使用 api.ecoflow.com，手機號碼使用 api-cn）",
+        "api": "api.ecoflow.com（全球 / 美國）",
+        "api-e": "api-e.ecoflow.com（歐洲）",
+        "api-a": "api-a.ecoflow.com（亞洲 / 中東非洲）",
+        "api-j": "api-j.ecoflow.com（日本）",
+        "api-r": "api-r.ecoflow.com（俄羅斯）",
+        "api-cn": "api-cn.ecoflow.com（中國 - 僅限手機號碼）"
+      }
+    },
+    "preferred_proxy": {
+      "options": {
+        "any": "任何可用的代理"
+      }
+    }
+  }
+}

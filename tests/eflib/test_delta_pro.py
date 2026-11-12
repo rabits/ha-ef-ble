@@ -208,6 +208,16 @@ async def test_delta_pro_exact_values_from_known_packets(device, packet_sequence
         Device.battery_1_battery_level: 89.85,
         Device.battery_1_sn: "BATPACK001",
         Device.battery_2_enabled: False,
+        Device.remaining_time_charging: 65535,
+        Device.remaining_time_discharging: 336,
+        Device.battery_level_main: 78.4,
+        Device.battery_voltage: 49.8,
+        Device.max_cell_voltage: 3.41,
+        Device.min_cell_voltage: 3.38,
+        Device.battery_temperature: 25,
+        Device.cell_temperature: 26,
+        Device.state_of_health: 98,
+        Device.ac_output_voltage: 230.0,
     }
 
     for field_name, expected_value in expected.items():
@@ -217,19 +227,27 @@ async def test_delta_pro_exact_values_from_known_packets(device, packet_sequence
         )
 
 
-async def test_delta_pro_dc_output_power_from_mppt_car_out_watts(
-    device, packet_sequence
+@pytest.mark.parametrize(
+    ("raw_attr", "raw_value", "field_name", "expected"),
+    [
+        ("car_out_watts", 60, Device.dc_output_power, 6.0),
+        ("dcdc_12v_watts", 138, Device.anderson_out_power, 138),
+    ],
+    ids=["dc_output_power", "anderson_out_power"],
+)
+async def test_delta_pro_mppt_output_power_scale(
+    device, packet_sequence, raw_attr, raw_value, field_name, expected
 ):
-    """12 V output power comes from the MPPT heartbeat, in tenths of a watt."""
+    """12 V car output is in tenths of a watt, the Anderson output in whole watts"""
     for hex_packet in packet_sequence:
         packet = await device.packet_parse(bytes.fromhex(hex_packet))
         await device.data_parse(packet)
 
     mppt = DirectMpptHeartbeatPack.from_bytes(packet.payload)
-    mppt.car_out_watts = 60
+    setattr(mppt, raw_attr, raw_value)
     device.update_from_data(mppt)
 
-    assert device.get_value(Device.dc_output_power) == 6.0
+    assert device.get_value(field_name) == expected
 
 
 async def test_delta_pro_charging_ceiling_covers_a_230v_unit_without_rated_power(

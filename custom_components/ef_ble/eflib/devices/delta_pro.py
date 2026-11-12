@@ -57,6 +57,16 @@ class Device(DeviceBase, RawDataProps):
     battery_level = raw_field(rd_ems.f32_lcd_show_soc, pround(2))
     battery_charge_limit_min = raw_field(rd_ems.min_dsg_soc)
     battery_charge_limit_max = raw_field(rd_ems.max_charge_soc)
+    remaining_time_charging = raw_field(rd_ems.chg_remain_time)
+    remaining_time_discharging = raw_field(rd_ems.dsg_remain_time)
+
+    battery_level_main = raw_field(rd_bms.f32_show_soc, pround(2))
+    battery_voltage = raw_field(rd_bms.vol, pdiv(1000, 2))
+    max_cell_voltage = raw_field(rd_bms.max_cell_vol, pdiv(1000, 3))
+    min_cell_voltage = raw_field(rd_bms.min_cell_vol, pdiv(1000, 3))
+    battery_temperature = raw_field(rd_bms.temp)
+    cell_temperature = raw_field(rd_bms.max_cell_temp)
+    state_of_health = raw_field(rd_bms.soh)
 
     battery_1_enabled = Field[bool]()
     battery_1_battery_level = Field[float]()
@@ -67,6 +77,7 @@ class Device(DeviceBase, RawDataProps):
     battery_2_sn = Field[str]()
 
     ac_output_power = raw_field(rd_inv.output_watts)
+    ac_output_voltage = raw_field(rd_inv.inv_out_vol, pdiv(1000, 2))
     ac_input_power = raw_field(rd_inv.input_watts)
     ac_input_voltage = raw_field(rd_inv.ac_in_vol, pdiv(1000, 2))
     ac_input_current = raw_field(rd_inv.ac_in_amp, pdiv(1000, 2))
@@ -92,6 +103,7 @@ class Device(DeviceBase, RawDataProps):
     input_power = raw_field(rd_pd.watts_in_sum)
     output_power = raw_field(rd_pd.watts_out_sum)
     dc_output_power = raw_field(rd_mppt.car_out_watts, pdiv(10, 1))
+    anderson_out_power = raw_field(rd_mppt.dcdc_12v_watts)
 
     dc_12v_port = raw_field(rd_mppt.car_state, lambda x: x == 1)
     energy_backup = raw_field(rd_pd.watth_is_config, lambda x: x == 1)

@@ -635,7 +635,8 @@ Click on any device below to see available sensors, switches, and controls:
 | Battery Level                       | AC Ports    | AC Charging Speed |
 | Main Battery Level                  | DC 12V Port | Backup Reserve    |
 | Battery Temperature                 |             | Charge Limit      |
-| Input Power                         |             | Discharge Limit   |
+| Inverter Temperature                |             | Discharge Limit   |
+| Input Power                         |             |                   |
 | Output Power                        |             |                   |
 | AC Input Power                      |             |                   |
 | AC Input Voltage                    |             |                   |
@@ -649,12 +650,19 @@ Click on any device below to see available sensors, switches, and controls:
 | USB A (2) Output Power              |             |                   |
 | USB A QC (1) Power                  |             |                   |
 | USB A QC (2) Power                  |             |                   |
+| AC Input Energy                     |             |                   |
+| AC Output Energy                    |             |                   |
+| DC Input Energy                     |             |                   |
+| DC Output Energy                    |             |                   |
 | Extra Battery Level ¹               |             |                   |
 | Extra Battery Temperature ¹         |             |                   |
 | Extra Battery Voltage ¹             |             |                   |
 | Extra Battery Input Power ¹         |             |                   |
 | Extra Battery Output Power ¹        |             |                   |
 | Battery Voltage (disabled)          |             |                   |
+| Battery Current (disabled)          |             |                   |
+| Battery Input Power (disabled)      |             |                   |
+| Battery Output Power (disabled)     |             |                   |
 | Max Cell Voltage (disabled)         |             |                   |
 | Min Cell Voltage (disabled)         |             |                   |
 | Cell Temperature (disabled)         |             |                   |
@@ -662,6 +670,13 @@ Click on any device below to see available sensors, switches, and controls:
 | Charge Time Remaining (disabled)    |             |                   |
 | Discharge Time Remaining (disabled) |             |                   |
 | AC Output Voltage (disabled)        |             |                   |
+| Inverter DC Temperature (disabled)  |             |                   |
+| MPPT Temperature (disabled)         |             |                   |
+| MPPT Output Power (disabled)        |             |                   |
+| MPPT Output Voltage (disabled)      |             |                   |
+| Remaining Capacity (disabled)       |             |                   |
+| Full Capacity (disabled)            |             |                   |
+| Charge Cycles (disabled)            |             |                   |
 
 <sup>¹ Per extra battery (up to 2)</sup>
 

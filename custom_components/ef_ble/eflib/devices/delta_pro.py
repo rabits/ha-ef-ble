@@ -49,6 +49,13 @@ rd_mppt = dataclass_attr_mapper(DirectMpptHeartbeatPack)
 rd_kit = dataclass_attr_mapper(AllKitDetailData)
 
 
+def _signed_milliamps_to_amps(value: int) -> float:
+    """The shared heartbeat reads `amp` unsigned, but the pack sends a signed int32"""
+    if value >= 1 << 31:
+        value -= 1 << 32
+    return round(value / 1000, 2)
+
+
 class Device(DeviceBase, RawDataProps):
     """Delta Pro"""
 
@@ -89,6 +96,26 @@ class Device(DeviceBase, RawDataProps):
     battery_temperature = raw_field(rd_bms.temp)
     cell_temperature = raw_field(rd_bms.max_cell_temp)
     state_of_health = raw_field(rd_bms.soh)
+    battery_remaining_capacity = raw_field(rd_bms.remain_cap)
+    battery_full_capacity = raw_field(rd_bms.full_cap)
+    battery_cycles = raw_field(rd_bms.cycles)
+    battery_current = raw_field(rd_bms.amp, _signed_milliamps_to_amps)
+
+    @computed_field
+    def battery_input_power(self) -> float | None:
+        power = self._main_battery_power()
+        return None if power is None else max(0, power)
+
+    @computed_field
+    def battery_output_power(self) -> float | None:
+        power = self._main_battery_power()
+        return None if power is None else -min(0, power)
+
+    def _main_battery_power(self) -> float | None:
+        """Plus while charging; volts × amps, as the pack watts can stay at 0"""
+        if self.battery_voltage is None or self.battery_current is None:
+            return None
+        return round(self.battery_voltage * self.battery_current, 1)
 
     battery_1_enabled = Field[bool]()
     battery_1_battery_level = Field[float]()
@@ -99,6 +126,9 @@ class Device(DeviceBase, RawDataProps):
     battery_1_min_cell_voltage = raw_field(rd_bms_1.min_cell_vol, pdiv(1000, 3))
     battery_1_input_power = raw_field(rd_bms_1.input_watts)
     battery_1_output_power = raw_field(rd_bms_1.output_watts)
+    battery_1_remaining_capacity = raw_field(rd_bms_1.remain_cap)
+    battery_1_full_capacity = raw_field(rd_bms_1.full_cap)
+    battery_1_cycles = raw_field(rd_bms_1.cycles)
 
     battery_2_enabled = Field[bool]()
     battery_2_battery_level = Field[float]()
@@ -109,17 +139,25 @@ class Device(DeviceBase, RawDataProps):
     battery_2_min_cell_voltage = raw_field(rd_bms_2.min_cell_vol, pdiv(1000, 3))
     battery_2_input_power = raw_field(rd_bms_2.input_watts)
     battery_2_output_power = raw_field(rd_bms_2.output_watts)
+    battery_2_remaining_capacity = raw_field(rd_bms_2.remain_cap)
+    battery_2_full_capacity = raw_field(rd_bms_2.full_cap)
+    battery_2_cycles = raw_field(rd_bms_2.cycles)
 
     ac_output_power = raw_field(rd_inv.output_watts)
     ac_output_voltage = raw_field(rd_inv.inv_out_vol, pdiv(1000, 2))
     ac_input_power = raw_field(rd_inv.input_watts)
     ac_input_voltage = raw_field(rd_inv.ac_in_vol, pdiv(1000, 2))
     ac_input_current = raw_field(rd_inv.ac_in_amp, pdiv(1000, 2))
+    inverter_temperature = raw_field(rd_inv.out_temp)
+    inverter_dc_temperature = raw_field(rd_inv.dc_in_temp)
     ac_ports = raw_field(rd_inv.cfg_ac_enabled, lambda x: x == 1)
 
     dc_input_power = raw_field(rd_mppt.in_watts, pdiv(10, 1))
     dc_input_voltage = raw_field(rd_mppt.in_vol, pdiv(10, 1))
     dc_input_current = raw_field(rd_mppt.in_amp, pdiv(100, 2))
+    mppt_temperature = raw_field(rd_mppt.mppt_temp)
+    mppt_output_power = raw_field(rd_mppt.out_watts, pdiv(10, 1))
+    mppt_output_voltage = raw_field(rd_mppt.out_vol, pdiv(10, 1))
 
     ac_charging_speed = raw_field(rd_inv.cfg_slow_chg_watts)
     _ac_chg_rated_power = raw_field(rd_inv.ac_chg_rated_power)
@@ -136,6 +174,11 @@ class Device(DeviceBase, RawDataProps):
 
     input_power = raw_field(rd_pd.watts_in_sum)
     output_power = raw_field(rd_pd.watts_out_sum)
+    # Lifetime counters in Wh; the AC input one also counts the pass-through power
+    ac_input_energy = raw_field(rd_pd.chg_power_ac)
+    ac_output_energy = raw_field(rd_pd.dsg_power_ac)
+    dc_input_energy = raw_field(rd_pd.chg_sun_power)
+    dc_output_energy = raw_field(rd_pd.dsg_power_dc)
     dc_output_power = raw_field(rd_mppt.car_out_watts, pdiv(10, 1))
     anderson_out_power = raw_field(rd_mppt.dcdc_12v_watts)
 

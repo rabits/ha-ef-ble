@@ -6,12 +6,16 @@ from custom_components.ef_ble.eflib.model import (
     DirectBmsMDeltaHeartbeatPack,
     DirectInvDeltaHeartbeatPack,
     DirectMpptHeartbeatPack,
+    DirectPdHeartbeatPack,
 )
 from custom_components.ef_ble.eflib.model.base import RawData
 from custom_components.ef_ble.eflib.packet import Packet
 
 # Index of each heartbeat in `packet_sequence`, with its source address and model
+_PD = (2, 0x02, DirectPdHeartbeatPack)
 _BMS = (3, 0x03, DirectBmsMDeltaHeartbeatPack)
+_INV = (4, 0x04, DirectInvDeltaHeartbeatPack)
+_MPPT = (5, 0x05, DirectMpptHeartbeatPack)
 
 
 def _reference(packet_sequence, kind: tuple[int, int, type[RawData]], **fields):
@@ -239,6 +243,10 @@ async def test_delta_pro_exact_values_from_known_packets(device, packet_sequence
         Device.dc_output_power: 0,
         Device.usbc_output_power: 0,
         Device.usba_output_power: 0,
+        Device.ac_input_energy: 0,
+        Device.ac_output_energy: 0,
+        Device.dc_input_energy: 0,
+        Device.dc_output_energy: 200,
         Device.dc_12v_port: False,
         Device.energy_backup: False,
         Device.energy_backup_battery_level: 50,
@@ -255,7 +263,18 @@ async def test_delta_pro_exact_values_from_known_packets(device, packet_sequence
         Device.battery_temperature: 25,
         Device.cell_temperature: 26,
         Device.state_of_health: 98,
+        Device.battery_remaining_capacity: 112320,
+        Device.battery_full_capacity: 144000,
+        Device.battery_cycles: 12,
+        Device.battery_current: 0.0,
+        Device.battery_input_power: 0,
+        Device.battery_output_power: 0,
         Device.ac_output_voltage: 230.0,
+        Device.inverter_temperature: 0,
+        Device.inverter_dc_temperature: 0,
+        Device.mppt_temperature: 37,
+        Device.mppt_output_power: 1.8,
+        Device.mppt_output_voltage: 48.8,
     }
 
     for field_name, expected_value in expected.items():
@@ -284,6 +303,30 @@ async def test_delta_pro_mppt_output_power_scale(
     mppt = DirectMpptHeartbeatPack.from_bytes(packet.payload)
     setattr(mppt, raw_attr, raw_value)
     device.update_from_data(mppt)
+
+    assert device.get_value(field_name) == expected
+
+
+@pytest.mark.parametrize(
+    ("kind", "raw_attr", "raw_value", "field_name", "expected"),
+    [
+        (_MPPT, "mppt_temp", 26, Device.mppt_temperature, 26),
+        (_MPPT, "out_watts", 13, Device.mppt_output_power, 1.3),
+        (_MPPT, "out_vol", 512, Device.mppt_output_voltage, 51.2),
+        (_INV, "out_temp", 48, Device.inverter_temperature, 48),
+        (_INV, "dc_in_temp", 50, Device.inverter_dc_temperature, 50),
+        (_PD, "chg_power_ac", 4_694_133, Device.ac_input_energy, 4_694_133),
+        (_PD, "dsg_power_ac", 4_225_958, Device.ac_output_energy, 4_225_958),
+        (_PD, "chg_sun_power", 571, Device.dc_input_energy, 571),
+        (_PD, "dsg_power_dc", 24_070, Device.dc_output_energy, 24_070),
+    ],
+    ids=lambda value: value if isinstance(value, str) else None,
+)
+async def test_delta_pro_maps_heartbeat_field(
+    device, packet_sequence, kind, raw_attr, raw_value, field_name, expected
+):
+    """Each value differs from the reference packet, so a wrong source field fails"""
+    device.update_from_data(_reference(packet_sequence, kind, **{raw_attr: raw_value}))
 
     assert device.get_value(field_name) == expected
 
@@ -320,6 +363,9 @@ async def test_delta_pro_extra_battery_heartbeat_fills_only_its_own_slot(
         min_cell_vol=3_401,
         input_watts=922,
         output_watts=37,
+        remain_cap=70_001,
+        full_cap=79_360,
+        cycles=72,
     )
 
     assert await device.data_parse(packet)
@@ -331,6 +377,9 @@ async def test_delta_pro_extra_battery_heartbeat_fills_only_its_own_slot(
         "min_cell_voltage": 3.401,
         "input_power": 922,
         "output_power": 37,
+        "remaining_capacity": 70_001,
+        "full_capacity": 79_360,
+        "cycles": 72,
     }
     for name, value in expected.items():
         assert device.get_value(f"battery_{num}_{name}") == value, name
@@ -349,6 +398,45 @@ async def test_delta_pro_main_pack_heartbeat_does_not_fill_an_extra_battery(
     assert device.get_value(Device.battery_level) is None
     assert device.get_value(Device.battery_1_cell_temperature) is None
     assert device.get_value(Device.battery_2_cell_temperature) is None
+
+
+@pytest.mark.parametrize(
+    ("amp", "expected"),
+    [
+        (6_481, 6.48),
+        ((1 << 32) - 6_481, -6.48),
+        ((1 << 31) - 1, 2_147_483.65),
+        (1 << 31, -2_147_483.65),
+    ],
+    ids=["charging", "discharging", "int32_max", "int32_min"],
+)
+async def test_delta_pro_battery_current_is_signed(
+    device, packet_sequence, amp, expected
+):
+    assert await device.data_parse(_heartbeat(packet_sequence, _BMS, amp=amp))
+
+    assert device.battery_current == expected
+
+
+@pytest.mark.parametrize(
+    ("amp", "input_power", "output_power"),
+    [
+        (12_340, 614.0, 0),
+        (0, 0, 0),
+        ((1 << 32) - 6_481, 0, 322.4),
+    ],
+    ids=["charging", "idle", "discharging"],
+)
+async def test_delta_pro_battery_power_splits_by_direction(
+    device, packet_sequence, amp, input_power, output_power
+):
+    """The power comes from volts × amps, as a main pack can send 0 watts both ways"""
+    packet = _heartbeat(packet_sequence, _BMS, vol=49_762, amp=amp)
+
+    assert await device.data_parse(packet)
+
+    assert device.battery_input_power == input_power
+    assert device.battery_output_power == output_power
 
 
 async def test_delta_pro_unknown_pack_slot_is_left_unprocessed(device, packet_sequence):

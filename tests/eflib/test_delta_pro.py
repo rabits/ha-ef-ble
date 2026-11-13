@@ -3,10 +3,48 @@ from pytest_mock import MockerFixture
 
 from custom_components.ef_ble.eflib.devices.delta_pro import Device
 from custom_components.ef_ble.eflib.model import (
+    DirectBmsMDeltaHeartbeatPack,
     DirectInvDeltaHeartbeatPack,
     DirectMpptHeartbeatPack,
 )
+from custom_components.ef_ble.eflib.model.base import RawData
 from custom_components.ef_ble.eflib.packet import Packet
+
+# Index of each heartbeat in `packet_sequence`, with its source address and model
+_BMS = (3, 0x03, DirectBmsMDeltaHeartbeatPack)
+
+
+def _reference(packet_sequence, kind: tuple[int, int, type[RawData]], **fields):
+    """The decoded reference heartbeat of `kind`, with `fields` replaced"""
+    index, _, model = kind
+    reference = Packet.from_bytes(
+        bytes.fromhex(packet_sequence[index]), xor_payload=True
+    )
+    data = model.from_bytes(reference.payload)
+    for name, value in fields.items():
+        setattr(data, name, value)
+    return data
+
+
+def _heartbeat(
+    packet_sequence,
+    kind: tuple[int, int, type[RawData]],
+    src: int | None = None,
+    **fields,
+) -> Packet:
+    """The reference heartbeat with `fields` replaced, as the device would send it"""
+    index, kind_src, _ = kind
+    reference = Packet.from_bytes(
+        bytes.fromhex(packet_sequence[index]), xor_payload=True
+    )
+    return Packet(
+        kind_src if src is None else src,
+        0x21,
+        reference.cmd_set,
+        reference.cmd_id,
+        _reference(packet_sequence, kind, **fields).pack(),
+        version=0x02,
+    )
 
 
 @pytest.fixture
@@ -265,3 +303,58 @@ async def test_delta_pro_charging_ceiling_covers_a_230v_unit_without_rated_power
 
     assert device.ac_charging_speed == 2600
     assert device.ac_charging_power_max >= 2600
+
+
+@pytest.mark.parametrize("num", [1, 2])
+async def test_delta_pro_extra_battery_heartbeat_fills_only_its_own_slot(
+    device, packet_sequence, num
+):
+    packet = _heartbeat(
+        packet_sequence,
+        _BMS,
+        src=0x06,
+        num=num,
+        max_cell_temp=30,
+        vol=51_230,
+        max_cell_vol=3_420,
+        min_cell_vol=3_401,
+        input_watts=922,
+        output_watts=37,
+    )
+
+    assert await device.data_parse(packet)
+
+    expected = {
+        "cell_temperature": 30,
+        "voltage": 51.23,
+        "max_cell_voltage": 3.42,
+        "min_cell_voltage": 3.401,
+        "input_power": 922,
+        "output_power": 37,
+    }
+    for name, value in expected.items():
+        assert device.get_value(f"battery_{num}_{name}") == value, name
+        assert device.get_value(f"battery_{3 - num}_{name}") is None, name
+    assert device.get_value(Device.cell_temperature) is None
+    assert device.get_value(Device.battery_level_main) is None
+
+
+async def test_delta_pro_main_pack_heartbeat_does_not_fill_an_extra_battery(
+    device, packet_sequence
+):
+    assert await device.data_parse(_heartbeat(packet_sequence, _BMS))
+
+    assert device.get_value(Device.cell_temperature) == 26
+    assert device.get_value(Device.battery_level_main) == 78.4
+    assert device.get_value(Device.battery_level) is None
+    assert device.get_value(Device.battery_1_cell_temperature) is None
+    assert device.get_value(Device.battery_2_cell_temperature) is None
+
+
+async def test_delta_pro_unknown_pack_slot_is_left_unprocessed(device, packet_sequence):
+    packet = _heartbeat(packet_sequence, _BMS, src=0x06, num=5)
+
+    assert not await device.data_parse(packet)
+
+    assert device.get_value(Device.battery_1_cell_temperature) is None
+    assert device.get_value(Device.battery_2_cell_temperature) is None

@@ -1096,6 +1096,28 @@
           "power_supply": "Постачання енергії",
           "power_storage": "Накопичення енергії"
         }
+      },
+      "screen_timeout": {
+        "name": "Вимкнення екрана",
+        "state": {
+          "never": "Ніколи",
+          "sec_10": "10 с",
+          "sec_30": "30 с",
+          "min_1": "1 хв",
+          "min_5": "5 хв",
+          "min_30": "30 хв"
+        }
+      },
+      "unit_timeout": {
+        "name": "Автовимкнення пристрою",
+        "state": {
+          "never": "Ніколи",
+          "min_30": "30 хв",
+          "hour_1": "1 год",
+          "hour_2": "2 год",
+          "hour_6": "6 год",
+          "hour_12": "12 год"
+        }
       }
     },
     "number": {
@@ -1155,6 +1177,12 @@
       },
       "dc_charging_max_amps_2": {
         "name": "Максимальний струм заряджання DC (2)"
+      },
+      "generator_auto_start_level": {
+        "name": "Рівень запуску генератора"
+      },
+      "generator_auto_stop_level": {
+        "name": "Рівень зупинки генератора"
       }
     },
     "climate": {
@@ -1245,6 +1273,15 @@
       },
       "feed_protect": {
         "name": "Контроль віддачі в мережу"
+      },
+      "beeper": {
+        "name": "Звуковий сигнал"
+      },
+      "ac_xboost": {
+        "name": "X-Boost"
+      },
+      "ac_always_on": {
+        "name": "AC завжди увімкнено"
       }
     }
   },

@@ -1112,6 +1112,28 @@
           "power_supply": "Power Supply",
           "power_storage": "Power Storage"
         }
+      },
+      "screen_timeout": {
+        "name": "Screen Timeout",
+        "state": {
+          "never": "Never",
+          "sec_10": "10 s",
+          "sec_30": "30 s",
+          "min_1": "1 min",
+          "min_5": "5 min",
+          "min_30": "30 min"
+        }
+      },
+      "unit_timeout": {
+        "name": "Unit Timeout",
+        "state": {
+          "never": "Never",
+          "min_30": "30 min",
+          "hour_1": "1 h",
+          "hour_2": "2 h",
+          "hour_6": "6 h",
+          "hour_12": "12 h"
+        }
       }
     },
     "number": {
@@ -1171,6 +1193,12 @@
       },
       "dc_charging_max_amps_2": {
         "name": "DC (2) Charging Max Amps"
+      },
+      "generator_auto_start_level": {
+        "name": "Generator Auto Start Level"
+      },
+      "generator_auto_stop_level": {
+        "name": "Generator Auto Stop Level"
       }
     },
     "climate": {
@@ -1261,6 +1289,15 @@
       },
       "feed_protect": {
         "name": "Feed-in Control"
+      },
+      "beeper": {
+        "name": "Beeper"
+      },
+      "ac_xboost": {
+        "name": "X-Boost"
+      },
+      "ac_always_on": {
+        "name": "AC Always On"
       }
     }
   },

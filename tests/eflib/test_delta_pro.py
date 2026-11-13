@@ -4,6 +4,7 @@ from pytest_mock import MockerFixture
 from custom_components.ef_ble.eflib.devices.delta_pro import Device
 from custom_components.ef_ble.eflib.model import (
     DirectBmsMDeltaHeartbeatPack,
+    DirectInvDeltaHeartbeatPack,
     DirectMpptHeartbeatPack,
 )
 from custom_components.ef_ble.eflib.model.base import RawData
@@ -285,6 +286,23 @@ async def test_delta_pro_mppt_output_power_scale(
     device.update_from_data(mppt)
 
     assert device.get_value(field_name) == expected
+
+
+async def test_delta_pro_charging_ceiling_covers_a_230v_unit_without_rated_power(
+    device, packet_sequence
+):
+    """A 230 V unit can report no rated power while it charges at 2600 W"""
+    reference = await device.packet_parse(bytes.fromhex(packet_sequence[4]))
+    inv = DirectInvDeltaHeartbeatPack.from_bytes(reference.payload)
+    inv.cfg_ac_out_voltage = 230_000
+    inv.cfg_slow_chg_watts = 2600
+    inv.ac_chg_rated_power = 0
+    packet = Packet(0x04, 0x21, 0x20, 0x02, inv.pack(), version=0x02)
+
+    assert await device.data_parse(packet)
+
+    assert device.ac_charging_speed == 2600
+    assert device.ac_charging_power_max >= 2600
 
 
 @pytest.mark.parametrize("num", [1, 2])

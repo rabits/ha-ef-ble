@@ -14,7 +14,7 @@ from ..model import (
     DirectPdHeartbeatPack,
 )
 from ..packet import Packet
-from ..props import Field
+from ..props import Field, computed_field
 from ..props.raw_data_field import dataclass_attr_mapper, raw_field
 from ..props.raw_data_props import RawDataProps
 from ..props.transforms import pdiv, pround
@@ -122,9 +122,17 @@ class Device(DeviceBase, RawDataProps):
     dc_input_current = raw_field(rd_mppt.in_amp, pdiv(100, 2))
 
     ac_charging_speed = raw_field(rd_inv.cfg_slow_chg_watts)
-    ac_charging_power_max = raw_field(
-        rd_inv.ac_chg_rated_power, lambda x: x if x and x > 200 else 1800
-    )
+    _ac_chg_rated_power = raw_field(rd_inv.ac_chg_rated_power)
+    _cfg_ac_out_voltage = raw_field(rd_inv.cfg_ac_out_voltage)
+
+    @computed_field
+    def ac_charging_power_max(self) -> int | None:
+        if self._ac_chg_rated_power is None:
+            return None
+        if self._ac_chg_rated_power > 200:
+            return self._ac_chg_rated_power
+        # 230 V units that report a rated power report 2900 W, the cloud's limit too
+        return 2900 if (self._cfg_ac_out_voltage or 0) >= 200_000 else 1800
 
     input_power = raw_field(rd_pd.watts_in_sum)
     output_power = raw_field(rd_pd.watts_out_sum)
@@ -222,9 +230,7 @@ class Device(DeviceBase, RawDataProps):
         if wake_up:
             await self.send_wake_up()
 
-        for field_name in self.updated_fields:
-            self.update_callback(field_name)
-            self.update_state(field_name, getattr(self, field_name))
+        self._notify_updated()
 
         return True
 

@@ -626,6 +626,34 @@ Click on any device below to see available sensors, switches, and controls:
 </details>
 
 <details>
+<summary><b>Smart Meter Dual CT</b></summary>
+
+<br>
+
+Channel 1 maps to the same sensors as the Smart Meter; channel 2 (the one the
+EcoFlow app labels as solar) is exposed as its total power.
+
+| *Sensors*             |
+|-----------------------|
+| Grid Power            |
+| Grid Energy           |
+| PV Power Sum          |
+| L1 Power (disabled)   |
+| L1 Current (disabled) |
+| L1 Voltage (disabled) |
+| L1 Energy (disabled)  |
+| L2 Power (disabled)   |
+| L2 Current (disabled) |
+| L2 Voltage (disabled) |
+| L2 Energy (disabled)  |
+| L3 Power (disabled)   |
+| L3 Current (disabled) |
+| L3 Voltage (disabled) |
+| L3 Energy (disabled)  |
+
+</details>
+
+<details>
 <summary><b>Delta Pro</b></summary>
 
 <br>

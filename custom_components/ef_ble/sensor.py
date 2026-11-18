@@ -153,6 +153,19 @@ def energy_storage(
     )
 
 
+def charge_capacity(
+    key: str = "", enabled: bool = True, **kwargs: Unpack[_SensorKwargs]
+) -> EcoflowSensorEntityDescription:
+    return EcoflowSensorEntityDescription(
+        key=key,
+        native_unit_of_measurement="mAh",
+        state_class=SensorStateClass.MEASUREMENT,
+        suggested_display_precision=0,
+        entity_registry_enabled_default=enabled,
+        **kwargs,
+    )
+
+
 def voltage(
     key: str = "",
     *,
@@ -728,6 +741,16 @@ _SENSORS: Final[dict[str, SensorEntityDescription]] = {
     "ac_inverter_temperature": port_temperature("AC Inverter"),
     "ac_inverter_error_code": port_error_code("AC Inverter"),
     "system_temperature": port_temperature("System"),
+    # Delta Pro
+    "inverter_dc_temperature": port_temperature("Inverter DC"),
+    "mppt_temperature": port_temperature("MPPT"),
+    "mppt_output_power": port_power(
+        "MPPT Output",
+        enabled=False,
+        precision=1,
+        entity_category=EntityCategory.DIAGNOSTIC,
+    ),
+    "mppt_output_voltage": port_voltage("MPPT Output", precision=1),
     # River 3, Delta 3
     "input_energy": energy(),
     "output_energy": energy(),
@@ -742,6 +765,7 @@ _SENSORS: Final[dict[str, SensorEntityDescription]] = {
     "dc_input_power": power(precision=2),
     "dc_input_energy": energy(),
     "dc_output_power": power(precision=2),
+    "dc_output_energy": energy(),
     "dc12v_output_power": power(precision=2),
     "dc12v_output_energy": energy(),
     "usba_output_power": power(),
@@ -793,6 +817,15 @@ _SENSORS: Final[dict[str, SensorEntityDescription]] = {
     "dc_hv_input_state": enum(options=delta_pro_3.DCPortState),
     "state_of_health": percentage(
         enabled=False, entity_category=EntityCategory.DIAGNOSTIC
+    ),
+    "battery_remaining_capacity": charge_capacity(enabled=False),
+    "battery_full_capacity": charge_capacity(
+        enabled=False, entity_category=EntityCategory.DIAGNOSTIC
+    ),
+    "battery_cycles": raw(
+        enabled=False,
+        state_class=SensorStateClass.TOTAL_INCREASING,
+        entity_category=EntityCategory.DIAGNOSTIC,
     ),
     # Smart Generator
     "xt150_battery_level": battery(),
@@ -957,6 +990,20 @@ _BATTERY_ADDON_SENSORS: Final = {
     ),
     "battery_{n}_input_power": power(precision=0, translation_key="input_power"),
     "battery_{n}_output_power": power(precision=0, translation_key="output_power"),
+    "battery_{n}_remaining_capacity": charge_capacity(
+        enabled=False, translation_key="battery_remaining_capacity"
+    ),
+    "battery_{n}_full_capacity": charge_capacity(
+        enabled=False,
+        entity_category=EntityCategory.DIAGNOSTIC,
+        translation_key="battery_full_capacity",
+    ),
+    "battery_{n}_cycles": raw(
+        enabled=False,
+        state_class=SensorStateClass.TOTAL_INCREASING,
+        entity_category=EntityCategory.DIAGNOSTIC,
+        translation_key="battery_cycles",
+    ),
 }
 
 

@@ -68,6 +68,9 @@
       "dc_input_energy": {
         "default": "mdi:current-dc"
       },
+      "dc_output_energy": {
+        "default": "mdi:current-dc"
+      },
       "dc12v_output_power": {
         "default": "mdi:current-dc"
       },
@@ -217,6 +220,15 @@
       },
       "state_of_health": {
         "default": "mdi:battery-heart"
+      },
+      "battery_remaining_capacity": {
+        "default": "mdi:battery-50"
+      },
+      "battery_full_capacity": {
+        "default": "mdi:battery"
+      },
+      "battery_cycles": {
+        "default": "mdi:counter"
       }
     },
     "switch": {

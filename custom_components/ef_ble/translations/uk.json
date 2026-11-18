@@ -582,6 +582,9 @@
       "dc_output_power": {
         "name": "Вихідна потужність постійного струму (DC)"
       },
+      "dc_output_energy": {
+        "name": "Вихідна енергія постійного струму (DC)"
+      },
       "dc12v_output_power": {
         "name": "Вихідна потужність DC 12V"
       },
@@ -695,6 +698,15 @@
       },
       "state_of_health": {
         "name": "Стан здоров'я батареї"
+      },
+      "battery_remaining_capacity": {
+        "name": "Залишкова ємність"
+      },
+      "battery_full_capacity": {
+        "name": "Повна ємність"
+      },
+      "battery_cycles": {
+        "name": "Цикли заряду"
       },
       "engine_state": {
         "name": "Стан двигуна",

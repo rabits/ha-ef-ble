@@ -614,6 +614,9 @@
       "dc_output_power": {
         "name": "直流輸出功率"
       },
+      "dc_output_energy": {
+        "name": "直流輸出能量"
+      },
       "dc12v_output_power": {
         "name": "直流 12V 輸出功率"
       },
@@ -727,6 +730,15 @@
       },
       "state_of_health": {
         "name": "健康狀態"
+      },
+      "battery_remaining_capacity": {
+        "name": "剩餘容量"
+      },
+      "battery_full_capacity": {
+        "name": "滿載容量"
+      },
+      "battery_cycles": {
+        "name": "循環次數"
       },
       "engine_state": {
         "name": "引擎狀態",

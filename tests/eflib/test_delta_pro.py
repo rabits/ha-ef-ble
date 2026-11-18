@@ -250,6 +250,10 @@ async def test_delta_pro_exact_values_from_known_packets(device, packet_sequence
         Device.dc_output_power: 0,
         Device.usbc_output_power: 0,
         Device.usba_output_power: 0,
+        Device.ac_input_energy: 0,
+        Device.ac_output_energy: 0,
+        Device.dc_input_energy: 0,
+        Device.dc_output_energy: 200,
         Device.dc_12v_port: False,
         Device.energy_backup: False,
         Device.energy_backup_battery_level: 50,
@@ -266,7 +270,18 @@ async def test_delta_pro_exact_values_from_known_packets(device, packet_sequence
         Device.battery_temperature: 25,
         Device.cell_temperature: 26,
         Device.state_of_health: 98,
+        Device.battery_remaining_capacity: 112320,
+        Device.battery_full_capacity: 144000,
+        Device.battery_cycles: 12,
+        Device.battery_current: 0.0,
+        Device.battery_input_power: 0,
+        Device.battery_output_power: 0,
         Device.ac_output_voltage: 230.0,
+        Device.inverter_temperature: 0,
+        Device.inverter_dc_temperature: 0,
+        Device.mppt_temperature: 37,
+        Device.mppt_output_power: 1.8,
+        Device.mppt_output_voltage: 48.8,
         Device.beeper: True,
         Device.ac_xboost: False,
         Device.ac_always_on: False,
@@ -311,10 +326,19 @@ async def test_delta_pro_mppt_output_power_scale(
     ("kind", "raw_attr", "raw_value", "field_name", "expected"),
     [
         (_MPPT, "cfg_dc_chg_current", 6000, Device.dc_charging_max_amps, 6.0),
+        (_MPPT, "mppt_temp", 26, Device.mppt_temperature, 26),
+        (_MPPT, "out_watts", 13, Device.mppt_output_power, 1.3),
+        (_MPPT, "out_vol", 512, Device.mppt_output_voltage, 51.2),
+        (_INV, "out_temp", 48, Device.inverter_temperature, 48),
+        (_INV, "dc_in_temp", 50, Device.inverter_dc_temperature, 50),
         (_PD, "beep_mode", 1, Device.beeper, False),
         (_PD, "ac_auto_config", 1, Device.ac_always_on, True),
         (_PD, "lcd_off_sec", 300, Device.screen_timeout, ScreenTimeout.MIN_5),
         (_PD, "standby_min", 120, Device.unit_timeout, UnitTimeout.HOUR_2),
+        (_PD, "chg_power_ac", 4_694_133, Device.ac_input_energy, 4_694_133),
+        (_PD, "dsg_power_ac", 4_225_958, Device.ac_output_energy, 4_225_958),
+        (_PD, "chg_sun_power", 571, Device.dc_input_energy, 571),
+        (_PD, "dsg_power_dc", 24_070, Device.dc_output_energy, 24_070),
         (_INV, "cfg_ac_xboost", 1, Device.ac_xboost, True),
         (_EMS, "open_oil_eb_soc", 25, Device.generator_auto_start_level, 25),
         (_EMS, "close_oil_eb_soc", 85, Device.generator_auto_stop_level, 85),
@@ -362,6 +386,9 @@ async def test_delta_pro_extra_battery_heartbeat_fills_only_its_own_slot(
         min_cell_vol=3_401,
         input_watts=922,
         output_watts=37,
+        remain_cap=70_001,
+        full_cap=79_360,
+        cycles=72,
     )
 
     assert await device.data_parse(packet)
@@ -373,6 +400,9 @@ async def test_delta_pro_extra_battery_heartbeat_fills_only_its_own_slot(
         "min_cell_voltage": 3.401,
         "input_power": 922,
         "output_power": 37,
+        "remaining_capacity": 70_001,
+        "full_capacity": 79_360,
+        "cycles": 72,
     }
     for name, value in expected.items():
         assert device.get_value(f"battery_{num}_{name}") == value, name
@@ -391,6 +421,45 @@ async def test_delta_pro_main_pack_heartbeat_does_not_fill_an_extra_battery(
     assert device.get_value(Device.battery_level) is None
     assert device.get_value(Device.battery_1_cell_temperature) is None
     assert device.get_value(Device.battery_2_cell_temperature) is None
+
+
+@pytest.mark.parametrize(
+    ("amp", "expected"),
+    [
+        (6_481, 6.48),
+        ((1 << 32) - 6_481, -6.48),
+        ((1 << 31) - 1, 2_147_483.65),
+        (1 << 31, -2_147_483.65),
+    ],
+    ids=["charging", "discharging", "int32_max", "int32_min"],
+)
+async def test_delta_pro_battery_current_is_signed(
+    device, packet_sequence, amp, expected
+):
+    assert await device.data_parse(_heartbeat(packet_sequence, _BMS, amp=amp))
+
+    assert device.battery_current == expected
+
+
+@pytest.mark.parametrize(
+    ("amp", "input_power", "output_power"),
+    [
+        (12_340, 614.0, 0),
+        (0, 0, 0),
+        ((1 << 32) - 6_481, 0, 322.4),
+    ],
+    ids=["charging", "idle", "discharging"],
+)
+async def test_delta_pro_battery_power_splits_by_direction(
+    device, packet_sequence, amp, input_power, output_power
+):
+    """The power comes from volts × amps, as a main pack can send 0 watts both ways"""
+    packet = _heartbeat(packet_sequence, _BMS, vol=49_762, amp=amp)
+
+    assert await device.data_parse(packet)
+
+    assert device.battery_input_power == input_power
+    assert device.battery_output_power == output_power
 
 
 async def test_delta_pro_unknown_pack_slot_is_left_unprocessed(device, packet_sequence):

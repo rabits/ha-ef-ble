@@ -228,7 +228,9 @@ async def test_delta_pro_extra_battery_kit_parsed(device, packet_sequence):
     assert device.battery_2_enabled is False, "Kit 1 should be reported as disabled"
 
 
-@pytest.mark.parametrize("length", [4, 20], ids=["count_cut", "record_cut"])
+@pytest.mark.parametrize(
+    "length", [4, 5, 20], ids=["count_cut", "records_missing", "record_cut"]
+)
 async def test_delta_pro_short_kit_packet_keeps_the_extra_battery_values(
     device, packet_sequence, length
 ):

@@ -228,6 +228,27 @@ async def test_delta_pro_extra_battery_kit_parsed(device, packet_sequence):
     assert device.battery_2_enabled is False, "Kit 1 should be reported as disabled"
 
 
+@pytest.mark.parametrize(
+    "length", [4, 5, 20], ids=["count_cut", "records_missing", "record_cut"]
+)
+async def test_delta_pro_short_kit_packet_keeps_the_extra_battery_values(
+    device, packet_sequence, length
+):
+    """A kit packet that ends early neither fails nor changes the battery values"""
+    for hex_packet in packet_sequence:
+        packet = await device.packet_parse(bytes.fromhex(hex_packet))
+        await device.data_parse(packet)
+    kit = Packet.from_bytes(bytes.fromhex(packet_sequence[0]), xor_payload=True)
+    short = Packet(
+        0x03, 0x21, kit.cmd_set, kit.cmd_id, kit.payload[:length], version=0x02
+    )
+
+    await device.data_parse(short)
+
+    assert device.battery_1_enabled is True
+    assert device.battery_1_sn == "BATPACK001"
+
+
 async def test_delta_pro_exact_values_from_known_packets(device, packet_sequence):
     """Test that known packet data produces exact expected values."""
     for hex_packet in packet_sequence:

@@ -1124,6 +1124,28 @@
           "power_supply": "供電",
           "power_storage": "儲電"
         }
+      },
+      "screen_timeout": {
+        "name": "螢幕逾時",
+        "state": {
+          "never": "永不",
+          "sec_10": "10秒",
+          "sec_30": "30秒",
+          "min_1": "1分鐘",
+          "min_5": "5分鐘",
+          "min_30": "30分鐘"
+        }
+      },
+      "unit_timeout": {
+        "name": "整機待機時間",
+        "state": {
+          "never": "永不",
+          "min_30": "30分鐘",
+          "hour_1": "1小時",
+          "hour_2": "2小時",
+          "hour_6": "6小時",
+          "hour_12": "12小時"
+        }
       }
     },
     "number": {
@@ -1183,6 +1205,12 @@
       },
       "dc_charging_max_amps_2": {
         "name": "直流 (2) 充電最大電流"
+      },
+      "generator_auto_start_level": {
+        "name": "發電機自動啟動電量"
+      },
+      "generator_auto_stop_level": {
+        "name": "發電機自動停止電量"
       }
     },
     "climate": {
@@ -1273,6 +1301,15 @@
       },
       "feed_protect": {
         "name": "回饋控制"
+      },
+      "beeper": {
+        "name": "蜂鳴器"
+      },
+      "ac_xboost": {
+        "name": "X-Boost"
+      },
+      "ac_always_on": {
+        "name": "交流常開"
       }
     }
   },

@@ -630,53 +630,53 @@ Click on any device below to see available sensors, switches, and controls:
 
 <br>
 
-| *Sensors*                           | *Switches*  | *Sliders*         |
-|-------------------------------------|-------------|-------------------|
-| Battery Level                       | AC Ports    | AC Charging Speed |
-| Main Battery Level                  | DC 12V Port | Backup Reserve    |
-| Battery Temperature                 |             | Charge Limit      |
-| Inverter Temperature                |             | Discharge Limit   |
-| Input Power                         |             |                   |
-| Output Power                        |             |                   |
-| AC Input Power                      |             |                   |
-| AC Input Voltage                    |             |                   |
-| AC Input Current                    |             |                   |
-| AC Output Power                     |             |                   |
-| DC Output Power                     |             |                   |
-| Anderson Out Power                  |             |                   |
-| USB C Output Power                  |             |                   |
-| USB C (2) Output Power              |             |                   |
-| USB A Output Power                  |             |                   |
-| USB A (2) Output Power              |             |                   |
-| USB A QC (1) Power                  |             |                   |
-| USB A QC (2) Power                  |             |                   |
-| AC Input Energy                     |             |                   |
-| AC Output Energy                    |             |                   |
-| DC Input Energy                     |             |                   |
-| DC Output Energy                    |             |                   |
-| Extra Battery Level ¹               |             |                   |
-| Extra Battery Temperature ¹         |             |                   |
-| Extra Battery Voltage ¹             |             |                   |
-| Extra Battery Input Power ¹         |             |                   |
-| Extra Battery Output Power ¹        |             |                   |
-| Battery Voltage (disabled)          |             |                   |
-| Battery Current (disabled)          |             |                   |
-| Battery Input Power (disabled)      |             |                   |
-| Battery Output Power (disabled)     |             |                   |
-| Max Cell Voltage (disabled)         |             |                   |
-| Min Cell Voltage (disabled)         |             |                   |
-| Cell Temperature (disabled)         |             |                   |
-| State of Health (disabled)          |             |                   |
-| Charge Time Remaining (disabled)    |             |                   |
-| Discharge Time Remaining (disabled) |             |                   |
-| AC Output Voltage (disabled)        |             |                   |
-| Inverter DC Temperature (disabled)  |             |                   |
-| MPPT Temperature (disabled)         |             |                   |
-| MPPT Output Power (disabled)        |             |                   |
-| MPPT Output Voltage (disabled)      |             |                   |
-| Remaining Capacity (disabled)       |             |                   |
-| Full Capacity (disabled)            |             |                   |
-| Charge Cycles (disabled)            |             |                   |
+| *Sensors*                           | *Switches*     | *Sliders*                  | *Selects*      |
+|-------------------------------------|----------------|----------------------------|----------------|
+| Battery Level                       | AC Ports       | AC Charging Speed          | Screen Timeout |
+| Main Battery Level                  | DC 12V Port    | Backup Reserve             | Unit Timeout   |
+| Battery Temperature                 | Backup Reserve | Charge Limit               |                |
+| Inverter Temperature                | X-Boost        | Discharge Limit            |                |
+| Input Power                         | AC Always On   | DC Charging Max Amps       |                |
+| Output Power                        | Beeper         | Generator Auto Start Level |                |
+| AC Input Power                      |                | Generator Auto Stop Level  |                |
+| AC Input Voltage                    |                |                            |                |
+| AC Input Current                    |                |                            |                |
+| AC Output Power                     |                |                            |                |
+| DC Output Power                     |                |                            |                |
+| Anderson Out Power                  |                |                            |                |
+| USB C Output Power                  |                |                            |                |
+| USB C (2) Output Power              |                |                            |                |
+| USB A Output Power                  |                |                            |                |
+| USB A (2) Output Power              |                |                            |                |
+| USB A QC (1) Power                  |                |                            |                |
+| USB A QC (2) Power                  |                |                            |                |
+| AC Input Energy                     |                |                            |                |
+| AC Output Energy                    |                |                            |                |
+| DC Input Energy                     |                |                            |                |
+| DC Output Energy                    |                |                            |                |
+| Extra Battery Level ¹               |                |                            |                |
+| Extra Battery Temperature ¹         |                |                            |                |
+| Extra Battery Voltage ¹             |                |                            |                |
+| Extra Battery Input Power ¹         |                |                            |                |
+| Extra Battery Output Power ¹        |                |                            |                |
+| Battery Voltage (disabled)          |                |                            |                |
+| Battery Current (disabled)          |                |                            |                |
+| Battery Input Power (disabled)      |                |                            |                |
+| Battery Output Power (disabled)     |                |                            |                |
+| Max Cell Voltage (disabled)         |                |                            |                |
+| Min Cell Voltage (disabled)         |                |                            |                |
+| Cell Temperature (disabled)         |                |                            |                |
+| State of Health (disabled)          |                |                            |                |
+| Charge Time Remaining (disabled)    |                |                            |                |
+| Discharge Time Remaining (disabled) |                |                            |                |
+| AC Output Voltage (disabled)        |                |                            |                |
+| Inverter DC Temperature (disabled)  |                |                            |                |
+| MPPT Temperature (disabled)         |                |                            |                |
+| MPPT Output Power (disabled)        |                |                            |                |
+| MPPT Output Voltage (disabled)      |                |                            |                |
+| Remaining Capacity (disabled)       |                |                            |                |
+| Full Capacity (disabled)            |                |                            |                |
+| Charge Cycles (disabled)            |                |                            |                |
 
 <sup>¹ Per extra battery (up to 2)</sup>
 

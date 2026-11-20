@@ -1,9 +1,15 @@
 import pytest
 from pytest_mock import MockerFixture
 
-from custom_components.ef_ble.eflib.devices.delta_pro import Device
+from custom_components.ef_ble.eflib.devices.delta_pro import (
+    Device,
+    ScreenTimeout,
+    UnitTimeout,
+)
+from custom_components.ef_ble.eflib.entity import controls
 from custom_components.ef_ble.eflib.model import (
     DirectBmsMDeltaHeartbeatPack,
+    DirectEmsDeltaHeartbeatPack,
     DirectInvDeltaHeartbeatPack,
     DirectMpptHeartbeatPack,
     DirectPdHeartbeatPack,
@@ -12,6 +18,7 @@ from custom_components.ef_ble.eflib.model.base import RawData
 from custom_components.ef_ble.eflib.packet import Packet
 
 # Index of each heartbeat in `packet_sequence`, with its source address and model
+_EMS = (1, 0x03, DirectEmsDeltaHeartbeatPack)
 _PD = (2, 0x02, DirectPdHeartbeatPack)
 _BMS = (3, 0x03, DirectBmsMDeltaHeartbeatPack)
 _INV = (4, 0x04, DirectInvDeltaHeartbeatPack)
@@ -275,6 +282,14 @@ async def test_delta_pro_exact_values_from_known_packets(device, packet_sequence
         Device.mppt_temperature: 37,
         Device.mppt_output_power: 1.8,
         Device.mppt_output_voltage: 48.8,
+        Device.beeper: True,
+        Device.ac_xboost: False,
+        Device.ac_always_on: False,
+        Device.screen_timeout: ScreenTimeout.MIN_1,
+        Device.unit_timeout: UnitTimeout.NEVER,
+        Device.dc_charging_max_amps: 8.0,
+        Device.generator_auto_start_level: 0,
+        Device.generator_auto_stop_level: 0,
     }
 
     for field_name, expected_value in expected.items():
@@ -310,15 +325,23 @@ async def test_delta_pro_mppt_output_power_scale(
 @pytest.mark.parametrize(
     ("kind", "raw_attr", "raw_value", "field_name", "expected"),
     [
+        (_MPPT, "cfg_dc_chg_current", 6000, Device.dc_charging_max_amps, 6.0),
         (_MPPT, "mppt_temp", 26, Device.mppt_temperature, 26),
         (_MPPT, "out_watts", 13, Device.mppt_output_power, 1.3),
         (_MPPT, "out_vol", 512, Device.mppt_output_voltage, 51.2),
         (_INV, "out_temp", 48, Device.inverter_temperature, 48),
         (_INV, "dc_in_temp", 50, Device.inverter_dc_temperature, 50),
+        (_PD, "beep_mode", 1, Device.beeper, False),
+        (_PD, "ac_auto_config", 1, Device.ac_always_on, True),
+        (_PD, "lcd_off_sec", 300, Device.screen_timeout, ScreenTimeout.MIN_5),
+        (_PD, "standby_min", 120, Device.unit_timeout, UnitTimeout.HOUR_2),
         (_PD, "chg_power_ac", 4_694_133, Device.ac_input_energy, 4_694_133),
         (_PD, "dsg_power_ac", 4_225_958, Device.ac_output_energy, 4_225_958),
         (_PD, "chg_sun_power", 571, Device.dc_input_energy, 571),
         (_PD, "dsg_power_dc", 24_070, Device.dc_output_energy, 24_070),
+        (_INV, "cfg_ac_xboost", 1, Device.ac_xboost, True),
+        (_EMS, "open_oil_eb_soc", 25, Device.generator_auto_start_level, 25),
+        (_EMS, "close_oil_eb_soc", 85, Device.generator_auto_stop_level, 85),
     ],
     ids=lambda value: value if isinstance(value, str) else None,
 )
@@ -446,3 +469,67 @@ async def test_delta_pro_unknown_pack_slot_is_left_unprocessed(device, packet_se
 
     assert device.get_value(Device.battery_1_cell_temperature) is None
     assert device.get_value(Device.battery_2_cell_temperature) is None
+
+
+@pytest.mark.parametrize(
+    ("control_type", "keys"),
+    [
+        (
+            controls.toggle,
+            {
+                "ac_ports",
+                "ac_xboost",
+                "ac_always_on",
+                "dc_12v_port",
+                "energy_backup",
+                "beeper",
+            },
+        ),
+        (
+            controls.NumberType,
+            {
+                "ac_charging_speed",
+                "battery_charge_limit_max",
+                "battery_charge_limit_min",
+                "energy_backup_battery_level",
+                "dc_charging_max_amps",
+                "generator_auto_start_level",
+                "generator_auto_stop_level",
+            },
+        ),
+        (controls.select, {"screen_timeout", "unit_timeout"}),
+    ],
+    ids=["switches", "numbers", "selects"],
+)
+def test_delta_pro_registers_its_controls(device, control_type, keys):
+    """Keys must equal the deprecated entities, or HA orphans their history"""
+    assert {control.key for control in device.get_controls(control_type)} == keys
+
+
+@pytest.mark.parametrize(
+    ("setter", "value", "payload"),
+    [
+        ("enable_beeper", True, b"\x00"),
+        ("enable_beeper", False, b"\x01"),
+        ("set_dc_charging_amps_max", 6.0, (6000).to_bytes(4, "little")),
+    ],
+    ids=["beeper_on", "beeper_off", "dc_amps_in_milliamps"],
+)
+async def test_delta_pro_setter_payload(device, setter, value, payload):
+    await getattr(device, setter)(value)
+
+    assert device._conn.send_packet.call_args.args[0].payload == payload
+
+
+async def test_delta_pro_ac_always_on_keeps_the_minimum_level(device, packet_sequence):
+    device.update_from_data(_reference(packet_sequence, _PD, min_ac_out_soc=15))
+
+    await device.enable_ac_always_on(True)
+
+    assert device._conn.send_packet.call_args.args[0].payload == bytes([1, 15])
+
+
+async def test_delta_pro_ac_always_on_waits_for_the_minimum_level(device):
+    await device.enable_ac_always_on(True)
+
+    device._conn.send_packet.assert_not_called()

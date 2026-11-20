@@ -30,7 +30,10 @@ class AllKitDetailData(RawData):
 
         offset = parsed.SIZE
 
-        for _ in range(parsed.support_kit_max_num):
+        # A short payload leaves the count unset or ends inside a record
+        for _ in range(parsed.support_kit_max_num or 0):
+            if len(data) - offset < KitBaseInfo.SIZE:
+                break
             base_info = KitBaseInfo.from_bytes(data[offset:])
             parsed.kit_base_info.append(base_info)
             offset += base_info.SIZE

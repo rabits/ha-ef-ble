@@ -27,6 +27,7 @@ from bleak_retry_connector import (
 )
 
 from . import keydata
+from .early_att import answer_early_mtu_request
 from .encryption import EncryptionStrategy, Type1Encryption, Type7Encryption
 from .exceptions import (
     AuthErrors,
@@ -423,15 +424,18 @@ class Connection:
             # establish_connection needs a real retry count for BLE-level attempts (e.g.
             # when adapter slots are contested).
             ble_attempts = max_attempts if max_attempts != 0 else MAX_CONNECT_ATTEMPTS
-            self._client = await establish_connection(
-                BleakClient,
-                self.ble_dev(),
-                self._ble_dev.name or self._address,
-                disconnected_callback=self.disconnected,
-                ble_device_callback=self.ble_dev,
-                max_attempts=ble_attempts,
-                timeout=self._options.timeout,
-            )
+            # The kernel can drop the MTU request a device sends as the link comes up,
+            # and a device left without an answer may never send a notification
+            async with answer_early_mtu_request(self._address, self._logger):
+                self._client = await establish_connection(
+                    BleakClient,
+                    self.ble_dev(),
+                    self._ble_dev.name or self._address,
+                    disconnected_callback=self.disconnected,
+                    ble_device_callback=self.ble_dev,
+                    max_attempts=ble_attempts,
+                    timeout=self._options.timeout,
+                )
             self._validate_characteristics()
         except UnsupportedBluetoothProtocol as e:
             error = e

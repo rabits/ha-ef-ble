@@ -927,6 +927,16 @@ _SENSORS: Final[dict[str, SensorEntityDescription]] = {
         indexed_range=range(1, 3),
         enabled=False,
     ),
+    "inverter_error_code": port_error_code("Inverter"),
+    "bms_error_code": port_error_code("BMS"),
+    "bms_fault": raw(enabled=False, entity_category=EntityCategory.DIAGNOSTIC),
+    "bms_warning_state": raw(enabled=False, entity_category=EntityCategory.DIAGNOSTIC),
+    "ac_input_frequency": frequency(
+        enabled=False, precision=0, entity_category=EntityCategory.DIAGNOSTIC
+    ),
+    "ac_standby_time": duration(
+        enabled=False, entity_category=EntityCategory.DIAGNOSTIC
+    ),
     # Wave 2
     "outlet_temperature": wave_temperature(),
     "power_battery": power(precision=0),

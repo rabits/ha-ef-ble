@@ -720,6 +720,13 @@ Click on any device below to see available sensors, switches, and controls:
 | Cell Temperature (disabled)         |                                  |                     |
 | Charge Time Remaining (disabled)    |                                  |                     |
 | Discharge Time Remaining (disabled) |                                  |                     |
+| Error Occurred ¹ (disabled)         |                                  |                     |
+| Inverter Error Code ¹ (disabled)    |                                  |                     |
+| BMS Error Code ¹ (disabled)         |                                  |                     |
+| BMS Fault ¹ (disabled)              |                                  |                     |
+| BMS Warning State ¹ (disabled)      |                                  |                     |
+| AC Input Frequency ¹ (disabled)     |                                  |                     |
+| AC Standby Time ¹ (disabled)        |                                  |                     |
 
 <sup>¹ Only available on Delta 2 and Delta 3 1500</sup><br>
 <sup>² Only available on Delta 2 Max</sup><br>

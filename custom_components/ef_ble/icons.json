@@ -229,6 +229,12 @@
       },
       "battery_cycles": {
         "default": "mdi:counter"
+      },
+      "bms_fault": {
+        "default": "mdi:battery-alert"
+      },
+      "bms_warning_state": {
+        "default": "mdi:battery-alert-variant-outline"
       }
     },
     "switch": {

@@ -16,7 +16,6 @@ from homeassistant.components.bluetooth import (
     async_discovered_service_info,
 )
 from homeassistant.config_entries import (
-    CONN_CLASS_LOCAL_PUSH,
     ConfigEntry,
     ConfigFlow,
     ConfigFlowResult,
@@ -133,8 +132,6 @@ class EFBLEConfigFlow(ConfigFlow, domain=DOMAIN):
 
     VERSION = 1
     MINOR_VERSION = 3
-
-    CONNECTION_CLASS = CONN_CLASS_LOCAL_PUSH
 
     def __init__(self) -> None:
         """Initialize the config flow."""

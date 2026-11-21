@@ -740,6 +740,18 @@
       "battery_cycles": {
         "name": "Charge Cycles"
       },
+      "bms_fault": {
+        "name": "BMS Fault"
+      },
+      "bms_warning_state": {
+        "name": "BMS Warning State"
+      },
+      "ac_input_frequency": {
+        "name": "AC Input Frequency"
+      },
+      "ac_standby_time": {
+        "name": "AC Standby Time"
+      },
       "engine_state": {
         "name": "Engine State",
         "state": {

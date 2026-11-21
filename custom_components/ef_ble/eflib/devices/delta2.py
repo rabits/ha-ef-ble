@@ -7,7 +7,7 @@ from ..model import (
 from ..packet import Packet
 from ..props import computed_field
 from ..props.raw_data_field import dataclass_attr_mapper, raw_field
-from ._delta2_base import Delta2Base
+from ._delta2_base import Delta2Base, pb_bms, pb_ems, pb_inv
 
 pb_pd = dataclass_attr_mapper(Mr330PdHeartDelta2)
 pb_mppt = dataclass_attr_mapper(Mr330MpptHeart)
@@ -30,6 +30,13 @@ class Device(Delta2Base):
 
     xt60_input_power = raw_field(pb_pd.dc_pv_input_watts)
 
+    inverter_error_code = raw_field(pb_inv.err_code)
+    ac_input_frequency = raw_field(pb_inv.ac_in_freq)
+    ac_standby_time = raw_field(pb_inv.standby_mins)
+    bms_error_code = raw_field(pb_bms.err_code)
+    bms_fault = raw_field(pb_bms.bms_fault)
+    bms_warning_state = raw_field(pb_ems.bms_warning_state)
+
     async def packet_parse(self, data: bytes):
         return Packet.from_bytes(data, xor_payload=True)
 
@@ -40,6 +47,10 @@ class Device(Delta2Base):
     @property
     def mppt_heart_type(self):
         return Mr330MpptHeart
+
+    @computed_field
+    def error_occurred(self) -> bool:
+        return bool(self.inverter_error_code) or bool(self.bms_error_code)
 
     @computed_field
     def ac_charging_power_max(self) -> int:

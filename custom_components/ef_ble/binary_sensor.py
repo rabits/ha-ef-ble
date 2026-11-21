@@ -142,7 +142,12 @@ _BINARY_SENSORS: Final[dict[str, BinarySensorEntityDescription]] = {
     "error_occurred": problem(
         enabled=False,
         entity_category=EntityCategory.DIAGNOSTIC,
-        state_attribute_fields=["error_code", "device_error_codes"],
+        state_attribute_fields=[
+            "error_code",
+            "device_error_codes",
+            "inverter_error_code",
+            "bms_error_code",
+        ],
     ),
     "bms_run_state": power(enabled=False, entity_category=EntityCategory.DIAGNOSTIC),
     # Rapid Pro 320W port state telemetry

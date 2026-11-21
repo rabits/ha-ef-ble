@@ -708,6 +708,18 @@
       "battery_cycles": {
         "name": "循环次数"
       },
+      "bms_fault": {
+        "name": "BMS 故障"
+      },
+      "bms_warning_state": {
+        "name": "BMS 告警状态"
+      },
+      "ac_input_frequency": {
+        "name": "交流输入频率"
+      },
+      "ac_standby_time": {
+        "name": "交流待机时间"
+      },
       "engine_state": {
         "name": "引擎状态",
         "state": {

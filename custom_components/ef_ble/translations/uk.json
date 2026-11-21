@@ -708,6 +708,18 @@
       "battery_cycles": {
         "name": "Цикли заряду"
       },
+      "bms_fault": {
+        "name": "Несправність BMS"
+      },
+      "bms_warning_state": {
+        "name": "Стан попередження BMS"
+      },
+      "ac_input_frequency": {
+        "name": "Вхідна частота змінного струму (AC)"
+      },
+      "ac_standby_time": {
+        "name": "Автовимкнення AC"
+      },
       "engine_state": {
         "name": "Стан двигуна",
         "state": {

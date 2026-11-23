@@ -322,6 +322,8 @@ Click on any device below to see available sensors, switches, and controls:
 | AC Plugged In                        |                                 |                            |
 | Battery Input Power (disabled)       |                                 |                            |
 | Battery Output Power (disabled)      |                                 |                            |
+| Battery Voltage (disabled) ⁺         |                                 |                            |
+| Battery Current (disabled) ⁺         |                                 |                            |
 | Cell Temperature (disabled)          |                                 |                            |
 | Charge Time Remaining (disabled)     |                                 |                            |
 | Discharge Time Remaining (disabled)  |                                 |                            |

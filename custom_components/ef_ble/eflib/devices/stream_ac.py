@@ -420,7 +420,8 @@ class Device(DeviceBase, ProtobufProps):
             finally:
                 # If the send failed the mod never reached the device, so drop it;
                 # otherwise it would be silently re-applied on the next successful edit
-                if not sent:
+                # A clear scheduled by an earlier edit may already have emptied the list
+                if not sent and pending_mod in chain.pending_mods:
                     chain.pending_mods.remove(pending_mod)
 
             # Clear pending mods after the device has had time to process and send back
